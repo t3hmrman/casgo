@@ -2,10 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="utf8">
-    <title>{{.companyName}} CasGo Login</title>
+    <title>{{.CompanyName}} CasGo Login</title>
+
+    <!-- Inline styles -->
+    <style>
+      .alert {
+      color: red;
+      }
+
+    </style>
+
   </head>
   <body>
-    <h1>{{.companyName}} Login</h1>
+    <h1>{{.CompanyName}} Login</h1>
+
+    {{if .Error}}
+    <div class=".alert" style="color:red">
+      <strong>Error: {{.Error}}</strong>
+    </div>
+    {{end}}
+
     <form action="/login" method="POST">
       <div>
         <label for="email"></label>
