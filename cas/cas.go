@@ -5,8 +5,9 @@ package cas
  */
 
 import (
-	"net/http"
 	"github.com/unrolled/render"
+	"net/http"
+	"strings"
 )
 
 // CAS server interface
@@ -39,11 +40,20 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 // Credential acceptor endpoint (requestor is Handled in main)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Show login page if credentials are not provided, attempt login otherwise
-	if true {
+	username := strings.ToLower(req.FormValue("email"))
+	password := strings.ToLower(req.FormValue("password"))
+	if username == "" || password == "" {
 		c.render.HTML(w, http.StatusOK, "login", nil)
-	} else {
-		c.render.HTML(w, http.StatusOK, "login", nil)
+		return
 	}
+
+	// Attempt to log the user in
+	if username == "user@email.com" && password == "user" {
+		w.Write([]byte("Logged in!"))
+	} else {
+		w.Write([]byte("Failed to log in!"))
+	}
+
 }
 
 // Endpoint for destroying CAS sessions (logging out)
