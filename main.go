@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"net/http"
 	"log"
 
@@ -12,6 +13,11 @@ import (
 type CasServerConfig struct {
 	host string
 	port string
+	companyName string
+}
+
+func (c *CasServerConfig) getAddr() string {
+	return c.host + ":" + c.port
 }
 
 // Render object
@@ -24,15 +30,20 @@ func handleIndex(w http.ResponseWriter, req *http.Request) {
 func main() {
 
 	// Configuration
-	config := &CasServerConfig{"0.0.0.0", ":8080"}
+	config := &CasServerConfig{"0.0.0.0", "8080", "companyABC"}
+
+	// Environment overrides
+	if v := os.Getenv("PORT"); len(v) > 0 { config.port = os.Getenv("PORT") }
+	if v := os.Getenv("HOST"); len(v) > 0 { config.host = os.Getenv("HOST") }
+	if v := os.Getenv("COMPANY_NAME"); len(v) > 0 { config.companyName = os.Getenv("COMPANY_NAME") }
 
 	// Setup handlers
 	http.HandleFunc("/login", cas.HandleLogin)
 	http.HandleFunc("/", handleIndex)
 
 	log.Printf("Starting CasGo on port %s...\n", config.port)
-	err := http.ListenAndServe(config.port, nil)
+	err := http.ListenAndServe(config.getAddr(), nil)
 	if err != nil {
-		log.Fatal("Server Failed:", err)
+		log.Fatal("CasGo server startup failed: ", err)
 	}
 }
