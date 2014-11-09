@@ -6,6 +6,8 @@ import "os"
 type CASServerConfig struct {
 	Host string
 	Port string
+	DBHost string
+	DBName string
 	TemplatesDirectory string
 	CompanyName string
 }
