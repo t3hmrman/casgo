@@ -39,6 +39,7 @@ func main() {
 
     // Setup handlers
     http.HandleFunc("/login", cas.HandleLogin)
+    http.HandleFunc("/register", cas.HandleRegister)
     http.HandleFunc("/", cas.HandleIndex)
 
     log.Printf("Starting CasGo on port %s...\n", config.Port)
