@@ -14,7 +14,13 @@
 
   </head>
   <body>
-    <h1>{{.CompanyName}} Login</h1>
+    <h1>{{.CompanyName}} -
+      {{if .Register}}
+      Register
+      {{else}}
+      Login
+      {{end}}
+    </h1>
 
     {{if .Error}}
     <div class=".alert" style="color:red">
@@ -31,11 +37,17 @@
       <div>
         <label for="password"></label>
         <input id="password" name="password" type="password"  placeholder="Password"/>
-      <div>
-
         <div>
-          <button type="submit">Log in</button>
-        </div>
+
+          <div>
+              {{if .Register}}
+            <button type="submit">Register</button>
+            {{else}}
+            <button type="submit">Login</button>
+            <p>Don't have a username/password? Maybe you should <a href="/?register=true">register</a>?</p>
+            {{end}}
+            </button>
+          </div>
     </form>
   </body>
 </html>
