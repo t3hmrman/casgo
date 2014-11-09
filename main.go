@@ -12,7 +12,7 @@ func main() {
     // Configuration
     config := &cas.CASServerConfig{
         "0.0.0.0",
-        "8080",
+        "9090",
         "localhost:28015",
         "casgo",
         "templates/",

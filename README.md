@@ -16,3 +16,14 @@ Casgo is a simple to use, simple to deploy [Single Sign On](http://en.wikipedia.
 |*DBName*               |DBNAME           |"casgo"           |The database name for casgo to use         |
 |*TemplatesDirectory*   |CASGO_TEMPLATES  |"templates/"      |The folder in which casgo templates reside |
 |*CompanyName*          |CASGO_COMPNAME   |"companyABC"      |The database name for casgo to use         |
+
+
+### Database Schema
+
+So what does the database that powers casgo look like?
+
+|Database |Table    |Description                                                   |
+|---------|---------|--------------------------------------------------------------|
+|casgo    |tickets  |The authentication tickets currently in use by the casgo      |
+|casgo    |services |Services authorized to use casgo                              |
+|casgo    |users    |User data stored by casgo (if not using external auth)        |
