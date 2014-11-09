@@ -48,20 +48,20 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Show login page if credentials are not provided, attempt login otherwise
-	username := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
+	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
 	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
 
-	// Exit early if username/password are empty
-	if username == "" || password == "" {
+	// Exit early if email/password are empty
+	if email == "" || password == "" {
 		c.render.HTML(w, http.StatusOK, "login", context)
 		return
 	}
 
 	// Attempt to log the user in
-	if username == "user@email.com" && password == "user" {
+	if email == "user@email.com" && password == "user" {
 		w.Write([]byte("Logged in!"))
 	} else {
-		context["Error"] = "Invalid username/password combination"
+		context["Error"] = "Invalid email/password combination"
 		c.render.HTML(w, http.StatusOK, "login", context)
 	}
 
@@ -70,11 +70,12 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	context := map[string]string{
+		"CompanyName": c.config.CompanyName,
 		"Registered": "",
 	}
 
 	// Show login page if credentials are not provided, attempt login otherwise
-	username := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
+	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
 	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
 
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10) // Default cost
@@ -85,13 +86,14 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	
 	// Create new user object
 	newUser := map[string]string{
-		"username": username,
+		"email": email,
 		"password": string(encryptedPassword),
 	}
 
 	_, err = r.Db(c.config.DBName).Table("users").Insert(newUser).Run(c.config.RDBSession)
 	if err != nil {
 		c.render.HTML(w, http.StatusOK, "register", context)
+		return
 	}
 
 	context["Registered"] = "true"
