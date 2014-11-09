@@ -18,16 +18,22 @@ func (c *CASServerConfig) GetAddr() string {
 
 func (c *CASServerConfig) OverrideWithEnvVariables() {
 	// Environment overrides
-	if v := os.Getenv("HOST"); len(v) > 0 {
-		c.Host = os.Getenv("HOST")
+	if v := os.Getenv("CASGO_HOST"); len(v) > 0 {
+		c.Host = os.Getenv("CASGO_HOST")
 	}
-	if v := os.Getenv("PORT"); len(v) > 0 {
-		c.Port = os.Getenv("PORT")
+	if v := os.Getenv("CASGO_PORT"); len(v) > 0 {
+		c.Port = os.Getenv("CASGO_PORT")
 	}
-	if v := os.Getenv("TEMPLATES_DIR"); len(v) > 0 {
-		c.TemplatesDirectory = os.Getenv("TEMPLATES_DIR")
+	if v := os.Getenv("CASGO_DBHOST"); len(v) > 0 {
+		c.Port = os.Getenv("CASGO_DBHOST")
 	}
-	if v := os.Getenv("COMPANY_NAME"); len(v) > 0 {
-		c.CompanyName = os.Getenv("COMPANY_NAME")
+	if v := os.Getenv("CASGO_DBNAME"); len(v) > 0 {
+		c.Port = os.Getenv("CASGO_DBNAME")
+	}
+	if v := os.Getenv("CASGO_TEMPLATES"); len(v) > 0 {
+		c.TemplatesDirectory = os.Getenv("CASGO_TEMPLATES")
+	}
+	if v := os.Getenv("CASGO_COMPNAME"); len(v) > 0 {
+		c.CompanyName = os.Getenv("CASGO_COMPNAME")
 	}
 }
