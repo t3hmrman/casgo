@@ -17,18 +17,21 @@ func main() {
         "casgo",
         "templates/",
         "companyABC",
+        nil,
     }
     config.OverrideWithEnvVariables()
 
     // Database setup
-    var session = *r.Session
-    session, err := r.Connect(r.ConnectOps{
+    var session *r.Session
+    session, err := r.Connect(r.ConnectOpts{
         Address:  config.DBHost,
         Database: config.DBName,
     })
 
     if err != nil {
         log.Fatalln(err.Error())
+    } else {
+        config.RDBSession = session;
     }
 
     // Create CAS Server
@@ -39,8 +42,5 @@ func main() {
     http.HandleFunc("/", cas.HandleIndex)
 
     log.Printf("Starting CasGo on port %s...\n", config.Port)
-    err := http.ListenAndServe(config.GetAddr(), nil)
-    if err != nil {
-        log.Fatal("CasGo server startup failed: ", err)
-    }
+    log.Fatal(http.ListenAndServe(config.GetAddr(), nil))
 }
