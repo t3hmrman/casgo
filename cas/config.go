@@ -11,6 +11,7 @@ type CASServerConfig struct {
     Port string
     DBHost string
     DBName string
+    CookieSecret string
     TemplatesDirectory string
     CompanyName string
     RDBSession *r.Session
@@ -29,10 +30,13 @@ func (c *CASServerConfig) OverrideWithEnvVariables() {
         c.Port = os.Getenv("CASGO_PORT")
     }
     if v := os.Getenv("CASGO_DBHOST"); len(v) > 0 {
-        c.Port = os.Getenv("CASGO_DBHOST")
+        c.DBHost = os.Getenv("CASGO_DBHOST")
     }
     if v := os.Getenv("CASGO_DBNAME"); len(v) > 0 {
-        c.Port = os.Getenv("CASGO_DBNAME")
+        c.DBName = os.Getenv("CASGO_DBNAME")
+    }
+    if v := os.Getenv("CASGO_SECRET"); len(v) > 0 {
+        c.CookieSecret = os.Getenv("CASGO_SECRET")
     }
     if v := os.Getenv("CASGO_TEMPLATES"); len(v) > 0 {
         c.TemplatesDirectory = os.Getenv("CASGO_TEMPLATES")
