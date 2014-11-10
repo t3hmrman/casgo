@@ -23,11 +23,13 @@
   <body>
     <h1>{{.CompanyName}} - Login</h1>
 
-    {{if .Error}}
-    <div class="alert">
-      Error: {{.Error}}
+    <div class="alerts-container">
+      {{if .Error}}
+      <div class="alert error">
+        Error: {{.Error}}
+      </div>
+      {{end}}
     </div>
-    {{end}}
 
     <form action="/login" method="POST">
       <div>
