@@ -6,9 +6,16 @@
 
     <!-- Inline styles -->
     <style>
-      .alert {
-      color: red;
-      }
+    .alert {
+      padding: 1em;
+      color: white;
+    }
+    .alert.error {
+      background-color: #FF6961;
+    }
+    .alert.success {
+      background-color: #77DD77;
+    }
 
     </style>
 
@@ -17,12 +24,19 @@
     <h1>{{.CompanyName}} - Register</h1>
 
     {{if .Error}}
-    <div class=".alert" style="color:red">
-      <strong>Error: {{.Error}}</strong>
+    <div class="alert error">
+      <strong>{{.Error}}</strong>
     </div>
     {{end}}
 
-    <form action="/login" method="POST">
+    {{if .Success}}
+    <div class="alert success">
+      <strong>{{.Success}}</strong>
+    </div>
+    <strong>Now that you've registered, you can <a href="/login">Login</a>!
+    {{else}}
+
+    <form action="/register" method="POST">
       <div>
         <label for="email"></label>
         <input id="email" name="email" type="email"  placeholder="Email Address"/>
@@ -37,5 +51,7 @@
             <button type="submit">Register</button>
           </div>
     </form>
+    {{end}}
+
   </body>
 </html>

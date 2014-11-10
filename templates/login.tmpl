@@ -6,9 +6,16 @@
 
     <!-- Inline styles -->
     <style>
-      .alert {
-      color: red;
-      }
+    .alert {
+      padding: 1em;
+      color: white;
+    }
+    .alert.error {
+      background-color: #FF6961;
+    }
+    .alert.success {
+      background-color: #77DD77;
+    }
 
     </style>
 
@@ -17,7 +24,7 @@
     <h1>{{.CompanyName}} - Login</h1>
 
     {{if .Error}}
-    <div class=".alert" style="color:red">
+    <div class="alert">
       <strong>Error: {{.Error}}</strong>
     </div>
     {{end}}
