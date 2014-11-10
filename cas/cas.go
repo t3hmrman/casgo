@@ -92,7 +92,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
     // Create new user object
     newUser := map[string]string{
-        "email":    email,
+        "email": email,
         "password": string(encryptedPassword),
     }
 
