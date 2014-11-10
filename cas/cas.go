@@ -11,6 +11,7 @@ import (
 	"github.com/unrolled/render"
 	"net/http"
 	"strings"
+	"log"
 )
 
 type User struct {
@@ -33,13 +34,18 @@ type CASServer interface {
 type CAS struct {
 	config  *CASServerConfig
 	render  *render.Render
-	session *sessions.CookieStore
+	cookieStore *sessions.CookieStore
 }
 
 func New(config *CASServerConfig) *CAS {
 	r := render.New(render.Options{Directory: config.TemplatesDirectory})
-	s := sessions.NewCookieStore([]byte(config.CookieSecret))
-	c := &CAS{config, r, s}
+	cookieStore := sessions.NewCookieStore([]byte(config.CookieSecret))
+	cookieStore.Options = &sessions.Options{
+		Path: "/",
+		MaxAge: 86400 * 7,
+		HttpOnly: true,
+	}
+	c := &CAS{config, r, cookieStore}
 	return c
 }
 
@@ -51,8 +57,14 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 // Credential acceptor endpoint (requestor is Handled in main)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
-	context := map[string]string{
-		"CompanyName": c.config.CompanyName,
+	context := map[string]string{	"CompanyName": c.config.CompanyName }
+
+	// Exit early if the user is already logged in (in session)
+	session, _ := c.cookieStore.Get(req, "casgo-session")
+	if currentUserEmail,ok := session.Values["currentUserEmail"]; ok {
+		context["currentUserEmail"] = currentUserEmail.(string)
+		c.render.HTML(w, http.StatusOK, "login", context)
+		return
 	}
 
 	// Show login page if credentials are not provided, attempt login otherwise
@@ -73,6 +85,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Get the user from the returned cursor
 	var returnedUser *User
 	err = cursor.One(&returnedUser)
 	if err != nil {
@@ -89,16 +102,22 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Save session in cookies
+	session, _ = c.cookieStore.Get(req, "casgo-session")
+	session.Values["currentUserEmail"] = returnedUser.Email
+	err = session.Save(req, w)
+	if err != nil {
+		log.Fatal("Failed to save logged in user to session:", err)
+	}
+
 	context["Success"] = "Successful log in! Redirecting to services page..."
-	context["Username"] = returnedUser.Email
+	context["currentUserEmail"] = returnedUser.Email
 	c.render.HTML(w, http.StatusOK, "login", context)
 }
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{
-		"CompanyName": c.config.CompanyName,
-	}
+	context := map[string]string{	"CompanyName": c.config.CompanyName }
 
 	// Show login page if credentials are not provided, attempt login otherwise
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -140,7 +159,28 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
+	context := map[string]string{ "CompanyName": c.config.CompanyName }
 
+	// Exit early if the user is already logged in (in session)
+	session, _ := c.cookieStore.Get(req, "casgo-session")
+	if _,ok := session.Values["currentUserEmail"]; !ok {
+		// Redirect if the person was never logged in
+		http.Redirect(w, req, "/login", 301)
+	}
+
+	// Delete current user email (logging out user)
+	delete(session.Values, "currentUserEmail")
+
+	// Save the modified session
+	err := session.Save(req, w)
+	if err != nil {
+		context["Error"] = "Failed to log out... Please contact your IT administrator"
+		log.Fatal("Failed to remove logged in user from session:", err)
+	} else {
+		context["Success"] = "Successfully logged out"
+	}
+
+	c.render.HTML(w, http.StatusOK, "login", context)
 }
 
 // Endpoint for validating service tickets

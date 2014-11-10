@@ -40,6 +40,7 @@ func main() {
 
 	// Setup handlers
 	http.HandleFunc("/login", cas.HandleLogin)
+	http.HandleFunc("/logout", cas.HandleLogout)
 	http.HandleFunc("/register", cas.HandleRegister)
 	http.HandleFunc("/", cas.HandleIndex)
 
