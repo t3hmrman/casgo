@@ -6,16 +6,20 @@
 
     <!-- Inline styles -->
     <style>
-    .alert {
-      padding: 1em;
-      color: white;
-    }
-    .alert.error {
-      background-color: #FF6961;
-    }
-    .alert.success {
-      background-color: #77DD77;
-    }
+		 .alerts-container {
+			 margin-top: 1em;
+			 margin-bottom: 1em;
+		 }
+     .alert {
+       padding: 1em;
+       color: white;
+     }
+     .alert.error {
+       background-color: #FF6961;
+     }
+     .alert.success {
+       background-color: #77DD77;
+     }
 
     </style>
 
@@ -26,11 +30,20 @@
     <div class="alerts-container">
       {{if .Error}}
       <div class="alert error">
-        Error: {{.Error}}
+        {{.Error}}
+      </div>
+      {{end}}
+
+      {{if .Success}}
+      <div class="alert success">
+        {{.Success}}
       </div>
       {{end}}
     </div>
 
+    {{if .Success}}
+		<h2>Redirecting to services page...</h2>
+    {{else}}
     <form action="/login" method="POST">
       <div>
         <label for="email"></label>
@@ -47,5 +60,7 @@
             <p>Don't have a username/password? Maybe you should <a href="/register">register</a>?</p>
           </div>
     </form>
+    {{end}}
+
   </body>
 </html>

@@ -38,12 +38,13 @@
 			<div class="alert success">
 				{{.Success}}
 			</div>
-			<h2> Thanks for registering!</h2>
-			<p>Now that you've registered, you can <a href="/login">Login</a>!</p>
 			{{end}}
 		</div>
 
-		{{if not .Success}}
+		{{if .Success}}
+		<h2> Thanks for registering!</h2>
+		<p>Now that you've registered, you can <a href="/login">Login</a>!</p>
+    {{else}}
 		<form action="/register" method="POST">
 			<div>
 				<label for="email"></label>
