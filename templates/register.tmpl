@@ -25,15 +25,16 @@
 
     {{if .Error}}
     <div class="alert error">
-      <strong>{{.Error}}</strong>
+      {{.Error}}
     </div>
     {{end}}
 
     {{if .Success}}
     <div class="alert success">
-      <strong>{{.Success}}</strong>
+      {{.Success}}
     </div>
-    <strong>Now that you've registered, you can <a href="/login">Login</a>!
+    <h2> Thanks for registering!</h2>
+    <p>Now that you've registered, you can <a href="/login">Login</a>!</p>
     {{else}}
 
     <form action="/register" method="POST">

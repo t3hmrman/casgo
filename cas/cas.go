@@ -92,17 +92,18 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
     // Create new user object
     newUser := map[string]string{
-        "email": email,
+        "email":    email,
         "password": string(encryptedPassword),
     }
 
-    _, err = r.Db(c.config.DBName).Table("users").Insert(newUser).RunWrite(c.config.RDBSession)
+    _, err = r.Db(c.config.DBName).Table("users").Insert(newUser, r.InsertOpts{Conflict:"error"}).RunWrite(c.config.RDBSession)
     if err != nil {
+        context["Error"] = "An error occurred while creating your account.. Please verify fields and try again"
         c.render.HTML(w, http.StatusOK, "register", context)
         return
     }
 
-    context["Success"] = "Successfully registered email and password, Please use it to <a href=\"/login\">login</a>."
+    context["Success"] = "Successfully registered email and password"
     c.render.HTML(w, http.StatusOK, "register", context)
 }
 
