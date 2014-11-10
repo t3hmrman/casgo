@@ -7,10 +7,16 @@ package cas
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	r "github.com/dancannon/gorethink"
+	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"net/http"
 	"strings"
 )
+
+type User struct {
+	Email    string `gorethink:"email"`
+	Password string `gorethink:"password"`
+}
 
 // CAS server interface
 type CASServer interface {
@@ -25,13 +31,15 @@ type CASServer interface {
 
 // CAS Server
 type CAS struct {
-	config *CASServerConfig
-	render *render.Render
+	config  *CASServerConfig
+	render  *render.Render
+	session *sessions.CookieStore
 }
 
 func New(config *CASServerConfig) *CAS {
 	r := render.New(render.Options{Directory: config.TemplatesDirectory})
-	c := &CAS{config, r}
+	s := sessions.NewCookieStore([]byte(config.CookieSecret))
+	c := &CAS{config, r, s}
 	return c
 }
 
@@ -57,14 +65,33 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Attempt to log the user in
-	if email == "user@email.com" && password == "user" {
-		w.Write([]byte("Logged in!"))
-	} else {
-		context["Error"] = "Invalid email/password combination"
-		c.render.HTML(w, http.StatusOK, "login", context)
+	// Find the user
+	cursor, err := r.Db(c.config.DBName).Table("users").Get(email).Run(c.config.RDBSession)
+	if err != nil {
+		context["Error"] = "An error occurred finding a user with that email address.. Please wait a while and try again"
+		c.render.HTML(w, http.StatusInternalServerError, "login", context)
+		return
 	}
 
+	var returnedUser *User
+	err = cursor.One(&returnedUser)
+	if err != nil {
+		context["Error"] = "An error occurred finding a user with that email address.. Please wait a while and try again"
+		c.render.HTML(w, http.StatusInternalServerError, "login", context)
+		return
+	}
+
+	// Check hash
+	err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
+	if err != nil {
+		context["Error"] = "Invalid email/password combination"
+		c.render.HTML(w, http.StatusInternalServerError, "login", context)
+		return
+	}
+
+	context["Success"] = "Successful log in! Redirecting to services page..."
+	context["Username"] = returnedUser.Email
+	c.render.HTML(w, http.StatusOK, "login", context)
 }
 
 // Endpoint for destroying CAS sessions (logging out)
