@@ -67,51 +67,70 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Show login page if credentials are not provided, attempt login otherwise
+	// Trim and lightly pre-process/validate email/password
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
 	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
-
-	// Exit early if email/password are empty
 	if email == "" || password == "" {
 		c.render.HTML(w, http.StatusOK, "login", context)
 		return
 	}
 
-	// Find the user
-	cursor, err := r.Db(c.config.DBName).Table("users").Get(email).Run(c.config.RDBSession)
+	// Find and return a user or return CASServerError
+	returnedUser, err := c.validateUserCredentials(email,password)
 	if err != nil {
-		context["Error"] = "An error occurred finding a user with that email address.. Please wait a while and try again"
-		c.render.HTML(w, http.StatusInternalServerError, "login", context)
+		context["Error"] = err.msg
+		c.render.HTML(w, err.http_code, "login", context)
 		return
 	}
 
-	// Get the user from the returned cursor
-	var returnedUser *User
-	err = cursor.One(&returnedUser)
-	if err != nil {
-		context["Error"] = "An error occurred finding a user with that email address.. Please wait a while and try again"
-		c.render.HTML(w, http.StatusInternalServerError, "login", context)
-		return
-	}
-
-	// Check hash
-	err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
-	if err != nil {
-		context["Error"] = "Invalid email/password combination"
-		c.render.HTML(w, http.StatusInternalServerError, "login", context)
-		return
-	}
 
 	// Save session in cookies
 	session, _ = c.cookieStore.Get(req, "casgo-session")
 	session.Values["currentUserEmail"] = returnedUser.Email
-	err = session.Save(req, w)
-	if err != nil {
+	sessionSaveErr := session.Save(req, w)
+	if sessionSaveErr != nil {
 		log.Fatal("Failed to save logged in user to session:", err)
 	}
 
+	// if the user has logged in and there was a service, do stuff
+	// if req.FormValue("service"), ok; ok {
+	// 	handleServiceLogin(w, req)
+	// 	return
+	// }
+
 	context["Success"] = "Successful log in! Redirecting to services page..."
 	context["currentUserEmail"] = returnedUser.Email
+	c.render.HTML(w, http.StatusOK, "login", context)
+}
+
+// Validate user credentials
+// Returns a valid user object if validation succeeds
+func (c *CAS) validateUserCredentials(email string, password string) (*User, *CASServerError) {
+
+	// Find the user
+	cursor, err := r.Db(c.config.DBName).Table("users").Get(email).Run(c.config.RDBSession)
+	if err != nil { return nil, &InvalidEmailAddressError }
+
+	// Get the user from the returned cursor
+	var returnedUser *User
+	err = cursor.One(&returnedUser)
+	if err != nil {	return nil, &InvalidEmailAddressError }
+
+	// Check hash
+	err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
+	if err != nil { return nil, &InvalidCredentialsError }
+
+	// Successful validation
+	return returnedUser, nil
+}
+
+// Endpoint for handling login by services
+func (c *CAS) handleServiceLogin(w http.ResponseWriter, req *http.Request) {
+
+	// Trim and lightly pre-process/validate service
+	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+
+	context := map[string]string{ "Success": "Would have handled redirection for service..." + service }
 	c.render.HTML(w, http.StatusOK, "login", context)
 }
 
