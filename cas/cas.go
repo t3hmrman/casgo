@@ -75,14 +75,14 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Find and return a user or return CASServerError
+	// Find, and validate user credentials
+	// validateUserCredentials returns CASServerError if there is an error
 	returnedUser, err := c.validateUserCredentials(email,password)
 	if err != nil {
 		context["Error"] = err.msg
 		c.render.HTML(w, err.http_code, "login", context)
 		return
 	}
-
 
 	// Save session in cookies
 	session, _ = c.cookieStore.Get(req, "casgo-session")
@@ -94,8 +94,8 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 	// if the user has logged in and there was a service, do stuff
 	// if req.FormValue("service"), ok; ok {
-	// 	handleServiceLogin(w, req)
-	// 	return
+	//	handleServiceLogin(w, req)
+	//	return
 	// }
 
 	context["Success"] = "Successful log in! Redirecting to services page..."
@@ -126,12 +126,39 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 
 // Endpoint for handling login by services
 func (c *CAS) handleServiceLogin(w http.ResponseWriter, req *http.Request) {
+	context := map[string]string{}
 
 	// Trim and lightly pre-process/validate service
 	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	gateway := strings.TrimSpace(strings.ToLower(req.FormValue("gateway")))
+	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
+	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
 
-	context := map[string]string{ "Success": "Would have handled redirection for service..." + service }
-	c.render.HTML(w, http.StatusOK, "login", context)
+	if gateway == "true" && renew == "true" {
+		// Both gateway and  cannot be set -- Croak here? Maybe also take renew over gateway (as docs suggest?)
+		context["Error"] = "Invalid Request: Both gateway and renew options specified"
+			c.render.HTML(w, http.StatusBadRequest, "login", context)
+	} 
+
+	if gateway == "true" {
+		// If gateway is set, CAS will try to authenticate with non-interactive means (ex. LDAP)
+		// If no CAS session and no non-interactive means, then redirect with no ticket parameter to service URL
+
+	} else if renew == "true" {
+		// If renew is set, automatic sign on is disabled, user must present credentials regardless of whether a sign on session exists
+		// Ignore gateway if renew is set.
+
+	}
+
+	// Look up the service by URL -- URL encoded
+	// Verify that it exists for possible redirect
+
+	// If renew is set, gateway cannot be
+
+	//
+
+		context["Success"] = "Handling service login, service:" + service + ", gateway:" + gateway + ", method: " + method
+		c.render.HTML(w, http.StatusOK, "login", context)
 }
 
 // Endpoint for destroying CAS sessions (logging out)
