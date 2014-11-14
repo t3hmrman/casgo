@@ -124,8 +124,13 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 	return returnedUser, nil
 }
 
-// Endpoint for handling login by services
-func (c *CAS) handleServiceLogin(w http.ResponseWriter, req *http.Request) {
+// Handle login accesses (credential acceptance -- verifying attempt to log in)
+func (c *CAS) handleLoginCredentialAccept(w http.ResponseWriter, req *http.Request) {
+
+}
+
+// Handle login accesses (credential requests -- user logging in)
+func (c *CAS) handleLoginCredentialRequest(w http.ResponseWriter, req *http.Request) {
 	context := map[string]string{}
 
 	// Trim and lightly pre-process/validate service
