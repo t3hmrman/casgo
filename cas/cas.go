@@ -9,14 +9,19 @@ import (
 	r "github.com/dancannon/gorethink"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
+	"log"
 	"net/http"
 	"strings"
-	"log"
 )
 
 type User struct {
 	Email    string `gorethink:"email"`
 	Password string `gorethink:"password"`
+}
+
+type CASService struct {
+	Url               string `gorethink:"url"`
+	AdminstratorEmail string `gorethink:"admin_email"`
 }
 
 // CAS server interface
@@ -32,8 +37,8 @@ type CASServer interface {
 
 // CAS Server
 type CAS struct {
-	config  *CASServerConfig
-	render  *render.Render
+	config      *CASServerConfig
+	render      *render.Render
 	cookieStore *sessions.CookieStore
 }
 
@@ -41,8 +46,8 @@ func New(config *CASServerConfig) *CAS {
 	r := render.New(render.Options{Directory: config.TemplatesDirectory})
 	cookieStore := sessions.NewCookieStore([]byte(config.CookieSecret))
 	cookieStore.Options = &sessions.Options{
-		Path: "/",
-		MaxAge: 86400 * 7,
+		Path:     "/",
+		MaxAge:   86400 * 7,
 		HttpOnly: true,
 	}
 	c := &CAS{config, r, cookieStore}
@@ -57,15 +62,97 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 // Credential acceptor endpoint (requestor is Handled in main)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
-	context := map[string]string{	"CompanyName": c.config.CompanyName }
+	context := map[string]string{"CompanyName": c.config.CompanyName}
 
-	// Exit early if the user is already logged in (in session)
-	session, _ := c.cookieStore.Get(req, "casgo-session")
-	if currentUserEmail,ok := session.Values["currentUserEmail"]; ok {
-		context["currentUserEmail"] = currentUserEmail.(string)
+	// Trim and lightly pre-process/validate service
+	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	gateway := strings.TrimSpace(strings.ToLower(req.FormValue("gateway")))
+	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
+	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
+
+	// Handle service being not set early
+	casService, err := c.getService(service)
+	if err != nil {
+		context["Error"] = "Failed to find matching service with URL [" + service + "]."
+		c.render.HTML(w, http.StatusNotFound, "login", context)
+	}
+
+	// Pass method along in context if specified & valid
+	if method == "post" || method == "get" {
+		context["Method"] = method
+	}
+
+	// Both gateway and  cannot be set -- Croak here? Maybe also take renew over gateway (as docs suggest?)
+	if gateway == "true" && renew == "true" {
+		context["Error"] = "Invalid Request: Both gateway and renew options specified"
+		c.render.HTML(w, http.StatusBadRequest, "login", context)
+	}
+
+	if renew == "true" {
+
+		// If renew is set, automatic sign on is disabled, user must present credentials regardless of whether a sign on session exists
+		// Renew takes priority over gateway
 		c.render.HTML(w, http.StatusOK, "login", context)
 		return
-	}
+
+	} else if gateway == "true" {
+
+		// If gateway is set, CAS will try to use previous session or authenticate with non-interactive means (ex. LDAP)
+		// If no CAS session and no non-interactive means, then redirect with no ticket parameter to service URL
+
+		// Finish early if the user is already logged in (has session)
+		session, _ := c.cookieStore.Get(req, "casgo-session")
+		if _, ok := session.Values["currentUserEmail"]; ok {
+
+			// If session is not set and gateway is set, behavior is undefined, act as if nothing was given, let user know they are logged in
+			// Otherwiser make new ticket and properly redirect to service
+			if casService == nil {
+				context["Success"] = "User already logged in..."
+				c.render.HTML(w, http.StatusOK, "login", context)
+			} else {
+				_, err := c.makeNewTicketAndRedirect(w, req, casService)
+				if err != nil {
+					http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
+				}
+			}
+
+			return
+		}
+
+		// Attempt non-interactive authentication
+		returnedUser, err := c.validateUserCredentials("", "")
+		if err != nil {
+			// In the case of an error, redirect to the service with no ticket
+			if casService == nil {
+				context["Error"] = err.msg
+				c.render.HTML(w, err.http_code, "login", context)
+			} else {
+				http.Redirect(w, req, casService.Url, 401)
+			}
+			return
+		}
+
+		// Save session since non-interactive auth succeeded
+		_, err = c.saveUserEmailInSession(w, req, "casgo-session", returnedUser.Email)
+		if err != nil {
+			log.Fatal("Failed to save session!")
+		}
+
+		if casService == nil {
+			// If service is not set, render login with context
+			c.render.HTML(w, err.http_code, "login", context)
+		} else {
+			// If service is set, redirect
+			ticket, err := c.makeNewTicketForService(casService)
+			if err != nil {
+				http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
+				return
+			}
+			http.Redirect(w, req, service+"?ticket="+ticket, 302)
+			return
+		}
+
+	} // /if gateway == true
 
 	// Trim and lightly pre-process/validate email/password
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -75,9 +162,8 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Find, and validate user credentials
-	// validateUserCredentials returns CASServerError if there is an error
-	returnedUser, err := c.validateUserCredentials(email,password)
+	// Find user, and attempt to validate provided credentials
+	returnedUser, err := c.validateUserCredentials(email, password)
 	if err != nil {
 		context["Error"] = err.msg
 		c.render.HTML(w, err.http_code, "login", context)
@@ -85,22 +171,62 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Save session in cookies
-	session, _ = c.cookieStore.Get(req, "casgo-session")
-	session.Values["currentUserEmail"] = returnedUser.Email
-	sessionSaveErr := session.Save(req, w)
-	if sessionSaveErr != nil {
-		log.Fatal("Failed to save logged in user to session:", err)
+	c.saveUserEmailInSession(w, req, "casgo-session", returnedUser.Email)
+	if err != nil {
+		log.Fatal("Failed to save session, err:", err)
 	}
 
-	// if the user has logged in and there was a service, do stuff
-	// if req.FormValue("service"), ok; ok {
-	//	handleServiceLogin(w, req)
-	//	return
-	// }
+	// If the user has logged in and service was provided, redirect
+	// Otherwise render login page
+	if service != "" {
+		// Get ticket for the service
+		ticket, err := c.makeNewTicketForService(casService)
+		if err != nil {
+			http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
+			return
+		}
+		http.Redirect(w, req, service+"?ticket="+ticket, 302)
+		return
+	} else {
+		context["Success"] = "Successful log in! Redirecting to services page..."
+		context["currentUserEmail"] = returnedUser.Email
+		c.render.HTML(w, http.StatusOK, "login", context)
+	}
+}
 
-	context["Success"] = "Successful log in! Redirecting to services page..."
-	context["currentUserEmail"] = returnedUser.Email
-	c.render.HTML(w, http.StatusOK, "login", context)
+// Get the service that belongs to the cas
+func (c *CAS) getService(serviceName string) (*CASService, *CASServerError) {
+	return &CASService{serviceName, "nobody@nowhere.net"}, nil
+}
+
+// Make a new ticket for a service
+func (c *CAS) makeNewTicketForService(service *CASService) (string, *CASServerError) {
+	return "123456", nil
+}
+
+func (c *CAS) makeNewTicketAndRedirect(w http.ResponseWriter, req *http.Request, service *CASService) (bool, *CASServerError) {
+	// If service is set, redirect
+	ticket, err := c.makeNewTicketForService(service)
+	if err != nil {
+		http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
+		return false, &FailedToCreateNewAuthTicket
+	}
+	redirectUrl := service.Url + "?ticket=" + ticket
+	http.Redirect(w, req, redirectUrl, 302)
+	return true, nil
+}
+
+// Save session in cookiestore
+func (c *CAS) saveUserEmailInSession(w http.ResponseWriter, req *http.Request, sessionName string, email string) (bool, *CASServerError) {
+	// Save session in cookies
+	session, _ := c.cookieStore.Get(req, sessionName)
+	session.Values["currentUserEmail"] = email
+	sessionSaveErr := session.Save(req, w)
+	if sessionSaveErr != nil {
+		log.Fatal("Failed to save logged in user to session:", sessionSaveErr)
+		return false, &FailedToSaveSessionError
+	}
+	return true, nil
 }
 
 // Validate user credentials
@@ -109,66 +235,30 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 
 	// Find the user
 	cursor, err := r.Db(c.config.DBName).Table("users").Get(email).Run(c.config.RDBSession)
-	if err != nil { return nil, &InvalidEmailAddressError }
+	if err != nil {
+		return nil, &InvalidEmailAddressError
+	}
 
 	// Get the user from the returned cursor
 	var returnedUser *User
 	err = cursor.One(&returnedUser)
-	if err != nil {	return nil, &InvalidEmailAddressError }
+	if err != nil {
+		return nil, &InvalidEmailAddressError
+	}
 
 	// Check hash
 	err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
-	if err != nil { return nil, &InvalidCredentialsError }
+	if err != nil {
+		return nil, &InvalidCredentialsError
+	}
 
 	// Successful validation
 	return returnedUser, nil
 }
 
-// Handle login accesses (credential acceptance -- verifying attempt to log in)
-func (c *CAS) handleLoginCredentialAccept(w http.ResponseWriter, req *http.Request) {
-
-}
-
-// Handle login accesses (credential requests -- user logging in)
-func (c *CAS) handleLoginCredentialRequest(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{}
-
-	// Trim and lightly pre-process/validate service
-	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
-	gateway := strings.TrimSpace(strings.ToLower(req.FormValue("gateway")))
-	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
-	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
-
-	if gateway == "true" && renew == "true" {
-		// Both gateway and  cannot be set -- Croak here? Maybe also take renew over gateway (as docs suggest?)
-		context["Error"] = "Invalid Request: Both gateway and renew options specified"
-			c.render.HTML(w, http.StatusBadRequest, "login", context)
-	} 
-
-	if gateway == "true" {
-		// If gateway is set, CAS will try to authenticate with non-interactive means (ex. LDAP)
-		// If no CAS session and no non-interactive means, then redirect with no ticket parameter to service URL
-
-	} else if renew == "true" {
-		// If renew is set, automatic sign on is disabled, user must present credentials regardless of whether a sign on session exists
-		// Ignore gateway if renew is set.
-
-	}
-
-	// Look up the service by URL -- URL encoded
-	// Verify that it exists for possible redirect
-
-	// If renew is set, gateway cannot be
-
-	//
-
-		context["Success"] = "Handling service login, service:" + service + ", gateway:" + gateway + ", method: " + method
-		c.render.HTML(w, http.StatusOK, "login", context)
-}
-
-// Endpoint for destroying CAS sessions (logging out)
+// Endpoint for registering new users
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{	"CompanyName": c.config.CompanyName }
+	context := map[string]string{"CompanyName": c.config.CompanyName}
 
 	// Show login page if credentials are not provided, attempt login otherwise
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -210,11 +300,11 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{ "CompanyName": c.config.CompanyName }
+	context := map[string]string{"CompanyName": c.config.CompanyName}
 
 	// Exit early if the user is already logged in (in session)
 	session, _ := c.cookieStore.Get(req, "casgo-session")
-	if _,ok := session.Values["currentUserEmail"]; !ok {
+	if _, ok := session.Values["currentUserEmail"]; !ok {
 		// Redirect if the person was never logged in
 		http.Redirect(w, req, "/login", 301)
 	}

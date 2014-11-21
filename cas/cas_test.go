@@ -17,7 +17,7 @@ func TestLoginEndpoint(t *testing.T){
 
 // Login page tests
 func TestLoginPage(t *testing.T) {
-	if testing.Short() { t.Skip("skipping test in short mode.") }
+	if testing.Short() { t.Skip("Skipping integration test (in short mode).") }
 
 	testHandler := http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {		fmt.Fprintln(w, "Hello, client")
 	})
