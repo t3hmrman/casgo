@@ -9,22 +9,11 @@ import (
 
 func main() {
 
-	// Configuration
-	config := &cas.CASServerConfig{
-		"0.0.0.0",
-		"9090",
-		"localhost:28015",
-		"casgo",
-		"my-super-secret-casgo-secret",
-		"templates/",
-		"companyABC",
-		nil,
-	}
-	config.OverrideWithEnvVariables()
-
+	// Create new CAS Server config with default values
+	config, err := cas.NewCASServerConfig()
+	
 	// Database setup
-	var session *r.Session
-	session, err := r.Connect(r.ConnectOpts{
+	dbSession, err := r.Connect(r.ConnectOpts{
 		Address:  config.DBHost,
 		Database: config.DBName,
 	})
@@ -32,11 +21,11 @@ func main() {
 	if err != nil {
 		log.Fatalln(err.Error())
 	} else {
-		config.RDBSession = session
+		config.RDBSession = dbSession
 	}
 
 	// Create CAS Server
-	cas := cas.New(config)
+	cas := cas.NewCASServer(config)
 
 	// Setup handlers
 	http.HandleFunc("/login", cas.HandleLogin)

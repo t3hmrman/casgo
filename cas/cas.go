@@ -42,7 +42,7 @@ type CAS struct {
 	cookieStore *sessions.CookieStore
 }
 
-func New(config *CASServerConfig) *CAS {
+func NewCASServer(config *CASServerConfig) *CAS {
 	r := render.New(render.Options{Directory: config.TemplatesDirectory})
 	cookieStore := sessions.NewCookieStore([]byte(config.CookieSecret))
 	cookieStore.Options = &sessions.Options{
@@ -246,11 +246,20 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 		return nil, &InvalidEmailAddressError
 	}
 
-	// Check hash
-	err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
-	if err != nil {
-		return nil, &InvalidCredentialsError
+	// Use default authentication typeDepending on the authentication type
+	switch c.config.DefaultAuthMethod {
+	case "password":
+		// Check hash
+		err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
+		if err != nil {
+			return nil, &InvalidCredentialsError
+		}
+		break
+	default:
+		return nil, &AuthMethodNotSupported
+		break
 	}
+
 
 	// Successful validation
 	return returnedUser, nil

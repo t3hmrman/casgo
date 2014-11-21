@@ -15,6 +15,25 @@ type CASServerConfig struct {
     TemplatesDirectory string
     CompanyName string
     RDBSession *r.Session
+    DefaultAuthMethod string
+}
+
+func NewCASServerConfig() (*CASServerConfig, error)  {
+	// Default values
+	config := &CASServerConfig{
+		Host: "0.0.0.0",
+		Port: "9090",
+		DBHost: "localhost:28015",
+		DBName: "casgo",
+		CookieSecret: "my-super-secret-casgo-secret",
+		TemplatesDirectory: "templates/",
+		CompanyName: "companyABC",
+	}
+
+	// ENV overrides
+	config.OverrideWithEnvVariables()
+
+	return config, nil
 }
 
 func (c *CASServerConfig) GetAddr() string {
@@ -43,5 +62,8 @@ func (c *CASServerConfig) OverrideWithEnvVariables() {
     }
     if v := os.Getenv("CASGO_COMPNAME"); len(v) > 0 {
         c.CompanyName = os.Getenv("CASGO_COMPNAME")
+    }
+    if v := os.Getenv("CASGO_DEFAULT_AUTH"); len(v) > 0 {
+        c.DefaultAuthMethod = os.Getenv("CASGO_DEFAULT_AUTH")
     }
 }

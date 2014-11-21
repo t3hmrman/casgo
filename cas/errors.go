@@ -19,4 +19,5 @@ var(
 	InvalidCredentialsError = CASServerError{"Invalid email/password combination", http.StatusUnauthorized}
 	FailedToSaveSessionError = CASServerError{"Failed to save session", http.StatusInternalServerError}
 	FailedToCreateNewAuthTicket = CASServerError{"Failed to create new authentication ticket", http.StatusInternalServerError}
+	AuthMethodNotSupported = CASServerError{"Failed to create new authentication ticket", http.StatusMethodNotAllowed}
 )
