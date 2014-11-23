@@ -5,25 +5,25 @@ import (
 )
 
 var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
-	"Host":               "CASGO_HOST",
-	"Port":               "CASGO_PORT",
-	"DBHost":             "CASGO_DBHOST",
-	"DBName":             "CASGO_DBNAME",
-	"CookieSecret":       "CASGO_SECRET",
-	"TemplatesDirectory": "CASGO_TEMPLATES",
-	"CompanyName":        "CASGO_COMPNAME",
-	"DefaultAuthMethod":  "CASGO_DEFAULT_AUTH",
+	"host":               "CASGO_HOST",
+	"port":               "CASGO_PORT",
+	"dbHost":             "CASGO_DBHOST",
+	"dbName":             "CASGO_DBNAME",
+	"cookieSecret":       "CASGO_SECRET",
+	"templatesDirectory": "CASGO_TEMPLATES",
+	"companyName":        "CASGO_COMPNAME",
+	"authMethod":  "CASGO_DEFAULT_AUTH",
 }
 
 var CONFIG_DEFAULTS map[string]string = map[string]string{
-	"Host":               "0.0.0.0",
-	"Port":               "9090",
-	"DBHost":             "localhost:28015",
-	"DBName":             "casgo",
-	"CookieSecret":       "secret-casgo-secret",
-	"TemplatesDirectory": "templates/",
-	"CompanyName":        "companyABC",
-	"DefaultAuthMethod":  "password",
+	"host":               "0.0.0.0",
+	"port":               "9090",
+	"dbHost":             "localhost:28015",
+	"dbName":             "casgo",
+	"cookieSecret":       "secret-casgo-secret",
+	"templatesDirectory": "templates/",
+	"companyName":        "companyABC",
+	"authMethod":  "password",
 }
 
 func NewCASServerConfig(userOverrides map[string]string) (map[string]string, error) {
@@ -34,17 +34,20 @@ func NewCASServerConfig(userOverrides map[string]string) (map[string]string, err
 	}
 
 	// Override defaults with passed in map
-	for k, v := range userOverrides {
-		serverConfig[k] = v
+	for k, _ := range serverConfig {
+		if configVal, ok := userOverrides[k]; ok {
+			serverConfig[k] = configVal
+		}
 	}
 
 	return serverConfig, nil
 }
 
-func (c *CAS) overrideConfigWithEnv() {
+func overrideConfigWithEnv(config map[string]string) map[string]string {
 	for configKey, envVarName := range CONFIG_ENV_OVERRIDE_MAP {
 		if envValue := os.Getenv(envVarName); len(envValue) > 0 {
-			c.Config[configKey] = envValue
+			config[configKey] = envValue
 		}
 	}
+	return config
 }

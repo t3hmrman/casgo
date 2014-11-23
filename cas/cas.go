@@ -51,10 +51,10 @@ type CAS struct {
 
 func NewCASServer(config map[string]string) *CAS {
 	// Setup rendering function
-	render := render.New(render.Options{Directory: config["TemplatesDirectory"]})
+	render := render.New(render.Options{Directory: config["templatesDirectory"]})
 
 	// Cookie store setup
-	cookieStore := sessions.NewCookieStore([]byte(config["CookieSecret"]))
+	cookieStore := sessions.NewCookieStore([]byte(config["cookieSecret"]))
 	cookieStore.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 7,
@@ -63,34 +63,34 @@ func NewCASServer(config map[string]string) *CAS {
 
 	// Database setup
 	dbSession, err := r.Connect(r.ConnectOpts{
-		Address:  config["DBHost"],
-		Database: config["DBName"],
+		Address:  config["dbHost"],
+		Database: config["dbName"],
 	})
 	if err != nil {
 		log.Fatalln(err.Error())
-	} 
+	}
 
 	return &CAS{config, dbSession, render, cookieStore}
 }
 
 func (c *CAS) init() {
-	// override config with ENV variables
-	c.overrideConfigWithEnv()
+	// Override config with ENV variables
+	c.Config = overrideConfigWithEnv(c.Config)
 }
 
 func (c *CAS) GetAddr() string {
-	return c.Config["Host"] + ":" + c.Config["Port"]
+	return c.Config["host"] + ":" + c.Config["port"]
 }
 
 // (Optional) Handles Index route
 func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
-	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.Config["CompanyName"]})
+	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.Config["companyName"]})
 }
 
 // Credential acceptor endpoint (requestor is Handled in main)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
-	context := map[string]string{"CompanyName": c.Config["CompanyName"]}
+	context := map[string]string{"CompanyName": c.Config["companyName"]}
 
 	// Trim and lightly pre-process/validate service
 	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
@@ -262,7 +262,7 @@ func (c *CAS) saveUserEmailInSession(w http.ResponseWriter, req *http.Request, s
 func (c *CAS) validateUserCredentials(email string, password string) (*User, *CASServerError) {
 
 	// Find the user
-	cursor, err := r.Db(c.Config["DBName"]).Table("users").Get(email).Run(c.RDBSession)
+	cursor, err := r.Db(c.Config["dbName"]).Table("users").Get(email).Run(c.RDBSession)
 	if err != nil {
 		return nil, &InvalidEmailAddressError
 	}
@@ -275,7 +275,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 	}
 
 	// Use default authentication typeDepending on the authentication type
-	switch c.Config["DefaultAuthMethod"] {
+	switch c.Config["authMethod"] {
 	case "password":
 		// Check hash
 		err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
@@ -294,7 +294,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 
 // Endpoint for registering new users
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.Config["CompanyName"]}
+	context := map[string]string{"CompanyName": c.Config["companyName"]}
 
 	// Show login page if credentials are not provided, attempt login otherwise
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -319,7 +319,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 		"password": string(encryptedPassword),
 	}
 
-	res, err := r.Db(c.Config["DBName"]).Table("users").Insert(newUser, r.InsertOpts{Conflict: "error"}).RunWrite(c.RDBSession)
+	res, err := r.Db(c.Config["dbName"]).Table("users").Insert(newUser, r.InsertOpts{Conflict: "error"}).RunWrite(c.RDBSession)
 	if err != nil || res.Errors > 0 {
 		if err != nil {
 			context["Error"] = "An error occurred while creating your account.. Please verify fields and try again"
@@ -336,7 +336,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.Config["CompanyName"]}
+	context := map[string]string{"CompanyName": c.Config["companyName"]}
 
 	// Get the user's session
 	session, _ := c.cookieStore.Get(req, "casgo-session")
