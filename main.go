@@ -11,7 +11,7 @@ func main() {
 
 	// Create new CAS Server config with default values
 	config, err := cas.NewCASServerConfig()
-	
+
 	// Database setup
 	dbSession, err := r.Connect(r.ConnectOpts{
 		Address:  config.DBHost,

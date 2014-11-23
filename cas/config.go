@@ -28,6 +28,7 @@ func NewCASServerConfig() (*CASServerConfig, error)  {
 		CookieSecret: "my-super-secret-casgo-secret",
 		TemplatesDirectory: "templates/",
 		CompanyName: "companyABC",
+		DefaultAuthMethod: "password",
 	}
 
 	// ENV overrides
