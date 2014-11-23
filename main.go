@@ -1,7 +1,6 @@
 package main
 
 import (
-	r "github.com/dancannon/gorethink"
 	"github.com/t3hmrman/casgo/cas"
 	"log"
 	"net/http"
@@ -10,18 +9,9 @@ import (
 func main() {
 
 	// Create new CAS Server config with default values
-	config, err := cas.NewCASServerConfig()
-
-	// Database setup
-	dbSession, err := r.Connect(r.ConnectOpts{
-		Address:  config.DBHost,
-		Database: config.DBName,
-	})
-
+	config, err := cas.NewCASServerConfig(nil)
 	if err != nil {
-		log.Fatalln(err.Error())
-	} else {
-		config.RDBSession = dbSession
+		log.Fatal("Failed to create new CAS Server config...")
 	}
 
 	// Create CAS Server
@@ -33,6 +23,6 @@ func main() {
 	http.HandleFunc("/register", cas.HandleRegister)
 	http.HandleFunc("/", cas.HandleIndex)
 
-	log.Printf("Starting CasGo on port %s...\n", config.Port)
-	log.Fatal(http.ListenAndServe(config.GetAddr(), nil))
+	log.Printf("Starting CasGo on port %s...\n", cas.Config["Port"])
+	log.Fatal(http.ListenAndServe(cas.GetAddr(), nil))
 }

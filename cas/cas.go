@@ -43,32 +43,54 @@ type CASServer interface {
 
 // CAS Server
 type CAS struct {
-	config      *CASServerConfig
+	Config      map[string]string
+	RDBSession  *r.Session
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 }
 
-func NewCASServer(config *CASServerConfig) *CAS {
-	r := render.New(render.Options{Directory: config.TemplatesDirectory})
-	cookieStore := sessions.NewCookieStore([]byte(config.CookieSecret))
+func NewCASServer(config map[string]string) *CAS {
+	// Setup rendering function
+	render := render.New(render.Options{Directory: config["TemplatesDirectory"]})
+
+	// Cookie store setup
+	cookieStore := sessions.NewCookieStore([]byte(config["CookieSecret"]))
 	cookieStore.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 7,
 		HttpOnly: true,
 	}
-	c := &CAS{config, r, cookieStore}
-	return c
+
+	// Database setup
+	dbSession, err := r.Connect(r.ConnectOpts{
+		Address:  config["DBHost"],
+		Database: config["DBName"],
+	})
+	if err != nil {
+		log.Fatalln(err.Error())
+	} 
+
+	return &CAS{config, dbSession, render, cookieStore}
+}
+
+func (c *CAS) init() {
+	// override config with ENV variables
+	c.overrideConfigWithEnv()
+}
+
+func (c *CAS) GetAddr() string {
+	return c.Config["Host"] + ":" + c.Config["Port"]
 }
 
 // (Optional) Handles Index route
 func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
-	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.config.CompanyName})
+	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.Config["CompanyName"]})
 }
 
 // Credential acceptor endpoint (requestor is Handled in main)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
-	context := map[string]string{"CompanyName": c.config.CompanyName}
+	context := map[string]string{"CompanyName": c.Config["CompanyName"]}
 
 	// Trim and lightly pre-process/validate service
 	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
@@ -240,7 +262,7 @@ func (c *CAS) saveUserEmailInSession(w http.ResponseWriter, req *http.Request, s
 func (c *CAS) validateUserCredentials(email string, password string) (*User, *CASServerError) {
 
 	// Find the user
-	cursor, err := r.Db(c.config.DBName).Table("users").Get(email).Run(c.config.RDBSession)
+	cursor, err := r.Db(c.Config["DBName"]).Table("users").Get(email).Run(c.RDBSession)
 	if err != nil {
 		return nil, &InvalidEmailAddressError
 	}
@@ -253,7 +275,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 	}
 
 	// Use default authentication typeDepending on the authentication type
-	switch c.config.DefaultAuthMethod {
+	switch c.Config["DefaultAuthMethod"] {
 	case "password":
 		// Check hash
 		err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
@@ -272,7 +294,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 
 // Endpoint for registering new users
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.config.CompanyName}
+	context := map[string]string{"CompanyName": c.Config["CompanyName"]}
 
 	// Show login page if credentials are not provided, attempt login otherwise
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -297,7 +319,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 		"password": string(encryptedPassword),
 	}
 
-	res, err := r.Db(c.config.DBName).Table("users").Insert(newUser, r.InsertOpts{Conflict: "error"}).RunWrite(c.config.RDBSession)
+	res, err := r.Db(c.Config["DBName"]).Table("users").Insert(newUser, r.InsertOpts{Conflict: "error"}).RunWrite(c.RDBSession)
 	if err != nil || res.Errors > 0 {
 		if err != nil {
 			context["Error"] = "An error occurred while creating your account.. Please verify fields and try again"
@@ -314,7 +336,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.config.CompanyName}
+	context := map[string]string{"CompanyName": c.Config["CompanyName"]}
 
 	// Get the user's session
 	session, _ := c.cookieStore.Get(req, "casgo-session")
@@ -382,6 +404,7 @@ func (c *CAS) removeCurrentUserFromSession(w http.ResponseWriter, req *http.Requ
 // Endpoint for validating service tickets
 func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 
+	// Grab important request parameters
 	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
 	ticket := strings.TrimSpace(strings.ToLower(req.FormValue("ticket")))
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
@@ -398,7 +421,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Look up
+	// Look up ticket
 	casTicket, err := c.getTicketForService(casService, ticket)
 	if err != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
@@ -420,10 +443,11 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Successfully validated user send user information along
 	c.render.JSON(w, http.StatusOK, map[string]string{
 		"status": "success",
 		"message": "Successfully authenticated user",
-		"userName": "",
+		"username": "",
 	})
 }
 

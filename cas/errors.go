@@ -13,7 +13,6 @@ type CASServerError struct {
 
 func (err *CASServerError) Error() string { return err.msg }
 
-
 // Error declarations
 var(
 	// Input errors (error codes 100-199)
