@@ -1,15 +1,15 @@
 package cas
 
 import (
-	r "github.com/dancannon/gorethink"
-	"path/filepath"
-	"os/exec"
 	"bytes"
+	r "github.com/dancannon/gorethink"
+	"os/exec"
+	"path/filepath"
 )
 
 type RethinkDBAdapter struct {
-	session  *r.Session
-	dbName string
+	session *r.Session
+	dbName  string
 }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
@@ -30,7 +30,11 @@ func (db *RethinkDBAdapter) SetupDB() *CASServerError {
 	_, err := r.
 		DbCreate(db.dbName).
 		Run(db.session)
-	if err != nil {	return &FailedToSetupDatabase	}
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
 
 	return nil
 }
@@ -38,23 +42,31 @@ func (db *RethinkDBAdapter) SetupDB() *CASServerError {
 // Import JSON data into the database
 func (db *RethinkDBAdapter) ImportTableDataFromFile(tableName, tablePK, path string) *CASServerError {
 	absPath, err := filepath.Abs(path)
-	if err != nil {	return &FailedToImportTableDataFromFile }
+	if err != nil {
+		return &FailedToImportTableDataFromFile
+	}
 
 	cmd := exec.Command("rethinkdb", "import", "--table", tableName, "--pkey", tablePK, "--format", "json", "-f", absPath)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err = cmd.Run()
-	if err != nil { return &FailedToImportTableDataFromFile }
+	if err != nil {
+		casError := &FailedToImportTableDataFromFile
+		casError.err = &err
+		return casError
+	}
 
 	return nil
 }
 
 // Clear all relevant databases and/or tables
-func (db *RethinkDBAdapter) TeardownDB() *CASServerError{
+func (db *RethinkDBAdapter) TeardownDB() *CASServerError {
 	_, err := r.
 		DbDrop(db.dbName).
 		Run(db.session)
-	if err != nil {	return &FailedToTeardownDatabase }
+	if err != nil {
+		return &FailedToTeardownDatabase
+	}
 
 	return nil
 }
@@ -70,12 +82,16 @@ func (db *RethinkDBAdapter) FindUserByEmail(username string) (*User, *CASServerE
 		Table("users").
 		Get(username).
 		Run(db.session)
-	if err != nil {	return nil, &InvalidEmailAddressError	}
+	if err != nil {
+		return nil, &InvalidEmailAddressError
+	}
 
 	// Get the user from the returned cursor
 	var returnedUser *User
 	err = cursor.One(&returnedUser)
-	if err != nil {	return nil, &InvalidEmailAddressError	}
+	if err != nil {
+		return nil, &InvalidEmailAddressError
+	}
 
 	return returnedUser, nil
 }
