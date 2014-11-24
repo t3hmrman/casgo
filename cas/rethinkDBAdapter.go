@@ -1,15 +1,19 @@
 package cas
 
 import (
-	"bytes"
+	"encoding/json"
 	r "github.com/dancannon/gorethink"
-	"os/exec"
+	"log"
+	"os"
 	"path/filepath"
 )
 
 type RethinkDBAdapter struct {
-	session *r.Session
-	dbName  string
+	session          *r.Session
+	dbName           string
+	ticketTableName  string
+	serviceTableName string
+	userTableName    string
 }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
@@ -22,11 +26,22 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 		return nil, err
 	}
 
-	return &RethinkDBAdapter{dbSession, c.Config["dbName"]}, nil
+	// Create the adapter
+	adapter := &RethinkDBAdapter{
+		session:          dbSession,
+		dbName:           c.Config["dbName"],
+		ticketTableName:  "tickets",
+		serviceTableName: "services",
+		userTableName:    "users",
+	}
+
+	return adapter, nil
 }
 
 // Create/Setup all relevant tables in the database
 func (db *RethinkDBAdapter) SetupDB() *CASServerError {
+
+	// Setup the Database
 	_, err := r.
 		DbCreate(db.dbName).
 		Run(db.session)
@@ -36,20 +51,51 @@ func (db *RethinkDBAdapter) SetupDB() *CASServerError {
 		return casError
 	}
 
+	// Setup required tables
+	_, ticketTableErr := r.Db(db.dbName).TableCreate(db.ticketTableName).Run(db.session)
+	_, userTableErr := r.Db(db.dbName).TableCreate(db.userTableName).Run(db.session)
+	_, serviceTableErr := r.Db(db.dbName).TableCreate(db.serviceTableName).Run(db.session)
+	if ticketTableErr != nil || userTableErr != nil || serviceTableErr != nil {
+		casError := &FailedToSetupDatabase
+		return casError
+	}
+
 	return nil
 }
 
 // Import JSON data into the database
-func (db *RethinkDBAdapter) ImportTableDataFromFile(tableName, tablePK, path string) *CASServerError {
+func (db *RethinkDBAdapter) ImportTableDataFromFile(tableName, path string) *CASServerError {
+	// Get the absolute path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return &FailedToImportTableDataFromFile
+		casError := &FailedToImportTableDataFromFile
+		casError.err = &err
+		return casError
 	}
 
-	cmd := exec.Command("rethinkdb", "import", "--table", tableName, "--pkey", tablePK, "--format", "json", "-f", absPath)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err = cmd.Run()
+	// Open the file
+	file, err := os.Open(absPath)
+	if err != nil {
+		casError := &FailedToImportTableDataFromFile
+		casError.err = &err
+		return casError
+	}
+
+	// Read the JSON data and upload all of it into the specified table
+	// Build inert query to use to insert all the objects into the database
+	insertQuery := r.Db(db.dbName).Table(tableName)
+	decoder := json.NewDecoder(file)
+	for {
+		var v map[string]interface{}
+		if err := decoder.Decode(&v); err != nil {
+			break
+		}
+		log.Print("Want to insert:", v)
+		insertQuery.Insert(v)
+	}
+
+	// Run the insert query
+	_, err = insertQuery.Run(db.session)
 	if err != nil {
 		casError := &FailedToImportTableDataFromFile
 		casError.err = &err
@@ -65,7 +111,9 @@ func (db *RethinkDBAdapter) TeardownDB() *CASServerError {
 		DbDrop(db.dbName).
 		Run(db.session)
 	if err != nil {
-		return &FailedToTeardownDatabase
+		casError := &FailedToTeardownDatabase
+		casError.err = &err
+		return casError
 	}
 
 	return nil

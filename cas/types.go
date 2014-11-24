@@ -43,7 +43,7 @@ type CASServer interface {
 type CASDBAdapter interface {
 	SetupDB() *CASServerError
 	TeardownDB() *CASServerError
-	ImportTableDataFromFile(string, string, string) *CASServerError
+	ImportTableDataFromFile(string, string) *CASServerError
 	GetServiceByName(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
 	MakeNewTicketForService(service *CASService) (*CASTicket, *CASServerError)
