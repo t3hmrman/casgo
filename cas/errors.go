@@ -22,6 +22,9 @@ var(
 	FailedToCreateNewAuthTicketError = CASServerError{"Failed to create new authentication ticket", http.StatusInternalServerError, 202}
 	AuthMethodNotSupportedError = CASServerError{"Failed to create new authentication ticket", http.StatusMethodNotAllowed, 203}
 	FailedToCreateUserError = CASServerError{"An error occurred while creating your account.. Please verify fields and try again", http.StatusInternalServerError, 204}
+	FailedToTeardownDatabase = CASServerError{"Failed to tear down database", http.StatusInternalServerError, 205}
+	FailedToSetupDatabase = CASServerError{"Failed to setup database", http.StatusInternalServerError, 206}
+	FailedToImportTableDataFromFile = CASServerError{"Failed to import database information from file", http.StatusInternalServerError, 207}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{"Feature not supported by CASGO", http.StatusNotImplemented, 300}

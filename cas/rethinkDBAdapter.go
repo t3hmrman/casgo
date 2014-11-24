@@ -2,6 +2,9 @@ package cas
 
 import (
 	r "github.com/dancannon/gorethink"
+	"path/filepath"
+	"os/exec"
+	"bytes"
 )
 
 type RethinkDBAdapter struct {
@@ -20,6 +23,40 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	}
 
 	return &RethinkDBAdapter{dbSession, c.Config["dbName"]}, nil
+}
+
+// Create/Setup all relevant tables in the database
+func (db *RethinkDBAdapter) SetupDB() *CASServerError {
+	_, err := r.
+		DbCreate(db.dbName).
+		Run(db.session)
+	if err != nil {	return &FailedToSetupDatabase	}
+
+	return nil
+}
+
+// Import JSON data into the database
+func (db *RethinkDBAdapter) ImportTableDataFromFile(tableName, tablePK, path string) *CASServerError {
+	absPath, err := filepath.Abs(path)
+	if err != nil {	return &FailedToImportTableDataFromFile }
+
+	cmd := exec.Command("rethinkdb", "import", "--table", tableName, "--pkey", tablePK, "--format", "json", "-f", absPath)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err = cmd.Run()
+	if err != nil { return &FailedToImportTableDataFromFile }
+
+	return nil
+}
+
+// Clear all relevant databases and/or tables
+func (db *RethinkDBAdapter) TeardownDB() *CASServerError{
+	_, err := r.
+		DbDrop(db.dbName).
+		Run(db.session)
+	if err != nil {	return &FailedToTeardownDatabase }
+
+	return nil
 }
 
 func (db *RethinkDBAdapter) GetServiceByName(serviceName string) (*CASService, *CASServerError) {
