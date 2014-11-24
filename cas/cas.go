@@ -153,7 +153,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			// In the case of an error, redirect to the service with no ticket
 			if casService == nil {
 				context["Error"] = err.msg
-				c.render.HTML(w, err.http_code, "login", context)
+				c.render.HTML(w, err.httpCode, "login", context)
 			} else {
 				http.Redirect(w, req, casService.Url, 401)
 			}
@@ -168,7 +168,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 		if casService == nil {
 			// If service is not set, render login with context
-			c.render.HTML(w, err.http_code, "login", context)
+			c.render.HTML(w, err.httpCode, "login", context)
 		} else {
 			// If service is set, redirect
 			ticket, err := c.makeNewTicketForService(casService)
@@ -194,7 +194,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	returnedUser, err := c.validateUserCredentials(email, password)
 	if err != nil {
 		context["Error"] = err.msg
-		c.render.HTML(w, err.http_code, "login", context)
+		c.render.HTML(w, err.httpCode, "login", context)
 		return
 	}
 
@@ -354,7 +354,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	c.removeCurrentUserFromSession(w, req, session)
 	if err != nil {
 		context["Error"] = "Failed to log out... Please contact your IT administrator"
-		c.render.HTML(w, err.http_code, "login", context)
+		c.render.HTML(w, err.httpCode, "login", context)
 		return
 	}
 
@@ -397,7 +397,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status": "error",
-			"code": strconv.Itoa(*&FailedToFindServiceError.err_code),
+			"code": strconv.Itoa(*&FailedToFindServiceError.casErrCode),
 			"message": *&FailedToFindServiceError.msg,
 		})
 		return
@@ -409,7 +409,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status": "error",
-			"code": strconv.Itoa(*&FailedToFindTicketError.err_code),
+			"code": strconv.Itoa(*&FailedToFindTicketError.casErrCode),
 			"message": *&FailedToFindTicketError.msg,
 		})
 		return
@@ -419,7 +419,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	if renew == "true" && casTicket.wasFromSSOSession {
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status": "error",
-			"code": strconv.Itoa(*&SSOAuthenticatedUserRenewError.err_code),
+			"code": strconv.Itoa(*&SSOAuthenticatedUserRenewError.casErrCode),
 			"message": *&SSOAuthenticatedUserRenewError.msg,
 		})
 		return

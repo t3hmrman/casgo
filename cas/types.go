@@ -17,14 +17,15 @@ type CASService struct {
 }
 
 type CASTicket struct {
-	serviceUrl          string `gorethink:"serviceUrl"`
-	wasFromSSOSession   bool `gorethink:"wasFromSSOSession"`
+	serviceUrl        string `gorethink:"serviceUrl"`
+	wasFromSSOSession bool   `gorethink:"wasFromSSOSession"`
 }
 
 type CASServerError struct {
-	msg string
-	http_code int
-	err_code int
+	msg        string // Message string
+	httpCode   int    // HTTP error code, if applicable
+	casErrCode int    // CASGO specific error code
+	err        *error  // Actual error that was thrown (if any)
 }
 
 // CAS server interface
@@ -60,4 +61,3 @@ type CAS struct {
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 }
-
