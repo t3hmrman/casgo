@@ -1,12 +1,11 @@
 package cas
 
 /**
- * CAS protocol API
+ * CAS protocol API implementation
  */
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
-	r "github.com/dancannon/gorethink"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
@@ -15,42 +14,6 @@ import (
 	"strconv"
 	"errors"
 )
-
-type User struct {
-	Email    string `gorethink:"email"`
-	Password string `gorethink:"password"`
-}
-
-type CASService struct {
-	Url               string `gorethink:"url"`
-	AdminstratorEmail string `gorethink:"admin_email"`
-}
-
-type CASTicket struct {
-	serviceUrl          string `gorethink:"serviceUrl"`
-	wasFromSSOSession   bool `gorethink:"wasFromSSOSession"`
-}
-
-// CAS server interface
-type CASServer interface {
-	HandleLogin(w http.ResponseWriter, r *http.Request)
-	HandleLogout(w http.ResponseWriter, r *http.Request)
-	HandleRegister(w http.ResponseWriter, r *http.Request)
-	HandleValidate(w http.ResponseWriter, r *http.Request)
-	HandleServiceValidate(w http.ResponseWriter, r *http.Request)
-	HandleProxyValidate(w http.ResponseWriter, r *http.Request)
-	HandleProxy(w http.ResponseWriter, r *http.Request)
-}
-
-// CAS Server
-type CAS struct {
-	server      *http.Server
-	serveMux      *http.ServeMux
-	Config      map[string]string
-	RDBSession  *r.Session
-	render      *render.Render
-	cookieStore *sessions.CookieStore
-}
 
 func NewCASServer(config map[string]string) (*CAS, error) {
 	if config == nil {
@@ -68,30 +31,26 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 		HttpOnly: true,
 	}
 
-	// Database setup
-	dbSession, err := r.Connect(r.ConnectOpts{
-		Address:  config["dbHost"],
-		Database: config["dbName"],
-	})
-	if err != nil {
-		return nil, err
-	}
-
+	// Create and initialize the CAS server
 	cas := &CAS{
 		Config:config,
-		RDBSession: dbSession,
 		render: render,
 		cookieStore: cookieStore,
 		serveMux: http.NewServeMux(),
 	}
-
 	cas.init()
+
 	return cas, nil
 }
 
 func (c *CAS) init() {
 	// Override config with ENV variables
 	c.Config = overrideConfigWithEnv(c.Config)
+
+	// Setup database adapter
+	dbAdapter, err := NewRethinkDBAdapter(c)
+	if err != nil { log.Fatal("Failed to setup database adapter")	}
+	c.dbAdapter = dbAdapter
 
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
@@ -128,7 +87,7 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.Config["companyName"]})
 }
 
-// Credential acceptor endpoint (requestor is Handled in main)
+// Handle logins (functions as both a credential acceptor and requestor)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
 	context := map[string]string{"CompanyName": c.Config["companyName"]}
@@ -140,7 +99,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
 
 	// Handle service being not set early
-	casService, err := c.getService(service)
+	casService, err := c.dbAdapter.GetServiceByName(service)
 	if err != nil {
 		context["Error"] = "Failed to find matching service with URL [" + service + "]."
 		c.render.HTML(w, http.StatusNotFound, "login", context)
@@ -263,11 +222,6 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Get the service that belongs to the cas
-func (c *CAS) getService(serviceName string) (*CASService, *CASServerError) {
-	return &CASService{serviceName, "nobody@nowhere.net"}, nil
-}
-
 // Make a new ticket for a service
 func (c *CAS) makeNewTicketForService(service *CASService) (string, *CASServerError) {
 	return "123456", nil
@@ -302,24 +256,18 @@ func (c *CAS) saveUserEmailInSession(w http.ResponseWriter, req *http.Request, s
 // Returns a valid user object if validation succeeds
 func (c *CAS) validateUserCredentials(email string, password string) (*User, *CASServerError) {
 
-	// Find the user
-	cursor, err := r.Db(c.Config["dbName"]).Table("users").Get(email).Run(c.RDBSession)
+	// TODO get the user from the current database adapter
+	returnedUser, err := c.dbAdapter.FindUserByEmail(email)
 	if err != nil {
-		return nil, &InvalidEmailAddressError
+
 	}
 
-	// Get the user from the returned cursor
-	var returnedUser *User
-	err = cursor.One(&returnedUser)
-	if err != nil {
-		return nil, &InvalidEmailAddressError
-	}
 
 	// Use default authentication typeDepending on the authentication type
 	switch c.Config["authMethod"] {
 	case "password":
 		// Check hash
-		err = bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
+		err := bcrypt.CompareHashAndPassword([]byte(returnedUser.Password), []byte(password))
 		if err != nil {
 			return nil, &InvalidCredentialsError
 		}
@@ -347,6 +295,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Generate hashed password
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10) // Default cost
 	if err != nil {
 		context["Error"] = "Registration failed... Please contact server administrator"
@@ -355,18 +304,9 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create new user object
-	newUser := map[string]string{
-		"email":    email,
-		"password": string(encryptedPassword),
-	}
-
-	res, err := r.Db(c.Config["dbName"]).Table("users").Insert(newUser, r.InsertOpts{Conflict: "error"}).RunWrite(c.RDBSession)
-	if err != nil || res.Errors > 0 {
-		if err != nil {
-			context["Error"] = "An error occurred while creating your account.. Please verify fields and try again"
-		} else if res.Errors > 0 {
-			context["Error"] = "Looks like that email address is already taken. If you've forgotten your password, please contact the administrator"
-		}
+	_, err = c.dbAdapter.AddNewUser(email, string(encryptedPassword))
+	if err != nil {
+		context["Error"] = "An error occurred registering your user account. Please try again"
 		c.render.HTML(w, http.StatusOK, "register", context)
 		return
 	}
@@ -384,7 +324,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 
 	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
 	// Get the CASService for this service URL
-	casService, err := c.getService(service)
+	casService, err := c.dbAdapter.GetServiceByName(service)
 	if err != nil {
 		context["Error"] = "Failed to find matching service with URL [" + service + "]."
 		c.render.HTML(w, http.StatusNotFound, "login", context)
@@ -398,7 +338,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	c.removeTicketsForUser(userEmail.(string), casService)
+	err = c.removeTicketsForUser(userEmail.(string), casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
 	}
@@ -424,8 +364,9 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 
 // Remove the ticket granting tickets for a given user on a given service
 // If service is nil, for all services.
-func (c *CAS) removeTicketsForUser(userEmail string, service *CASService) {
+func (c *CAS) removeTicketsForUser(userEmail string, service *CASService) *CASServerError {
 	// Something
+	return nil
 }
 
 // Remove all current user information from the session object
@@ -451,7 +392,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 
 	// Get the CASService for the given service URL
-	casService, err := c.getService(serviceUrl)
+	casService, err := c.dbAdapter.GetServiceByName(serviceUrl)
 	if err != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
