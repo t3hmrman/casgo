@@ -26,6 +26,7 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 	"authMethod":  "password",
 }
 
+// Create default casgo configuration, with user overrides if any
 func NewCASServerConfig(userOverrides map[string]string) (map[string]string, error) {
 	// Set default config values
 	serverConfig := make(map[string]string)
@@ -43,6 +44,7 @@ func NewCASServerConfig(userOverrides map[string]string) (map[string]string, err
 	return serverConfig, nil
 }
 
+// Override a configuration hash with values provided by ENV
 func overrideConfigWithEnv(config map[string]string) map[string]string {
 	for configKey, envVarName := range CONFIG_ENV_OVERRIDE_MAP {
 		if envValue := os.Getenv(envVarName); len(envValue) > 0 {
