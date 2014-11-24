@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strings"
 	"strconv"
+	"errors"
 )
 
 type User struct {
@@ -43,13 +44,19 @@ type CASServer interface {
 
 // CAS Server
 type CAS struct {
+	server      *http.Server
+	serveMux      *http.ServeMux
 	Config      map[string]string
 	RDBSession  *r.Session
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 }
 
-func NewCASServer(config map[string]string) *CAS {
+func NewCASServer(config map[string]string) (*CAS, error) {
+	if config == nil {
+		return nil, errors.New("Non-nil configuration objectrequired")
+	}
+
 	// Setup rendering function
 	render := render.New(render.Options{Directory: config["templatesDirectory"]})
 
@@ -67,17 +74,51 @@ func NewCASServer(config map[string]string) *CAS {
 		Database: config["dbName"],
 	})
 	if err != nil {
-		log.Fatalln(err.Error())
+		return nil, err
 	}
 
-	return &CAS{config, dbSession, render, cookieStore}
+	cas := &CAS{
+		Config:config,
+		RDBSession: dbSession,
+		render: render,
+		cookieStore: cookieStore,
+		serveMux: http.NewServeMux(),
+	}
+
+	cas.init()
+	return cas, nil
 }
 
 func (c *CAS) init() {
 	// Override config with ENV variables
 	c.Config = overrideConfigWithEnv(c.Config)
+
+	// Setup the internal HTTP Server
+	c.server = &http.Server{
+		Addr: c.GetAddr(),
+		Handler: c.serveMux,
+	}
+
+	// Setup handlers
+	c.serveMux.HandleFunc("/login", c.HandleLogin)
+	c.serveMux.HandleFunc("/logout", c.HandleLogout)
+	c.serveMux.HandleFunc("/register", c.HandleRegister)
+	c.serveMux.HandleFunc("/validate", c.HandleValidate)
+	c.serveMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
+	c.serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
+	c.serveMux.HandleFunc("/proxy", c.HandleProxy)
+	c.serveMux.HandleFunc("/", c.HandleIndex)
 }
 
+// Start the CAS server
+func (c *CAS) Start() {
+	// Start server
+	log.Fatal(c.server.ListenAndServe())
+
+	//TODO: Start the TLS endpoints as well
+}
+
+// Get the address of the server based on server configuration
 func (c *CAS) GetAddr() string {
 	return c.Config["host"] + ":" + c.Config["port"]
 }
