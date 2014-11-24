@@ -46,23 +46,42 @@ func TestCASGetAddrFn(t *testing.T) {
 	}
 }
 
-// Utility function for tearing down and setting up the database
+// Utility functions for tearing down/setting up the database
 func tearDownAndSetupDB(server *CAS, t *testing.T) {
-	teardownErr := server.dbAdapter.TeardownDB()
-	if teardownErr != nil {
-		t.Errorf("Failed to tear down database: %s", *teardownErr.err)
-	}
+	teardownDB(server, t)
+	setupDB(server, t)
+}
 
+func setupDB(server *CAS, t *testing.T) {
 	setupErr := server.dbAdapter.SetupDB()
 	if setupErr != nil {
-		t.Errorf("Failed to set down database: %s", *setupErr.err)
+		if setupErr != nil { t.Errorf("Failed to set down database: %s", *setupErr.err) }
+	}
+}
+
+func teardownDB(server *CAS, t *testing.T) {
+	teardownErr := server.dbAdapter.TeardownDB()
+	if teardownErr != nil {
+		if teardownErr.err != nil { t.Errorf("Failed to tear down database: %s", *teardownErr.err) }
 	}
 }
 
 // Test setup and tear down of database (with utility function)
-func TestDBSetupAndTeardown(t *testing.T) {
+func TestDBSetup(t *testing.T) {
 	server := setupCASServer(t)
 	tearDownAndSetupDB(server, t)
+	teardownDB(server, t)
+}
+
+func TestImportTableDataFromFile(t *testing.T) {
+	server := setupCASServer(t)
+	setupDB(server, t)
+	importErr := server.dbAdapter.ImportTableDataFromFile("services", "fixtures/services.json")
+	if importErr != nil {
+		if importErr.err != nil { t.Errorf("Failed to import data into database: %s", *importErr.err) }
+	}
+
+	//teardownDB(server, t)
 }
 
 // Test retrieving service from DB
@@ -71,10 +90,7 @@ func TestGetServiceFn(t *testing.T) {
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
 
-	server := setupCASServer(t)
-	tearDownAndSetupDB(server, t)
-	server.dbAdapter.ImportTableDataFromFile("services", "id", "fixtures/services.json")
-
+	//teardownDB(server, t)
 }
 
 // Test making new tickets in DB
