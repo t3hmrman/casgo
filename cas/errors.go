@@ -77,7 +77,7 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 206,
 	}
-	FailedToImportTableDataFromFile = CASServerError{
+	FailedToLoadJSONFixture = CASServerError{
 		msg:        "Failed to import database information from file",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 207,

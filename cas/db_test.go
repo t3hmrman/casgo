@@ -40,7 +40,7 @@ func TestLoadJSONFixture(t *testing.T) {
 	setup(server, t)
 	importErr := server.dbAdapter.LoadJSONFixture("casgo_test", "services", "fixtures/services.json")
 	if importErr != nil {
-		if importErr.err != nil { 
+		if importErr.err != nil {
 			t.Log("DB error: %s", importErr.msg)
 			t.Errorf("Failed to import data into database: %s", *importErr.err)
 		}
@@ -48,4 +48,3 @@ func TestLoadJSONFixture(t *testing.T) {
 
 	teardown(server, t)
 }
-

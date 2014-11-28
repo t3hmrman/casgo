@@ -1,10 +1,9 @@
 package cas
 
 import (
-	"encoding/json"
 	r "github.com/dancannon/gorethink"
 	"log"
-	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -39,7 +38,7 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 }
 
 // Create/Setup all relevant tables in the database
-func (db *RethinkDBAdapter) SetupDB() *CASServerError {
+func (db *RethinkDBAdapter) Setup() *CASServerError {
 
 	// Setup the Database
 	_, err := r.
@@ -52,61 +51,119 @@ func (db *RethinkDBAdapter) SetupDB() *CASServerError {
 	}
 
 	// Setup required tables
-	_, ticketTableErr := r.Db(db.dbName).TableCreate(db.ticketTableName).Run(db.session)
-	_, userTableErr := r.Db(db.dbName).TableCreate(db.userTableName).Run(db.session)
-	_, serviceTableErr := r.Db(db.dbName).TableCreate(db.serviceTableName).Run(db.session)
-	if ticketTableErr != nil || userTableErr != nil || serviceTableErr != nil {
-		casError := &FailedToSetupDatabase
-		return casError
+	servicesErr := db.SetupServicesTable()
+	if servicesErr != nil {
+		return servicesErr
+	}
+	usersErr := db.SetupUsersTable()
+	if usersErr != nil {
+		return usersErr
+	}
+	ticketsErr := db.SetupTicketsTable()
+	if ticketsErr != nil {
+		return ticketsErr
 	}
 
 	return nil
 }
 
-// Import JSON data into the database
-func (db *RethinkDBAdapter) ImportTableDataFromFile(tableName, path string) *CASServerError {
+// Set up the table that holds services
+func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
+	_, err := r.Db(db.dbName).TableCreate(db.serviceTableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+// Tear down the table that holds services
+func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
+	_, err := r.Db(db.dbName).TableDrop(db.serviceTableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+// Set up the table that holds tickets
+func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
+	_, err := r.Db(db.dbName).TableCreate(db.ticketTableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+// Tear down the table that holds tickets
+func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
+	_, err := r.Db(db.dbName).TableDrop(db.serviceTableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+// Set up the table that holds users
+func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
+	_, err := r.Db(db.dbName).TableCreate(db.userTableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+// Tear down the table that holds users
+func (db *RethinkDBAdapter) TeardownUsersTable() *CASServerError {
+	_, err := r.Db(db.dbName).TableDrop(db.serviceTableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToSetupDatabase
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+// Load database fixture, given intended database name, table and path to fixture file (JSON)
+func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CASServerError {
 	// Get the absolute path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		casError := &FailedToImportTableDataFromFile
+		casError := &FailedToLoadJSONFixture
 		casError.err = &err
 		return casError
 	}
 
-	// Open the file
-	file, err := os.Open(absPath)
+	// Start import command
+	importCmd := exec.Command("rethinkdb", "import",
+		"--table", dbName+"."+tableName,
+		"--format", "json",
+		"--force",
+		"-f", absPath)
+	output, err := importCmd.CombinedOutput()
 	if err != nil {
-		casError := &FailedToImportTableDataFromFile
+		casError := &FailedToLoadJSONFixture
+		casError.msg = string(output)
 		casError.err = &err
 		return casError
 	}
 
-	// Read the JSON data and upload all of it into the specified table
-	// Build inert query to use to insert all the objects into the database
-	insertQuery := r.Db(db.dbName).Table(tableName)
-	decoder := json.NewDecoder(file)
-	for {
-		var v map[string]interface{}
-		if err := decoder.Decode(&v); err != nil {
-			break
-		}
-		log.Print("Want to insert:", v)
-		insertQuery.Insert(v)
-	}
-
-	// Run the insert query
-	_, err = insertQuery.Run(db.session)
-	if err != nil {
-		casError := &FailedToImportTableDataFromFile
-		casError.err = &err
-		return casError
-	}
+	log.Println("[DB IMPORT]:", string(output))
 
 	return nil
 }
 
 // Clear all relevant databases and/or tables
-func (db *RethinkDBAdapter) TeardownDB() *CASServerError {
+func (db *RethinkDBAdapter) Teardown() *CASServerError {
 	_, err := r.
 		DbDrop(db.dbName).
 		Run(db.session)
