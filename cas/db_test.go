@@ -36,9 +36,17 @@ func TestLoadJSONFixture(t *testing.T) {
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
 
-	server := setupCASServer(t)
-	setup(server, t)
-	importErr := server.dbAdapter.LoadJSONFixture("casgo_test", "services", "fixtures/services.json")
+	s := setupCASServer(t)
+	setup(s, t)
+
+	// Setup the services table for importing into
+	err := s.dbAdapter.SetupServicesTable()
+	if err != nil {
+		t.Errorf("Failed to setup services table:", err)
+	}
+
+	// Import into the services table
+	importErr := s.dbAdapter.LoadJSONFixture(s.dbAdapter.getDbName(), s.dbAdapter.getServicesTableName(), "fixtures/services.json")
 	if importErr != nil {
 		if importErr.err != nil {
 			t.Log("DB error: %s", importErr.msg)
@@ -46,5 +54,7 @@ func TestLoadJSONFixture(t *testing.T) {
 		}
 	}
 
-	teardown(server, t)
+	teardown(s, t)
 }
+
+//

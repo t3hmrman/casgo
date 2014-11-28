@@ -107,6 +107,12 @@ type CASDBAdapter interface {
 	RemoveTicketsForUser(string, *CASService) *CASServerError
 	FindTicketForService(string, *CASService) (*CASTicket, *CASServerError)
 	AddNewUser(string, string) (*User, *CASServerError)
+
+	// Property getter utility functions
+	getDbName() string
+	getTicketsTableName() string
+	getServicesTableName() string
+	getUsersTableName() string
 }
 
 // CAS Server

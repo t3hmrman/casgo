@@ -8,12 +8,17 @@ import (
 )
 
 type RethinkDBAdapter struct {
-	session          *r.Session
-	dbName           string
-	ticketTableName  string
-	serviceTableName string
-	userTableName    string
+	session           *r.Session
+	dbName            string
+	ticketsTableName  string
+	servicesTableName string
+	usersTableName    string
 }
+
+func (db *RethinkDBAdapter) getDbName() string { return db.dbName }
+func (db *RethinkDBAdapter) getTicketsTableName() string { return db.dbName }
+func (db *RethinkDBAdapter) getServicesTableName() string { return db.dbName }
+func (db *RethinkDBAdapter) getUsersTableName() string { return db.dbName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -27,11 +32,11 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 
 	// Create the adapter
 	adapter := &RethinkDBAdapter{
-		session:          dbSession,
-		dbName:           c.Config["dbName"],
-		ticketTableName:  "tickets",
-		serviceTableName: "services",
-		userTableName:    "users",
+		session:           dbSession,
+		dbName:            c.Config["dbName"],
+		ticketsTableName:  "tickets",
+		servicesTableName: "services",
+		usersTableName:    "users",
 	}
 
 	return adapter, nil
@@ -50,26 +55,12 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 		return casError
 	}
 
-	// Setup required tables
-	servicesErr := db.SetupServicesTable()
-	if servicesErr != nil {
-		return servicesErr
-	}
-	usersErr := db.SetupUsersTable()
-	if usersErr != nil {
-		return usersErr
-	}
-	ticketsErr := db.SetupTicketsTable()
-	if ticketsErr != nil {
-		return ticketsErr
-	}
-
 	return nil
 }
 
 // Set up the table that holds services
 func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.serviceTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableCreate(db.servicesTableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabase
 		casError.err = &err
@@ -80,7 +71,7 @@ func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
 
 // Tear down the table that holds services
 func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(db.serviceTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabase
 		casError.err = &err
@@ -91,7 +82,7 @@ func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
 
 // Set up the table that holds tickets
 func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.ticketTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableCreate(db.ticketsTableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabase
 		casError.err = &err
@@ -102,7 +93,7 @@ func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
 
 // Tear down the table that holds tickets
 func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(db.serviceTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabase
 		casError.err = &err
@@ -113,7 +104,7 @@ func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
 
 // Set up the table that holds users
 func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.userTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableCreate(db.usersTableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabase
 		casError.err = &err
@@ -124,7 +115,7 @@ func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
 
 // Tear down the table that holds users
 func (db *RethinkDBAdapter) TeardownUsersTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(db.serviceTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabase
 		casError.err = &err
