@@ -22,6 +22,7 @@ func createUserFromGenericObject(generic map[string]interface{}) User {
 
 type CASService struct {
 	Url        string `gorethink:"url" json:"url"`
+	Name        string `gorethink:"name" json:"name"`
 	AdminEmail string `gorethink:"adminEmail" json:"adminEmail"`
 }
 
@@ -101,7 +102,7 @@ type CASDBAdapter interface {
 	LoadJSONFixture(string, string, string) *CASServerError
 
 	// App functions
-	GetServiceByName(string) (*CASService, *CASServerError)
+	GetServiceByUrl(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
 	MakeNewTicketForService(service *CASService) (*CASTicket, *CASServerError)
 	RemoveTicketsForUser(string, *CASService) *CASServerError

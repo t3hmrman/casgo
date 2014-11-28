@@ -40,6 +40,11 @@ var (
 		httpCode:   http.StatusBadRequest,
 		casErrCode: 104,
 	}
+	FailedToFindServiceByUrlError = CASServerError{
+		msg:        "Failed to find service with given URL",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 208,
+	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
@@ -67,20 +72,25 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 204,
 	}
-	FailedToTeardownDatabase = CASServerError{
+	FailedToTeardownDatabaseError = CASServerError{
 		msg:        "Failed to tear down database",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 205,
 	}
-	FailedToSetupDatabase = CASServerError{
+	FailedToSetupDatabaseError = CASServerError{
 		msg:        "Failed to setup database",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 206,
 	}
-	FailedToLoadJSONFixture = CASServerError{
+	FailedToLoadJSONFixtureError = CASServerError{
 		msg:        "Failed to import database information from file",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 207,
+	}
+	FailedToLookupServiceByUrlError = CASServerError{
+		msg:        "An error occurred while searching for service with given URL",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 208,
 	}
 
 	// Other (error codes 300 - 399)

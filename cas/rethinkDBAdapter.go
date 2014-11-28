@@ -16,9 +16,9 @@ type RethinkDBAdapter struct {
 }
 
 func (db *RethinkDBAdapter) getDbName() string { return db.dbName }
-func (db *RethinkDBAdapter) getTicketsTableName() string { return db.dbName }
-func (db *RethinkDBAdapter) getServicesTableName() string { return db.dbName }
-func (db *RethinkDBAdapter) getUsersTableName() string { return db.dbName }
+func (db *RethinkDBAdapter) getTicketsTableName() string { return db.ticketsTableName }
+func (db *RethinkDBAdapter) getServicesTableName() string { return db.servicesTableName }
+func (db *RethinkDBAdapter) getUsersTableName() string { return db.usersTableName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -50,7 +50,7 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 		DbCreate(db.dbName).
 		Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -62,7 +62,7 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
 	_, err := r.Db(db.dbName).TableCreate(db.servicesTableName).Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -73,7 +73,7 @@ func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
 func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
 	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -84,7 +84,7 @@ func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
 func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
 	_, err := r.Db(db.dbName).TableCreate(db.ticketsTableName).Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -95,7 +95,7 @@ func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
 func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
 	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -106,7 +106,7 @@ func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
 func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
 	_, err := r.Db(db.dbName).TableCreate(db.usersTableName).Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -117,7 +117,7 @@ func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
 func (db *RethinkDBAdapter) TeardownUsersTable() *CASServerError {
 	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
 	if err != nil {
-		casError := &FailedToSetupDatabase
+		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -129,7 +129,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 	// Get the absolute path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		casError := &FailedToLoadJSONFixture
+		casError := &FailedToLoadJSONFixtureError
 		casError.err = &err
 		return casError
 	}
@@ -142,7 +142,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 		"-f", absPath)
 	output, err := importCmd.CombinedOutput()
 	if err != nil {
-		casError := &FailedToLoadJSONFixture
+		casError := &FailedToLoadJSONFixtureError
 		casError.msg = string(output)
 		casError.err = &err
 		return casError
@@ -159,7 +159,7 @@ func (db *RethinkDBAdapter) Teardown() *CASServerError {
 		DbDrop(db.dbName).
 		Run(db.session)
 	if err != nil {
-		casError := &FailedToTeardownDatabase
+		casError := &FailedToTeardownDatabaseError
 		casError.err = &err
 		return casError
 	}
@@ -167,15 +167,35 @@ func (db *RethinkDBAdapter) Teardown() *CASServerError {
 	return nil
 }
 
-func (db *RethinkDBAdapter) GetServiceByName(serviceName string) (*CASService, *CASServerError) {
-	return &CASService{serviceName, "nobody@nowhere.net"}, nil
+func (db *RethinkDBAdapter) GetServiceByUrl(serviceUrl string) (*CASService, *CASServerError) {
+	// Get the first service with the given name
+	cursor, err := r.Db(db.dbName).
+		Table(db.servicesTableName).
+		Filter(map[string]string{"url": serviceUrl}).
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToLookupServiceByUrlError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Create user object from the returned data cursor
+	var returnedService *CASService
+	err = cursor.One(&returnedService)
+	if err != nil {
+		casErr := &FailedToLookupServiceByUrlError
+		casErr.err = &err
+		return nil, casErr
+	}
+	
+	return returnedService, nil
 }
 
 func (db *RethinkDBAdapter) FindUserByEmail(username string) (*User, *CASServerError) {
 	// Find the user
 	cursor, err := r.
 		Db(db.dbName).
-		Table("users").
+		Table(db.usersTableName).
 		Get(username).
 		Run(db.session)
 	if err != nil {
