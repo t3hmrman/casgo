@@ -99,7 +99,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
 
 	// Handle service being not set early
-	casService, err := c.dbAdapter.GetServiceByUrl(serviceUrl)
+	casService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
 	if err != nil {
 		context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
 		c.render.HTML(w, http.StatusNotFound, "login", context)
@@ -324,7 +324,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 
 	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
 	// Get the CASService for this service URL
-	casService, err := c.dbAdapter.GetServiceByUrl(serviceUrl)
+	casService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
 	if err != nil {
 		context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
 		c.render.HTML(w, http.StatusNotFound, "login", context)
@@ -392,7 +392,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 
 	// Get the CASService for the given service URL
-	casService, err := c.dbAdapter.GetServiceByUrl(serviceUrl)
+	casService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
 	if err != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{

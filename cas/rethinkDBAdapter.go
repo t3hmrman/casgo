@@ -104,7 +104,7 @@ func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
 
 // Set up the table that holds users
 func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.usersTableName).Run(db.session)
+	_, err := r.Db(db.dbName).TableCreate(db.usersTableName, r.TableCreateOpts{ PrimaryKey: "email" }).Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabaseError
 		casError.err = &err
@@ -167,7 +167,7 @@ func (db *RethinkDBAdapter) Teardown() *CASServerError {
 	return nil
 }
 
-func (db *RethinkDBAdapter) GetServiceByUrl(serviceUrl string) (*CASService, *CASServerError) {
+func (db *RethinkDBAdapter) FindServiceByUrl(serviceUrl string) (*CASService, *CASServerError) {
 	// Get the first service with the given name
 	cursor, err := r.Db(db.dbName).
 		Table(db.servicesTableName).
@@ -187,16 +187,16 @@ func (db *RethinkDBAdapter) GetServiceByUrl(serviceUrl string) (*CASService, *CA
 		casErr.err = &err
 		return nil, casErr
 	}
-	
+
 	return returnedService, nil
 }
 
-func (db *RethinkDBAdapter) FindUserByEmail(username string) (*User, *CASServerError) {
+func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerError) {
 	// Find the user
 	cursor, err := r.
 		Db(db.dbName).
 		Table(db.usersTableName).
-		Get(username).
+		Get(email).
 		Run(db.session)
 	if err != nil {
 		return nil, &InvalidEmailAddressError

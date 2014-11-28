@@ -79,8 +79,16 @@ func TestGetServiceByUrl(t *testing.T) {
 		}
 	}
 
+	// Create the service we expect to find in the fixture
+	expectedService := &CASService{
+		Name: "test_service",
+		Url: "localhost:9090/validateCASLogin",
+		AdminEmail: "noone@nowhere.com",
+	}
+
+
 	// Attempt to get a service by name
-	returnedService, casErr := s.dbAdapter.GetServiceByUrl("localhost:9090/validateCASLogin")
+	returnedService, casErr := s.dbAdapter.FindServiceByUrl(expectedService.Url)
 	if casErr != nil {
 		if casErr.err != nil {
 			t.Log("Internal Error: %v", *casErr.err)
@@ -88,16 +96,54 @@ func TestGetServiceByUrl(t *testing.T) {
 		t.Errorf("Failed to find service that was expected to be present. err: %v", err)
 	}
 
-	// Inspect the error, it should have properties we expect
-	expectedService := &CASService{
-		Name: "test_service",
-		Url: "localhost:9090/validateCASLogin",
-		AdminEmail: "noone@nowhere.com",
-	}
-
 	// Ensure received data matches expected
 	if *returnedService != *expectedService {
 		t.Errorf("Returned service %v is not equal to expected service %v", returnedService, expectedService)
+	}
+
+	teardownDb(s, t)
+}
+
+// Test getting a user by email
+func TestFindUserByEmail(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	s := setupCASServer(t)
+	setupDb(s, t)
+
+	// Setup & load users table
+	err := s.dbAdapter.SetupUsersTable()
+	if err != nil {
+		t.Errorf("Failed to setup users table", err)
+	}
+	casErr := s.dbAdapter.LoadJSONFixture(s.dbAdapter.getDbName(), s.dbAdapter.getUsersTableName(), "fixtures/users.json")
+	if casErr != nil {
+		if casErr.err != nil {
+			t.Errorf("Failed to import data into database: %s", *casErr.err)
+		}
+			t.Log("Failed to load JSON fixture: %s", casErr.msg)
+	}
+
+	// Inspect the error, it should have properties we expect
+	expectedUser := &User{
+		Email: "test@test.com",
+		Password: "thisisnotarealpassword",
+	}
+
+	// Attempt to get a user by name
+	returnedUser, casErr := s.dbAdapter.FindUserByEmail(expectedUser.Email)
+	if casErr != nil {
+		if casErr.err != nil {
+			t.Log("Internal Error: %v", *casErr.err)
+		}
+		t.Errorf("Failed to find user that was expected to be present. err: %v", err)
+	}
+
+	// Ensure received data matches expected
+	if returnedUser != nil && *returnedUser != *expectedUser {
+		t.Errorf("Returned user %v is not equal to expected user %v", returnedUser, expectedUser)
 	}
 
 	teardownDb(s, t)

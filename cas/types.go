@@ -102,7 +102,7 @@ type CASDBAdapter interface {
 	LoadJSONFixture(string, string, string) *CASServerError
 
 	// App functions
-	GetServiceByUrl(string) (*CASService, *CASServerError)
+	FindServiceByUrl(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
 	MakeNewTicketForService(service *CASService) (*CASTicket, *CASServerError)
 	RemoveTicketsForUser(string, *CASService) *CASServerError
