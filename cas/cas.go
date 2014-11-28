@@ -93,15 +93,15 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	context := map[string]string{"CompanyName": c.Config["companyName"]}
 
 	// Trim and lightly pre-process/validate service
-	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
 	gateway := strings.TrimSpace(strings.ToLower(req.FormValue("gateway")))
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
 
 	// Handle service being not set early
-	casService, err := c.dbAdapter.GetServiceByName(service)
+	casService, err := c.dbAdapter.GetServiceByUrl(serviceUrl)
 	if err != nil {
-		context["Error"] = "Failed to find matching service with URL [" + service + "]."
+		context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
 		c.render.HTML(w, http.StatusNotFound, "login", context)
 	}
 
@@ -176,7 +176,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 				http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 				return
 			}
-			http.Redirect(w, req, service+"?ticket="+ticket, 302)
+			http.Redirect(w, req, serviceUrl+"?ticket="+ticket, 302)
 			return
 		}
 
@@ -206,14 +206,14 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 	// If the user has logged in and service was provided, redirect
 	// Otherwise render login page
-	if service != "" {
+	if serviceUrl != "" {
 		// Get ticket for the service
 		ticket, err := c.makeNewTicketForService(casService)
 		if err != nil {
 			http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 			return
 		}
-		http.Redirect(w, req, service+"?ticket="+ticket, 302)
+		http.Redirect(w, req, serviceUrl+"?ticket="+ticket, 302)
 		return
 	} else {
 		context["Success"] = "Successful log in! Redirecting to services page..."
@@ -322,11 +322,11 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	// Get the user's session
 	session, _ := c.cookieStore.Get(req, "casgo-session")
 
-	service := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
 	// Get the CASService for this service URL
-	casService, err := c.dbAdapter.GetServiceByName(service)
+	casService, err := c.dbAdapter.GetServiceByUrl(serviceUrl)
 	if err != nil {
-		context["Error"] = "Failed to find matching service with URL [" + service + "]."
+		context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
 		c.render.HTML(w, http.StatusNotFound, "login", context)
 	}
 
@@ -392,7 +392,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 
 	// Get the CASService for the given service URL
-	casService, err := c.dbAdapter.GetServiceByName(serviceUrl)
+	casService, err := c.dbAdapter.GetServiceByUrl(serviceUrl)
 	if err != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
