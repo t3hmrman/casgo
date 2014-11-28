@@ -30,6 +30,36 @@ func TestDBSetup(t *testing.T) {
 	teardownDb(casServer, t)
 }
 
+// Test DB property getters with default cas server
+func TestAdapterGetters(t *testing.T) {
+	s := setupCASServer(t)
+
+	actual, expected := s.dbAdapter.getDbName(), s.Config["dbName"]
+	if actual != expected {
+		t.Errorf("Expected GetDbName to return [%s], returned [%s]", actual, expected)
+		return
+	}
+
+	actual, expected = s.dbAdapter.getUsersTableName(), "users"
+	if actual != expected {
+		t.Errorf("Expected getUsersTableName to return [%s], returned [%s]", actual, expected)
+		return
+	}
+
+	actual, expected = s.dbAdapter.getServicesTableName(), "services"
+	if actual != expected {
+		t.Errorf("Expected getServicesTableName to return [%s], returned [%s]", actual, expected)
+		return
+	}
+
+	actual, expected = s.dbAdapter.getTicketsTableName(), "tickets"
+	if actual != expected {
+		t.Errorf("Expected getTicketsTableName to return [%s], returned [%s]", actual, expected)
+		return
+	}
+
+}
+
 // Test database import functionality (implemented LoadJSONFixture function should not fail to load fixtures)
 func TestLoadJSONFixture(t *testing.T) {
 	if testing.Short() {
