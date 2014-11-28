@@ -188,7 +188,7 @@ func TestAddNewUser(t *testing.T) {
 	s := setupCASServer(t)
 	setupDb(s, t)
 
-	// Setup & load users table
+	// Setup users table
 	err := s.dbAdapter.SetupUsersTable()
 	if err != nil {
 		t.Errorf("Failed to setup users table", err)
