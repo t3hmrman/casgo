@@ -178,3 +178,35 @@ func TestFindUserByEmail(t *testing.T) {
 
 	teardownDb(s, t)
 }
+
+// Test adding new user
+func TestAddNewUser(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	s := setupCASServer(t)
+	setupDb(s, t)
+
+	// Setup & load users table
+	err := s.dbAdapter.SetupUsersTable()
+	if err != nil {
+		t.Errorf("Failed to setup users table", err)
+	}
+
+	// Add the user
+	newUser, casErr := s.dbAdapter.AddNewUser("test_user@test.com", "randompassword")
+	if casErr != nil {
+		t.Errorf("Failed to add new user", casErr)
+	}
+
+	// Find the user by email
+	returnedUser, casErr := s.dbAdapter.FindUserByEmail(newUser.Email)
+	if casErr != nil {
+		t.Errorf("Failed to find created temporary user", casErr)
+	}
+
+	if newUser.Email != returnedUser.Email {
+		t.Errorf("Newly created user and returned user's emails don't match")
+	}
+}
