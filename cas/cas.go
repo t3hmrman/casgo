@@ -100,6 +100,10 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
 
+	// In the case login is being used as an acceptor
+	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
+	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
+
 	// Handle service being not set early
 	var casService *CASService
 	if len(serviceUrl) > 0 {
@@ -156,7 +160,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Attempt non-interactive authentication
-		returnedUser, err := c.validateUserCredentials("", "")
+		returnedUser, err := c.validateUserCredentials(email, password)
 		if err != nil {
 			// In the case of an error, redirect to the service with no ticket
 			if casService == nil {
@@ -178,7 +182,6 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			// If service is not set, render login with context
 			c.render.HTML(w, err.httpCode, "login", context)
 		} else {
-
 			// Create a new ticket
 			ticket := &CASTicket{
 				UserEmail:      returnedUser.Email,
@@ -199,8 +202,6 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	} // /if gateway == true
 
 	// Trim and lightly pre-process/validate email/password
-	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
-	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
 	if email == "" || password == "" {
 		c.render.HTML(w, http.StatusOK, "login", context)
 		return
@@ -346,11 +347,17 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	session, _ := c.cookieStore.Get(req, "casgo-session")
 
 	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+
 	// Get the CASService for this service URL
-	casService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
-	if err != nil {
-		context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
-		c.render.HTML(w, http.StatusNotFound, "login", context)
+	var casService *CASService
+	if len(serviceUrl) > 0 {
+		returnedService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
+		if err != nil {
+			context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
+			c.render.HTML(w, http.StatusNotFound, "login", context)
+			return
+		}
+		casService = returnedService
 	}
 
 	// Attempt to find the session for the user, exit early if there is no session
@@ -361,7 +368,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	err = c.dbAdapter.RemoveTicketsForUserWithService(userEmail.(string), casService)
+	err := c.dbAdapter.RemoveTicketsForUserWithService(userEmail.(string), casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
 	}
