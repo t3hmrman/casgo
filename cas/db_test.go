@@ -26,6 +26,9 @@ func TestDBSetup(t *testing.T) {
 	}
 
 	casServer := setupCASServer(t)
+
+	// If the database already
+
 	setupDb(casServer, t)
 	teardownDb(casServer, t)
 }
@@ -88,7 +91,7 @@ func TestLoadJSONFixture(t *testing.T) {
 }
 
 // Test getting service by URL
-func TestGetServiceByUrl(t *testing.T) {
+func TestFindServiceByUrl(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
@@ -127,7 +130,7 @@ func TestGetServiceByUrl(t *testing.T) {
 	}
 
 	// Ensure received data matches expected
-	if *returnedService != *expectedService {
+	if returnedService != nil && *returnedService != *expectedService {
 		t.Errorf("Returned service %v is not equal to expected service %v", returnedService, expectedService)
 	}
 
@@ -209,4 +212,6 @@ func TestAddNewUser(t *testing.T) {
 	if newUser.Email != returnedUser.Email {
 		t.Errorf("Newly created user and returned user's emails don't match")
 	}
+
+	teardownDb(s, t)
 }
