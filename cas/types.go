@@ -22,7 +22,7 @@ func createUserFromGenericObject(generic map[string]interface{}) User {
 
 type CASService struct {
 	Url        string `gorethink:"url" json:"url"`
-	Name        string `gorethink:"name" json:"name"`
+	Name       string `gorethink:"name" json:"name"`
 	AdminEmail string `gorethink:"adminEmail" json:"adminEmail"`
 }
 
@@ -35,15 +35,14 @@ func createCASServiceFromGenericObject(generic map[string]interface{}) CASServic
 }
 
 type CASTicket struct {
-	serviceUrl        string `gorethink:"serviceUrl" json:"serviceUrl"`
-	wasFromSSOSession bool   `gorethink:"wasFromSSOSession" json:"wasFromSSOSession"`
+	Id     string `gorethinkdb:"id" json:"id"`
+	WasSSO bool   `gorethink:"wasSSO" json:"wasSSO"`
 }
 
 // Function to create a CASTicket object from a parsed generic map[string]interface{}
 func createCASTicketFromGenericObject(generic map[string]interface{}) CASTicket {
 	return CASTicket{
-		serviceUrl:        generic["serviceUrl"].(string),
-		wasFromSSOSession: generic["wasFromSSOSession"].(bool),
+		WasSSO: generic["wasFromSSOSession"].(bool),
 	}
 }
 
