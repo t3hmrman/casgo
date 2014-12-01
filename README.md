@@ -4,6 +4,12 @@
 
 Casgo is a simple to use, simple to deploy [Single Sign On](http://en.wikipedia.org/wiki/Single_sign-on) that uses the [CAS protocol](http://en.wikipedia.org/wiki/Central_Authentication_Service) developed by Shawn Bayern of Yale University.
 
+### CAS Spec
+
+Casgo implements the CAS Specification as defined with a few key changes:
+
+- JSON is preferred over XML/plaintext responses
+
 ### Getting started
 
 0. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com))
