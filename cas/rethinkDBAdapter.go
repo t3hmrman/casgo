@@ -233,8 +233,8 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 	return user, nil
 }
 
+// Add new CASTicket to the database for the given service
 func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError) {
-	// Add new ticket to the database
 	res, err := r.
 		Db(db.dbName).
 		Table(db.ticketsTableName).
@@ -254,10 +254,43 @@ func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASS
 	return ticket, nil
 }
 
-func (db *RethinkDBAdapter) RemoveTicketsForUser(username string, service *CASService) *CASServerError {
-	return nil
+// Find ticket by Id for a given service
+func (db *RethinkDBAdapter) FindTicketByIdForService(ticketId string, service *CASService) (*CASTicket, *CASServerError) {
+	cursor, err := r.
+		Db(db.dbName).
+		Table(db.ticketsTableName).
+		Get(ticketId).
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToFindTicketError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Create CASTicket from result
+	var returnedTicket *CASTicket
+	err = cursor.One(&returnedTicket)
+	if err != nil {
+		casErr := &FailedToFindTicketError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	return returnedTicket, nil
 }
 
-func (db *RethinkDBAdapter) FindTicketForService(ticket string, service *CASService) (*CASTicket, *CASServerError) {
-	return nil, nil
+func (db *RethinkDBAdapter) RemoveTicketsForUser(email string, service *CASService) *CASServerError {
+	_, err := r.
+		Db(db.dbName).
+		Table(db.ticketsTableName).
+		Filter(map[string]string{"userEmail":email}).
+		Delete().
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToDeleteTicketsForUserError
+		casErr.err = &err
+		return casErr
+	}
+
+	return nil
 }

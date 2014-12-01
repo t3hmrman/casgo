@@ -175,7 +175,7 @@ func TestFindUserByEmail(t *testing.T) {
 	}
 
 	// Ensure received data matches expected
-	if returnedUser != nil && !compare(*returnedUser, *expectedUser) {
+	if returnedUser != nil && !compareUsers(*returnedUser, *expectedUser) {
 		t.Errorf("Returned user %v is not equal to expected user %v", returnedUser, expectedUser)
 	}
 
@@ -216,15 +216,8 @@ func TestAddNewUser(t *testing.T) {
 	teardownDb(s, t)
 }
 
-// Test adding ticket for service
-func TestAddTicketForService(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping DB-involved test (in short mode).")
-	}
-
-	s := setupCASServer(t)
-	setupDb(s, t)
-
+// Utility function for creating a service
+func addTicketForService(s *CAS, t *testing.T) (*CASTicket, *CASService) {
 	// Setup tickets table
 	err := s.dbAdapter.SetupTicketsTable()
 	if err != nil {
@@ -251,7 +244,76 @@ func TestAddTicketForService(t *testing.T) {
 
 	// Ensure that the ticket has been updated with the right ID
 	if len(ticket.Id) == 0 {
-		t.Errorf("Received ticket does not have a proper Id attribute set!")
+		t.Errorf("Received ticket does not have a proper Id attribute set: %v", ticket)
+	}
+
+	return ticket, mockService
+}
+
+// Test adding ticket for service
+func TestAddTicketForService(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	// Setup server and Db
+	s := setupCASServer(t)
+	setupDb(s, t)
+
+	// Add ticket for the service
+	addTicketForService(s, t)
+
+	teardownDb(s, t)
+}
+
+// Test finding tickets by Id given a service
+func TestFindTicketByIdForService(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	// Setup server and Db
+	s := setupCASServer(t)
+	setupDb(s, t)
+
+	// Add ticket for the service
+	originalTicket, service := addTicketForService(s, t)
+
+	// Find the ticket that was just added
+	ticket, err := s.dbAdapter.FindTicketByIdForService(originalTicket.Id, service)
+	if err != nil {
+		t.Errorf("Failed to find ticket that should have been added: %v", originalTicket)
+	}
+
+	// Ensure the tickets are the same
+	if ticket != nil && originalTicket != nil && !compareTickets(*ticket, *originalTicket) {
+		t.Errorf("Found ticket ( %v ) != original ticket ( %v )", ticket, originalTicket)
+	}
+
+	teardownDb(s, t)
+}
+
+
+// Test removing an added tickets for a given user
+func TestRemoveTicketsForUser(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	// Setup server and DB
+	s := setupCASServer(t)
+	setupDb(s, t)
+
+	// Add a ticket for the user
+	ticket, service := addTicketForService(s, t)
+
+	// Remove ticket for the user
+	s.dbAdapter.RemoveTicketsForUser(ticket.UserEmail, service)
+
+	// Attempt to find ticket (that should have been removed
+	ticket, err := s.dbAdapter.FindTicketByIdForService(ticket.Id, service)
+	if ticket != nil || err == nil {
+		t.Errorf("Found ticket (or did not recieve expected error) that should have been deleted: %v", ticket)
 	}
 
 	teardownDb(s, t)

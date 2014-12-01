@@ -420,7 +420,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Look up ticket
-	casTicket, err := c.dbAdapter.FindTicketForService(ticket, casService)
+	casTicket, err := c.dbAdapter.FindTicketByIdForService(ticket, casService)
 	if err != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
