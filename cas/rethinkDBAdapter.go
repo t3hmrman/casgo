@@ -167,6 +167,7 @@ func (db *RethinkDBAdapter) Teardown() *CASServerError {
 	return nil
 }
 
+// Find a service by given URL (callback URL)
 func (db *RethinkDBAdapter) FindServiceByUrl(serviceUrl string) (*CASService, *CASServerError) {
 	// Get the first service with the given name
 	cursor, err := r.Db(db.dbName).
@@ -191,6 +192,7 @@ func (db *RethinkDBAdapter) FindServiceByUrl(serviceUrl string) (*CASService, *C
 	return returnedService, nil
 }
 
+// Find a user by email address ("username")
 func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerError) {
 	// Find the user
 	cursor, err := r.
@@ -212,6 +214,7 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 	return returnedUser, nil
 }
 
+// Add a new user to the database
 func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASServerError) {
 	user := &User{
 		Email: username,
@@ -279,7 +282,8 @@ func (db *RethinkDBAdapter) FindTicketByIdForService(ticketId string, service *C
 	return returnedTicket, nil
 }
 
-func (db *RethinkDBAdapter) RemoveTicketsForUser(email string, service *CASService) *CASServerError {
+// Remove tickets for a given user under a given service
+func (db *RethinkDBAdapter) RemoveTicketsForUserWithService(email string, service *CASService) *CASServerError {
 	_, err := r.
 		Db(db.dbName).
 		Table(db.ticketsTableName).

@@ -123,7 +123,7 @@ type CASDBAdapter interface {
 	FindServiceByUrl(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
 	AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError)
-	RemoveTicketsForUser(string, *CASService) *CASServerError
+	RemoveTicketsForUserWithService(string, *CASService) *CASServerError
 	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
 	AddNewUser(string, string) (*User, *CASServerError)
 

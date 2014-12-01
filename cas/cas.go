@@ -354,7 +354,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	err = c.dbAdapter.RemoveTicketsForUser(userEmail.(string), casService)
+	err = c.dbAdapter.RemoveTicketsForUserWithService(userEmail.(string), casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
 	}

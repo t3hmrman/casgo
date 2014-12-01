@@ -308,7 +308,7 @@ func TestRemoveTicketsForUser(t *testing.T) {
 	ticket, service := addTicketForService(s, t)
 
 	// Remove ticket for the user
-	s.dbAdapter.RemoveTicketsForUser(ticket.UserEmail, service)
+	s.dbAdapter.RemoveTicketsForUserWithService(ticket.UserEmail, service)
 
 	// Attempt to find ticket (that should have been removed
 	ticket, err := s.dbAdapter.FindTicketByIdForService(ticket.Id, service)
