@@ -27,7 +27,7 @@ var (
 	}
 	FailedToFindTicketError = CASServerError{
 		msg:        "Failed to find matching ticket",
-		httpCode:   http.StatusNotImplemented,
+		httpCode:   http.StatusBadRequest,
 		casErrCode: 103,
 	}
 	SSOAuthenticatedUserRenewError = CASServerError{
@@ -96,6 +96,11 @@ var (
 		msg:        "Failed to create ticket",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 209,
+	}
+	FailedToDeleteTicketsForUserError = CASServerError{
+		msg:        "Failed to delete tickets for user",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 210,
 	}
 
 	// Other (error codes 300 - 399)
