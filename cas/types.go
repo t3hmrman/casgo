@@ -13,7 +13,8 @@ type User struct {
 	Password   string            `gorethink:"password" json:"password"`
 }
 
-func compare(a, b User) bool {
+// Comparison function for Users
+func compareUsers(a, b User) bool {
 	if &a == &b || (a.Email == b.Email && a.Password == b.Password) {
 		return true
 	}
@@ -43,10 +44,18 @@ func createCASServiceFromGenericObject(generic map[string]interface{}) CASServic
 }
 
 type CASTicket struct {
-	Id             string            `gorethinkdb:"id" json:"id"`
-	UserEmail      string            `gorethinkdb:"userEmail" json:"userEmail"`
-	UserAttributes map[string]string `gorethinkdb:"userAttributes" json:"userAttributes"`
+	Id             string            `gorethink:"id,omitempty" json:"id"`
+	UserEmail      string            `gorethink:"userEmail" json:"userEmail"`
+	UserAttributes map[string]string `gorethink:"userAttributes" json:"userAttributes"`
 	WasSSO         bool              `gorethink:"wasSSO" json:"wasSSO"`
+}
+
+// Compairson function for CASTickets
+func compareTickets(a, b CASTicket) bool {
+	if &a == &b || (a.Id == b.Id && a.UserEmail == b.UserEmail && a.WasSSO == b.WasSSO) {
+		return true
+	}
+	return false
 }
 
 // Function to create a CASTicket object from a parsed generic map[string]interface{}
@@ -115,7 +124,7 @@ type CASDBAdapter interface {
 	FindUserByEmail(string) (*User, *CASServerError)
 	AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError)
 	RemoveTicketsForUser(string, *CASService) *CASServerError
-	FindTicketForService(string, *CASService) (*CASTicket, *CASServerError)
+	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
 	AddNewUser(string, string) (*User, *CASServerError)
 
 	// Property getter utility functions
