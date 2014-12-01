@@ -1,12 +1,10 @@
 package cas
 
 import (
-	"fmt"
-	"golang.org/x/net/html"
-	"log"
-	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // CAS Server creation should fail if no configuration is provided
@@ -45,6 +43,7 @@ func TestCASGetAddrFn(t *testing.T) {
 		t.Error("Expected address [%s], got [%s]", expectedAddress, actualAddress)
 	}
 }
+
 // Test retrieving service from DB
 func TestGetServiceFn(t *testing.T) {
 	if testing.Short() {
@@ -62,30 +61,59 @@ func TestMakeNewTicketForServiceFn(t *testing.T) {
 
 }
 
-// Login page tests
-func TestLoginPage(t *testing.T) {
+// Utility function for setting up necessary things for http test
+func setupHTTPTest(t *testing.T) (*CAS, *httptest.Server) {
+	// Setup CAS server and DB
+	server := setupCASServer(t)
+	setupDb(server, t)
+
+	httpTestServer := httptest.NewServer(server.serveMux)
+	return server, httpTestServer
+}
+
+// Test index page load
+func TestHTTPIndexPageLoad(t *testing.T) {
+	// Setup http test server
+	server, httpTestServer := setupHTTPTest(t)
+	defer httpTestServer.Close()
+
+	doc, err := goquery.NewDocument(httpTestServer.URL)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log("docText:", doc.Text())
+
+	// Ensure title of index page contains what we expect
+	expectedText, actualText := "CasGo", doc.Find("title").Text()
+	if expectedText != actualText {
+		t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
+	}
+
+	teardownDb(server, t)
+}
+
+// Test login page display (check for some expected elements)
+func TestHTTPLoginPageLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test (in short mode).")
 	}
 
-	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello, client")
-	})
+	// Setup http test server
+	server, httpTestServer := setupHTTPTest(t)
+	defer httpTestServer.Close()
 
-	loginServer := httptest.NewServer(testHandler)
-	defer loginServer.Close()
-
-	res, err := http.Get(loginServer.URL)
+	doc, err := goquery.NewDocument(httpTestServer.URL + "/login")
 	if err != nil {
-		log.Fatal(err)
+		t.Error(err)
 	}
 
-	doc, err := html.Parse(res.Body)
-	if err != nil {
-		log.Fatal(err)
+	// Ensure actual title text matches what is expected
+	expectedText := server.Config["companyName"] + " - Login"
+	actualText := doc.Find("title").Text()
+	if expectedText != actualText {
+		t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
 	}
 
-	if doc == nil {
-		t.Error("Doc is nil!")
-	}
+	teardownDb(server, t)
 }
