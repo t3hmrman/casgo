@@ -6,9 +6,11 @@ Casgo is a simple to use, simple to deploy [Single Sign On](http://en.wikipedia.
 
 ### CAS Spec
 
-Casgo implements the CAS Specification as defined with a few key changes:
+Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/cas/specification/CAS%202.0%20Protocol%20Specification%20v1.0.html) as defined with a few key changes:
 
 - JSON is preferred over XML/plaintext responses
+- The /validate endpoint behaves as specified in CAS 1.0 (success/failure and the username of the user)
+- The /validate endpoint returns user attributes
 
 ### Getting started
 
