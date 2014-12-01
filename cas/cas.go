@@ -170,8 +170,16 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			// If service is not set, render login with context
 			c.render.HTML(w, err.httpCode, "login", context)
 		} else {
+
+			// Create a new ticket
+			ticket := &CASTicket{
+				UserEmail: returnedUser.Email,
+				UserAttributes: returnedUser.Attributes,
+				WasSSO:false,
+			}
+
 			// If service is set, redirect
-			ticket, err := c.dbAdapter.MakeNewTicketForService(casService)
+			ticket, err := c.dbAdapter.AddTicketForService(ticket, casService)
 			if err != nil {
 				http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 				return
@@ -204,15 +212,23 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		log.Fatal("Failed to save session, err:", err)
 	}
 
-	// If the user has logged in and service was provided, redirect
+	// If the user was already logged in service was provided, create a new ticket (with SSO set to true) and redirect
 	// Otherwise render login page
 	if serviceUrl != "" {
+
+		ssoTicket := &CASTicket{
+			UserEmail: returnedUser.Email,
+			UserAttributes: returnedUser.Attributes,
+			WasSSO: true,
+		}
+
 		// Get ticket for the service
-		ticket, err := c.dbAdapter.MakeNewTicketForService(casService)
+		ticket, err := c.dbAdapter.AddTicketForService(ssoTicket, casService)
 		if err != nil {
 			http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 			return
 		}
+
 		http.Redirect(w, req, serviceUrl+"?ticket="+ticket.Id, 302)
 		return
 	} else {

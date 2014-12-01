@@ -92,6 +92,11 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 208,
 	}
+	FailedToCreateTicketError = CASServerError{
+		msg:        "Failed to create ticket",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 209,
+	}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{

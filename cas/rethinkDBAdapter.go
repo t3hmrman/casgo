@@ -213,12 +213,15 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 }
 
 func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASServerError) {
-	user := &User{username, password}
+	user := &User{
+		Email: username,
+		Password: password,
+	}
 
 	// Insert user into database
 	res, err := r.
 		Db(db.dbName).
-		Table("users").
+		Table(db.usersTableName).
 		Insert(user, r.InsertOpts{Conflict: "error"}).
 		RunWrite(db.session)
 	if err != nil {
@@ -230,9 +233,25 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 	return user, nil
 }
 
-func (db *RethinkDBAdapter) MakeNewTicketForService(service *CASService) (*CASTicket, *CASServerError) {
-	// TODO
-	return &CASTicket{}, nil
+func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError) {
+	// Add new ticket to the database
+	res, err := r.
+		Db(db.dbName).
+		Table(db.ticketsTableName).
+		Insert(ticket).
+		RunWrite(db.session)
+	if err != nil {
+		casErr := &FailedToCreateTicketError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Update the passed in ticket with the ID that was given by the database
+	if len(res.GeneratedKeys) > 0 {
+		ticket.Id = res.GeneratedKeys[0]
+	}
+
+	return ticket, nil
 }
 
 func (db *RethinkDBAdapter) RemoveTicketsForUser(username string, service *CASService) *CASServerError {
@@ -240,5 +259,5 @@ func (db *RethinkDBAdapter) RemoveTicketsForUser(username string, service *CASSe
 }
 
 func (db *RethinkDBAdapter) FindTicketForService(ticket string, service *CASService) (*CASTicket, *CASServerError) {
-	return &CASTicket{"ABC", false}, nil
+	return nil, nil
 }
