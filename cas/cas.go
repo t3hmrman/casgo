@@ -6,13 +6,13 @@ package cas
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
+	"errors"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
 	"net/http"
-	"strings"
 	"strconv"
-	"errors"
+	"strings"
 )
 
 func NewCASServer(config map[string]string) (*CAS, error) {
@@ -33,10 +33,10 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 
 	// Create and initialize the CAS server
 	cas := &CAS{
-		Config:config,
-		render: render,
+		Config:      config,
+		render:      render,
 		cookieStore: cookieStore,
-		serveMux: http.NewServeMux(),
+		serveMux:    http.NewServeMux(),
 	}
 	cas.init()
 
@@ -49,12 +49,14 @@ func (c *CAS) init() {
 
 	// Setup database adapter
 	dbAdapter, err := NewRethinkDBAdapter(c)
-	if err != nil { log.Fatal("Failed to setup database adapter")	}
+	if err != nil {
+		log.Fatal("Failed to setup database adapter")
+	}
 	c.dbAdapter = dbAdapter
 
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
-		Addr: c.GetAddr(),
+		Addr:    c.GetAddr(),
 		Handler: c.serveMux,
 	}
 
@@ -99,10 +101,15 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
 
 	// Handle service being not set early
-	casService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
-	if err != nil {
-		context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
-		c.render.HTML(w, http.StatusNotFound, "login", context)
+	var casService *CASService
+	if len(serviceUrl) > 0 {
+		foundService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
+		if err != nil {
+			context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
+			c.render.HTML(w, http.StatusNotFound, "login", context)
+			return
+		}
+		casService = foundService
 	}
 
 	// Pass method along in context if specified & valid
@@ -114,6 +121,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	if gateway == "true" && renew == "true" {
 		context["Error"] = "Invalid Request: Both gateway and renew options specified"
 		c.render.HTML(w, http.StatusBadRequest, "login", context)
+		return
 	}
 
 	if renew == "true" {
@@ -173,9 +181,9 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 			// Create a new ticket
 			ticket := &CASTicket{
-				UserEmail: returnedUser.Email,
+				UserEmail:      returnedUser.Email,
 				UserAttributes: returnedUser.Attributes,
-				WasSSO:false,
+				WasSSO:         false,
 			}
 
 			// If service is set, redirect
@@ -217,9 +225,9 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	if serviceUrl != "" {
 
 		ssoTicket := &CASTicket{
-			UserEmail: returnedUser.Email,
+			UserEmail:      returnedUser.Email,
 			UserAttributes: returnedUser.Attributes,
-			WasSSO: true,
+			WasSSO:         true,
 		}
 
 		// Get ticket for the service
@@ -277,7 +285,6 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 	if err != nil {
 
 	}
-
 
 	// Use default authentication typeDepending on the authentication type
 	switch c.Config["authMethod"] {
@@ -412,8 +419,8 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
-			"status": "error",
-			"code": strconv.Itoa(*&FailedToFindServiceError.casErrCode),
+			"status":  "error",
+			"code":    strconv.Itoa(*&FailedToFindServiceError.casErrCode),
 			"message": *&FailedToFindServiceError.msg,
 		})
 		return
@@ -424,8 +431,8 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
-			"status": "error",
-			"code": strconv.Itoa(*&FailedToFindTicketError.casErrCode),
+			"status":  "error",
+			"code":    strconv.Itoa(*&FailedToFindTicketError.casErrCode),
 			"message": *&FailedToFindTicketError.msg,
 		})
 		return
@@ -434,25 +441,25 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	// If renew is specified, validation only works if the login is fresh (not from a single sign on session)
 	if renew == "true" && casTicket.WasSSO {
 		c.render.JSON(w, http.StatusOK, map[string]string{
-			"status": "error",
-			"code": strconv.Itoa(*&SSOAuthenticatedUserRenewError.casErrCode),
+			"status":  "error",
+			"code":    strconv.Itoa(*&SSOAuthenticatedUserRenewError.casErrCode),
 			"message": *&SSOAuthenticatedUserRenewError.msg,
 		})
 		return
 	}
 
 	// Successfully validated user send user information along
-	c.render.JSON(w, http.StatusOK, map[string]string{
-		"status": "success",
-		"message": "Successfully authenticated user",
-		"username": "",
+	c.render.JSON(w, http.StatusOK, map[string]interface{}{
+		"status":         "success",
+		"message":        "Successfully authenticated user",
+		"userEmail":      casTicket.UserEmail,
+		"userAttributes": casTicket.UserAttributes,
 	})
 }
 
 // Endpoint for validating service tickets for possible proxies (CAS 2.0)
 func (c *CAS) HandleServiceValidate(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /serviceValidate, feature not supported yet")
-
 	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
 }
 
