@@ -212,19 +212,6 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 	return returnedUser, nil
 }
 
-func (db *RethinkDBAdapter) MakeNewTicketForService(service *CASService) (*CASTicket, *CASServerError) {
-	// TODO
-	return &CASTicket{}, nil
-}
-
-func (db *RethinkDBAdapter) RemoveTicketsForUser(username string, service *CASService) *CASServerError {
-	return nil
-}
-
-func (db *RethinkDBAdapter) FindTicketForService(ticket string, service *CASService) (*CASTicket, *CASServerError) {
-	return &CASTicket{}, nil
-}
-
 func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASServerError) {
 	user := &User{username, password}
 
@@ -241,4 +228,17 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 	}
 
 	return user, nil
+}
+
+func (db *RethinkDBAdapter) MakeNewTicketForService(service *CASService) (*CASTicket, *CASServerError) {
+	// TODO
+	return &CASTicket{}, nil
+}
+
+func (db *RethinkDBAdapter) RemoveTicketsForUser(username string, service *CASService) *CASServerError {
+	return nil
+}
+
+func (db *RethinkDBAdapter) FindTicketForService(ticket string, service *CASService) (*CASTicket, *CASServerError) {
+	return &CASTicket{"ABC", false}, nil
 }

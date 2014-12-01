@@ -74,7 +74,7 @@ func (c *CAS) Start() {
 	// Start server
 	log.Fatal(c.server.ListenAndServe())
 
-	//TODO: Start the TLS endpoints as well
+	//TODO: Start the TLS endpoint as well
 }
 
 // Get the address of the server based on server configuration
@@ -171,12 +171,12 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			c.render.HTML(w, err.httpCode, "login", context)
 		} else {
 			// If service is set, redirect
-			ticket, err := c.makeNewTicketForService(casService)
+			ticket, err := c.dbAdapter.MakeNewTicketForService(casService)
 			if err != nil {
 				http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 				return
 			}
-			http.Redirect(w, req, serviceUrl+"?ticket="+ticket, 302)
+			http.Redirect(w, req, serviceUrl+"?ticket="+ticket.Id, 302)
 			return
 		}
 
@@ -208,12 +208,12 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Otherwise render login page
 	if serviceUrl != "" {
 		// Get ticket for the service
-		ticket, err := c.makeNewTicketForService(casService)
+		ticket, err := c.dbAdapter.MakeNewTicketForService(casService)
 		if err != nil {
 			http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 			return
 		}
-		http.Redirect(w, req, serviceUrl+"?ticket="+ticket, 302)
+		http.Redirect(w, req, serviceUrl+"?ticket="+ticket.Id, 302)
 		return
 	} else {
 		context["Success"] = "Successful log in! Redirecting to services page..."
@@ -338,7 +338,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	err = c.removeTicketsForUser(userEmail.(string), casService)
+	err = c.dbAdapter.RemoveTicketsForUser(userEmail.(string), casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
 	}
@@ -404,7 +404,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Look up ticket
-	casTicket, err := c.getTicketForService(casService, ticket)
+	casTicket, err := c.dbAdapter.FindTicketForService(ticket, casService)
 	if err != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
@@ -416,7 +416,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If renew is specified, validation only works if the login is fresh (not from a single sign on session)
-	if renew == "true" && casTicket.wasFromSSOSession {
+	if renew == "true" && casTicket.WasSSO {
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status": "error",
 			"code": strconv.Itoa(*&SSOAuthenticatedUserRenewError.casErrCode),
@@ -433,14 +433,10 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-// Get the ticket for a given service
-func (c *CAS) getTicketForService(service *CASService, ticket string) (*CASTicket, *CASServerError) {
-	return &CASTicket{"ABC", false}, nil
-}
-
 // Endpoint for validating service tickets for possible proxies (CAS 2.0)
 func (c *CAS) HandleServiceValidate(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /serviceValidate, feature not supported yet")
+
 	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
 }
 
