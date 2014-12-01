@@ -175,7 +175,7 @@ func TestFindUserByEmail(t *testing.T) {
 	}
 
 	// Ensure received data matches expected
-	if returnedUser != nil && *returnedUser != *expectedUser {
+	if returnedUser != nil && !compare(*returnedUser, *expectedUser) {
 		t.Errorf("Returned user %v is not equal to expected user %v", returnedUser, expectedUser)
 	}
 
@@ -211,6 +211,47 @@ func TestAddNewUser(t *testing.T) {
 
 	if newUser.Email != returnedUser.Email {
 		t.Errorf("Newly created user and returned user's emails don't match")
+	}
+
+	teardownDb(s, t)
+}
+
+// Test adding ticket for service
+func TestAddTicketForService(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	s := setupCASServer(t)
+	setupDb(s, t)
+
+	// Setup tickets table
+	err := s.dbAdapter.SetupTicketsTable()
+	if err != nil {
+		t.Errorf("Failed to setup tickets table", err)
+	}
+
+	// Create a new CASTicket to store
+	ticket := &CASTicket{
+		UserEmail: "test@test.com",
+		UserAttributes: map[string]string{},
+		WasSSO: false,
+	}
+
+	mockService := &CASService{
+		Url: "localhost:8080",
+		Name: "mock_service",
+		AdminEmail: "noone@nowhere.com",
+	}
+
+	ticket, err = s.dbAdapter.AddTicketForService(ticket, mockService)
+	if err != nil {
+		t.Errorf("Failed to add ticket to database for service [%s]", mockService.Name)
+	}
+
+	// Ensure that the ticket has been updated with the right ID
+	if len(ticket.Id) == 0 {
+		t.Errorf("Received ticket does not have a proper Id attribute set!")
 	}
 
 	teardownDb(s, t)
