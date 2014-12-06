@@ -6,6 +6,7 @@ package cas
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -24,6 +25,14 @@ func TestConfigDefaults(t *testing.T) {
 		t.Errorf("Error creating config %s:", err)
 	}
 
+	// Get the absolute path of the config default directory
+	expectedTemplatesDirectory, err := filepath.Abs(CONFIG_DEFAULTS["templatesDirectory"])
+	if err != nil {
+		t.Errorf("Failed to retrieve absolute file path of templatesDirectory in test: %v", err)
+	}
+	CONFIG_DEFAULTS["templatesDirectory"] = expectedTemplatesDirectory
+
+	// Ensure all configurations are at defaults (or expected modified defaults)
 	for k, v := range config {
 		if config[k] != CONFIG_DEFAULTS[k] {
 			t.Errorf("Configuration key [%s] expected to be default (%s), was [%s]", k, CONFIG_DEFAULTS[k], v)
