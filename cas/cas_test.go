@@ -18,8 +18,8 @@ func TestNilConfigCASServerCreation(t *testing.T) {
 // Utility function for setting up CAS Server
 func setupCASServer(t *testing.T) *CAS {
 	config, err := NewCASServerConfig(map[string]string{
-		"companyName": "Casgo Testing Company",
-		"dbName": "casgo_test",
+		"companyName":        "Casgo Testing Company",
+		"dbName":             "casgo_test",
 		"templatesDirectory": "../templates",
 	})
 	if err != nil {
@@ -75,28 +75,8 @@ func setupHTTPTest(t *testing.T) (*CAS, *httptest.Server) {
 	return server, httpTestServer
 }
 
-// Test index page load
-func TestHTTPIndexPageLoad(t *testing.T) {
-	// Setup http test server
-	server, httpTestServer := setupHTTPTest(t)
-	defer httpTestServer.Close()
-
-	doc, err := goquery.NewDocument(httpTestServer.URL)
-	if err != nil {
-		t.Error(err)
-	}
-
-	// Ensure title of index page contains what we expect
-	expectedText, actualText := "CasGo", doc.Find("title").Text()
-	if expectedText != actualText {
-		t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
-	}
-
-	teardownDb(server, t)
-}
-
-// Test login page display (check for some expected elements)
-func TestHTTPLoginPageLoad(t *testing.T) {
+// Utility test harness for HTTP tests
+func httpTestHarness(t *testing.T, endpoint string, testFunc func(*testing.T, *CAS, *httptest.Server, *goquery.Document)) {
 	if testing.Short() {
 		t.Skip("Skipping integration test (in short mode).")
 	}
@@ -104,18 +84,49 @@ func TestHTTPLoginPageLoad(t *testing.T) {
 	// Setup http test server
 	server, httpTestServer := setupHTTPTest(t)
 	defer httpTestServer.Close()
+	defer teardownDb(server, t)
 
-	doc, err := goquery.NewDocument(httpTestServer.URL + "/login")
+	// Visit specified endpoint
+	doc, err := goquery.NewDocument(httpTestServer.URL + endpoint)
 	if err != nil {
 		t.Error(err)
 	}
 
-	// Ensure actual title text matches what is expected
-	expectedText := server.Config["companyName"] + " - CasGo Login"
-	actualText := doc.Find("title").Text()
-	if expectedText != actualText {
-		t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
-	}
+	// Run the function we were given
+	testFunc(t, server, httpTestServer, doc)
+}
 
-	teardownDb(server, t)
+// Test index page load
+func TestHTTPIndexPageLoad(t *testing.T) {
+	httpTestHarness(t, "", func(t *testing.T, _ *CAS, httpTestServer *httptest.Server, doc *goquery.Document) {
+		// Ensure title of index page (endpoint "") contains what we expect
+		expectedText, actualText := "CasGo", doc.Find("title").Text()
+		if expectedText != actualText {
+			t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
+		}
+	})
+}
+
+// Test login page display (check for some expected elements)
+func TestHTTPLoginPageLoad(t *testing.T) {
+	httpTestHarness(t, "/login", func(t *testing.T, server *CAS, httpTestServer *httptest.Server, doc *goquery.Document) {
+		// Ensure actual title text of login page (endpoint "/login") matches what is expected
+		expectedText := server.Config["companyName"] + " CasGo Login"
+		actualText := doc.Find("title").Text()
+		if expectedText != actualText {
+			t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
+		}
+
+	})
+}
+
+// Test register page load
+func TestHTTPRegisterPageLoad(t *testing.T) {
+	httpTestHarness(t, "/register", func(t *testing.T, server *CAS, httpTestServer *httptest.Server, doc *goquery.Document) {
+		expectedText := server.Config["companyName"] + " CasGo Register"
+		actualText := doc.Find("title").Text()
+		if expectedText != actualText {
+			t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
+		}
+	})
 }
