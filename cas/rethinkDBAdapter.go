@@ -1,21 +1,13 @@
 package cas
 
 import (
+	"errors"
 	"fmt"
 	r "github.com/dancannon/gorethink"
 	"log"
 	"os/exec"
 	"path/filepath"
 )
-
-type RethinkDBAdapter struct {
-	session           *r.Session
-	dbName            string
-	ticketsTableName  string
-	servicesTableName string
-	usersTableName    string
-	LogLevel          string
-}
 
 func (db *RethinkDBAdapter) getDbName() string            { return db.dbName }
 func (db *RethinkDBAdapter) getTicketsTableName() string  { return db.ticketsTableName }
@@ -98,7 +90,12 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions i
 	if dbOptions == nil {
 		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
 	} else {
-		_, err = r.Db(db.dbName).TableCreate(tableName, dbOptions.(r.TableCreateOpts)).Run(db.session)
+		// Cast the options to the type we expect them to be
+		castedOptions := dbOptions.(r.TableCreateOpts)
+
+		// Perform query & save the options for later use
+		_, err = r.Db(db.dbName).TableCreate(tableName, castedOptions).Run(db.session)
+		db.setTableSetupOptions(tableName, &castedOptions)
 	}
 	if err != nil {
 		casError := &FailedToCreateTableError
@@ -168,6 +165,35 @@ func (db *RethinkDBAdapter) TeardownTable(tableName string) *CASServerError {
 	}
 }
 
+// Dynamically get options that were used when setting up a table
+func (db *RethinkDBAdapter) getTableSetupOptions(tableName string) (*r.TableCreateOpts, error) {
+	switch tableName {
+	case db.ticketsTableName:
+		return db.ticketsTableOptions, nil
+	case db.servicesTableName:
+		return db.servicesTableOptions, nil
+	case db.usersTableName:
+		return db.usersTableOptions, nil
+	default:
+		return nil, errors.New(fmt.Sprintf("Invalid tableName, can't find setup options for table [%s]", tableName))
+	}
+}
+
+// Dynamically get options that were used when setting up a table
+func (db *RethinkDBAdapter) setTableSetupOptions(tableName string, opts *r.TableCreateOpts) error {
+	switch tableName {
+	case db.ticketsTableName:
+		db.ticketsTableOptions = opts
+	case db.servicesTableName:
+		db.servicesTableOptions = opts
+	case db.usersTableName:
+		db.usersTableOptions = opts
+	default:
+		return errors.New(fmt.Sprintf("Failed to set table setup options for table [%s]", tableName))
+	}
+	return nil
+}
+
 // Load database fixture, given intended database name, table and path to fixture file (JSON)
 func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CASServerError {
 	// Get the absolute path
@@ -184,6 +210,20 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 		"--format", "json",
 		"--force",
 		"-f", absPath)
+
+	// Add special options based on table information from setup
+	options, err := db.getTableSetupOptions(tableName)
+	if err != nil {
+		return &CASServerError{msg: "Failed to find table setup options for table!", err: &err}
+	}
+
+	// Check for and apply special options
+	if options != nil && options.PrimaryKey != nil {
+		importCmd.Args = append(importCmd.Args, "--pkey", options.PrimaryKey.(string))
+	}
+	logMessagef(db.LogLevel, "INFO", "Args: %v", importCmd.Args)
+
+	// Run the import command
 	output, err := importCmd.CombinedOutput()
 	if err != nil {
 		casError := &FailedToLoadJSONFixtureError
