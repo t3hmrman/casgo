@@ -15,6 +15,7 @@ var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
 	"templatesDirectory": "CASGO_TEMPLATES",
 	"companyName":        "CASGO_COMPNAME",
 	"authMethod":         "CASGO_DEFAULT_AUTH",
+	"logLevel":           "CASGO_LOG_LVL",
 }
 
 var CONFIG_DEFAULTS map[string]string = map[string]string{
@@ -26,6 +27,7 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 	"templatesDirectory": "templates/",
 	"companyName":        "companyABC",
 	"authMethod":         "password",
+	"logLevel":           "WARN",
 }
 
 // Create default casgo configuration, with user overrides if any

@@ -14,6 +14,7 @@ type RethinkDBAdapter struct {
 	ticketsTableName  string
 	servicesTableName string
 	usersTableName    string
+	LogLevel          string
 }
 
 func (db *RethinkDBAdapter) getDbName() string            { return db.dbName }
@@ -38,6 +39,7 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 		ticketsTableName:  "tickets",
 		servicesTableName: "services",
 		usersTableName:    "users",
+		LogLevel:          c.Config["logLevel"],
 	}
 
 	return adapter, nil
@@ -89,6 +91,8 @@ func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) 
 }
 
 func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions interface{}) *CASServerError {
+	logMessagef(db.LogLevel, "INFO", "Creating table [%s], options: %v", tableName, dbOptions)
+
 	// Check again that dbOptions is not nil, optionally leave out argument
 	var err error
 	if dbOptions == nil {

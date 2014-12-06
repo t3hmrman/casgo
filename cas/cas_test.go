@@ -21,6 +21,7 @@ func setupCASServer(t *testing.T) *CAS {
 		"companyName":        "Casgo Testing Company",
 		"dbName":             "casgo_test",
 		"templatesDirectory": "../templates",
+		"logLevel":           "INFO",
 	})
 	if err != nil {
 		t.Error("Error creating config:", err)

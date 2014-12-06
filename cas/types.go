@@ -144,4 +144,5 @@ type CAS struct {
 	dbAdapter   CASDBAdapter
 	render      *render.Render
 	cookieStore *sessions.CookieStore
+	LogLevel    int
 }

@@ -38,9 +38,23 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 		cookieStore: cookieStore,
 		serveMux:    http.NewServeMux(),
 	}
-	cas.init()
 
+	cas.init()
+	cas.setLogLevel(cas.Config["logLevel"])
 	return cas, nil
+}
+
+func (c *CAS) setLogLevel(lvl string) {
+	switch lvl {
+	case "WARN":
+		c.LogLevel = WARN
+	case "DEBUG":
+		c.LogLevel = DEBUG
+	case "INFO":
+		c.LogLevel = INFO
+	default:
+		c.LogLevel = WARN
+	}
 }
 
 func (c *CAS) init() {
