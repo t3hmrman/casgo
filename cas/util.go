@@ -2,6 +2,7 @@ package cas
 
 import (
 	"log"
+	"fmt"
 )
 
 const (
@@ -19,9 +20,9 @@ func logMessage(actualLogLevel, msgLogLevel, msg string, ) {
 }
 
 // Utility function for logging message
-func logMessagef(actualLogLevel, msgLogLevel, format string, msgArgs...interface{} ) {
+func logMessagef(actualLogLevel, msgLogLevel, format string, msgArgs ...interface{}) {
 	if actualLogLevel <= msgLogLevel {
-		log.Printf("[%s] " + format, msgLogLevel, msgArgs)
+		log.Printf("[%s] %s", msgLogLevel, fmt.Sprintf(format, msgArgs...))
 	}
 }
 
