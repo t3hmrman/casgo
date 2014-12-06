@@ -107,6 +107,16 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 210,
 	}
+	FailedToSetupTableError = CASServerError{
+		msg:        "Failed to setup table",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 211,
+	}
+	FailedToCreateTableError = CASServerError{
+		msg:        "Failed to setup database",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 212,
+	}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{

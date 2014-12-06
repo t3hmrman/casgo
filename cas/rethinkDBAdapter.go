@@ -80,7 +80,7 @@ func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) 
 	case r.TableCreateOpts:
 		return db.createTableWithOptions(tableName, dbOptions)
 	default:
-		casError := &FailedToSetupDatabaseError
+		casError := &FailedToSetupTableError
 		err := fmt.Errorf("Unexpected type of dbOptions: %T", t)
 		casError.err = &err
 		return casError
@@ -97,7 +97,7 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions i
 		_, err = r.Db(db.dbName).TableCreate(tableName, dbOptions.(r.TableCreateOpts)).Run(db.session)
 	}
 	if err != nil {
-		casError := &FailedToSetupDatabaseError
+		casError := &FailedToCreateTableError
 		casError.err = &err
 		return casError
 	}
