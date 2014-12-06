@@ -85,6 +85,7 @@ func TestLoadJSONFixture(t *testing.T) {
 			t.Logf("DB error: %v", *casErr.err)
 		}
 		t.Errorf("Failed to setup services table: %v", casErr)
+		return
 	}
 
 	// Import into the services table
@@ -93,6 +94,7 @@ func TestLoadJSONFixture(t *testing.T) {
 		if importErr.err != nil {
 			t.Logf("DB error: %s", importErr.msg)
 			t.Errorf("Failed to import data into database: %s", *importErr.err)
+			return
 		}
 	}
 
@@ -124,6 +126,7 @@ func dbTestHarness(t *testing.T, tablesToSetup []string, fixturesToLoad []string
 			if casErr.err != nil {
 				t.Logf("DB error: %s", casErr.msg)
 				t.Errorf("Failed to import data into database: %s", *casErr.err)
+				return
 			}
 		}
 	}
@@ -151,13 +154,14 @@ func TestFindServiceByUrl(t *testing.T) {
 			if casErr.err != nil {
 				t.Logf("Internal Error: %v", *casErr.err)
 			}
-
 			t.Errorf("Failed to find service that was expected to be present. err: %v", casErr)
+			return
 		}
 
 		// Ensure received data matches expected
 		if returnedService != nil && *returnedService != *expectedService {
 			t.Errorf("Returned service %v is not equal to expected service %v", returnedService, expectedService)
+			return
 		}
 
 	})
@@ -176,13 +180,16 @@ func TestFindUserByEmail(t *testing.T) {
 	err := s.dbAdapter.SetupUsersTable()
 	if err != nil {
 		t.Errorf("Failed to setup users table, err: %v", err)
+		return
 	}
+
 	casErr := s.dbAdapter.LoadJSONFixture(s.dbAdapter.getDbName(), s.dbAdapter.getUsersTableName(), "fixtures/users.json")
 	if casErr != nil {
 		if casErr.err != nil {
-			t.Errorf("Failed to import data into database: %s", *casErr.err)
+			t.Logf("Failed to import data into database: %s", *casErr.err)
 		}
-		t.Logf("Failed to load JSON fixture: %s", casErr.msg)
+		t.Errorf("Failed to load JSON fixture: %s", casErr)
+		return
 	}
 
 	// Inspect the error, it should have properties we expect
@@ -198,11 +205,13 @@ func TestFindUserByEmail(t *testing.T) {
 			t.Logf("Internal Error: %v", *casErr.err)
 		}
 		t.Errorf("Failed to find user that was expected to be present. (returnedUser: %v) err: %v", returnedUser, casErr)
+		return
 	}
 
 	// Ensure received data matches expected
 	if returnedUser != nil && !compareUsers(*returnedUser, *expectedUser) {
 		t.Errorf("Returned user %v is not equal to expected user %v", returnedUser, expectedUser)
+		return
 	}
 
 	teardownDb(s, t)
@@ -221,9 +230,10 @@ func TestAddNewUser(t *testing.T) {
 	casErr := s.dbAdapter.SetupUsersTable()
 	if casErr != nil {
 		if casErr.err != nil {
-			t.Errorf("DB Error: %v", *casErr.err)
+			t.Logf("DB Error: %v", *casErr.err)
 		}
 		t.Errorf("Failed to setup users table, err: %v", casErr)
+		return
 	}
 
 	// Add the user
@@ -253,7 +263,10 @@ func addTicketForService(s *CAS, t *testing.T) (*CASTicket, *CASService, *CASSer
 	// Setup tickets table
 	casErr := s.dbAdapter.SetupTicketsTable()
 	if casErr != nil {
-		t.Errorf("Failed to setup tickets table", casErr)
+		if casErr.err != nil {
+			t.Logf("DB Error: %v", *casErr.err)
+		}
+		t.Errorf("Failed to setup tickets table, %v", casErr)
 		return nil, nil, casErr
 	}
 
@@ -315,7 +328,7 @@ func TestFindTicketByIdForService(t *testing.T) {
 	originalTicket, service, casErr := addTicketForService(s, t)
 	if casErr != nil {
 		if casErr.err != nil {
-			t.Errorf("Utility function to add ticket for service failed, err: %v", *casErr.err)
+			t.Logf("DB err: %v", *casErr.err)
 		}
 		t.Errorf("Utility function to add ticket for service failed, err: %v", casErr)
 		return
@@ -351,7 +364,7 @@ func TestRemoveTicketsForUser(t *testing.T) {
 	ticket, service, casErr := addTicketForService(s, t)
 	if casErr != nil {
 		if casErr.err != nil {
-			t.Errorf("Utility function to add ticket for service failed, err: %v", *casErr.err)
+			t.Logf("DB err: %v", *casErr.err)
 		}
 		t.Errorf("Utility function to add ticket for service failed, err: %v", casErr)
 		return
