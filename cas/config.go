@@ -1,7 +1,9 @@
 package cas
 
 import (
+	"log"
 	"os"
+	"path/filepath"
 )
 
 var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
@@ -12,7 +14,7 @@ var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
 	"cookieSecret":       "CASGO_SECRET",
 	"templatesDirectory": "CASGO_TEMPLATES",
 	"companyName":        "CASGO_COMPNAME",
-	"authMethod":  "CASGO_DEFAULT_AUTH",
+	"authMethod":         "CASGO_DEFAULT_AUTH",
 }
 
 var CONFIG_DEFAULTS map[string]string = map[string]string{
@@ -23,7 +25,7 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 	"cookieSecret":       "secret-casgo-secret",
 	"templatesDirectory": "templates/",
 	"companyName":        "companyABC",
-	"authMethod":  "password",
+	"authMethod":         "password",
 }
 
 // Create default casgo configuration, with user overrides if any
@@ -39,6 +41,14 @@ func NewCASServerConfig(userOverrides map[string]string) (map[string]string, err
 		if configVal, ok := userOverrides[k]; ok {
 			serverConfig[k] = configVal
 		}
+	}
+
+	// Update filepath with absolute path
+	absDirPath, err := filepath.Abs(serverConfig["templatesDirectory"])
+	if err != nil {
+		log.Printf("[WARNING] Failed to resolve absolute path for templatesDirectory %s", serverConfig["templatesDirectory"])
+	} else {
+		serverConfig["templatesDirectory"] = absDirPath
 	}
 
 	return serverConfig, nil

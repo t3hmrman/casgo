@@ -17,7 +17,11 @@ func TestNilConfigCASServerCreation(t *testing.T) {
 
 // Utility function for setting up CAS Server
 func setupCASServer(t *testing.T) *CAS {
-	config, err := NewCASServerConfig(map[string]string{"dbName": "casgo_test"})
+	config, err := NewCASServerConfig(map[string]string{
+		"companyName": "Casgo Testing Company",
+		"dbName": "casgo_test",
+		"templatesDirectory": "../templates",
+	})
 	if err != nil {
 		t.Error("Error creating config:", err)
 	}
@@ -82,8 +86,6 @@ func TestHTTPIndexPageLoad(t *testing.T) {
 		t.Error(err)
 	}
 
-	t.Log("docText:", doc.Text())
-
 	// Ensure title of index page contains what we expect
 	expectedText, actualText := "CasGo", doc.Find("title").Text()
 	if expectedText != actualText {
@@ -109,7 +111,7 @@ func TestHTTPLoginPageLoad(t *testing.T) {
 	}
 
 	// Ensure actual title text matches what is expected
-	expectedText := server.Config["companyName"] + " - Login"
+	expectedText := server.Config["companyName"] + " - CasGo Login"
 	actualText := doc.Find("title").Text()
 	if expectedText != actualText {
 		t.Errorf("Actual title text [%s] != expected title text [%s]", actualText, expectedText)
