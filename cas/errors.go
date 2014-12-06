@@ -45,6 +45,11 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 208,
 	}
+	FailedToFindUserByEmailError = CASServerError{
+		msg:        "Failed to find user with given email address",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 209,
+	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
