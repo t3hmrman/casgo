@@ -26,3 +26,13 @@ func logMessagef(actualLogLevel, msgLogLevel, format string, msgArgs ...interfac
 	}
 }
 
+
+// Small tuple implementation
+func (t *StringTuple) First() string {
+	return t[0]
+}
+
+// Small tuple implementation
+func (t *StringTuple) Second() string {
+	return t[1]
+}

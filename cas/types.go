@@ -5,8 +5,13 @@ import (
 	"github.com/unrolled/render"
 	"log"
 	"net/http"
+	r "github.com/dancannon/gorethink"
 )
 
+// Small string tuple class implementation (see util.go)
+type StringTuple [2]string
+
+// CasGo user
 type User struct {
 	Email      string            `gorethink:"email" json:"email"`
 	Attributes map[string]string `gorethink:"attributes" json:"attributes"`
@@ -43,6 +48,7 @@ func createCASServiceFromGenericObject(generic map[string]interface{}) CASServic
 	}
 }
 
+// CasGo ticket
 type CASTicket struct {
 	Id             string            `gorethink:"id,omitempty" json:"id"`
 	UserEmail      string            `gorethink:"userEmail" json:"userEmail"`
@@ -145,4 +151,17 @@ type CAS struct {
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 	LogLevel    int
+}
+
+// RethinkDB Adapter
+type RethinkDBAdapter struct {
+	session              *r.Session
+	dbName               string
+	ticketsTableName     string
+	ticketsTableOptions  *r.TableCreateOpts
+	servicesTableName    string
+	servicesTableOptions *r.TableCreateOpts
+	usersTableName       string
+	usersTableOptions    *r.TableCreateOpts
+	LogLevel             string
 }
