@@ -109,6 +109,8 @@ type CASDBAdapter interface {
 	Teardown() *CASServerError
 
 	// Table setup & teardown logic
+	SetupTable(string) *CASServerError
+	TeardownTable(string) *CASServerError
 	SetupServicesTable() *CASServerError
 	TeardownServicesTable() *CASServerError
 	SetupUsersTable() *CASServerError
