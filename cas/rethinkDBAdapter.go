@@ -1,6 +1,7 @@
 package cas
 
 import (
+	"fmt"
 	r "github.com/dancannon/gorethink"
 	"log"
 	"os/exec"
@@ -15,10 +16,10 @@ type RethinkDBAdapter struct {
 	usersTableName    string
 }
 
-func (db *RethinkDBAdapter) getDbName() string { return db.dbName }
-func (db *RethinkDBAdapter) getTicketsTableName() string { return db.ticketsTableName }
+func (db *RethinkDBAdapter) getDbName() string            { return db.dbName }
+func (db *RethinkDBAdapter) getTicketsTableName() string  { return db.ticketsTableName }
 func (db *RethinkDBAdapter) getServicesTableName() string { return db.servicesTableName }
-func (db *RethinkDBAdapter) getUsersTableName() string { return db.usersTableName }
+func (db *RethinkDBAdapter) getUsersTableName() string    { return db.usersTableName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -58,70 +59,109 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 	return nil
 }
 
-// Set up the table that holds services
-func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.servicesTableName).Run(db.session)
+func (db *RethinkDBAdapter) teardownTable(tableName string) *CASServerError {
+	_, err := r.Db(db.dbName).TableDrop(tableName).Run(db.session)
+	if err != nil {
+		casError := &FailedToTeardownDatabaseError
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) *CASServerError {
+	// Catch nil options
+	if dbOptions == nil {
+		return db.createTableWithOptions(tableName, nil)
+	}
+
+	// Ensure dbOptions is of correct type, if non-nil
+	switch t := dbOptions.(type) {
+	case r.TableCreateOpts:
+		return db.createTableWithOptions(tableName, dbOptions)
+	default:
+		casError := &FailedToSetupDatabaseError
+		err := fmt.Errorf("Unexpected type of dbOptions: %T", t)
+		casError.err = &err
+		return casError
+	}
+	return nil
+}
+
+func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions interface{}) *CASServerError {
+	// Check again that dbOptions is not nil, optionally leave out argument
+	var err error
+	if dbOptions == nil {
+		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
+	} else {
+		_, err = r.Db(db.dbName).TableCreate(tableName, dbOptions.(r.TableCreateOpts)).Run(db.session)
+	}
 	if err != nil {
 		casError := &FailedToSetupDatabaseError
 		casError.err = &err
 		return casError
 	}
 	return nil
+}
+
+// Set up the table that holds services
+func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
+	return db.setupTable(db.servicesTableName, nil)
 }
 
 // Tear down the table that holds services
 func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
-	if err != nil {
-		casError := &FailedToSetupDatabaseError
-		casError.err = &err
-		return casError
-	}
-	return nil
+	return db.teardownTable(db.servicesTableName)
 }
 
 // Set up the table that holds tickets
 func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.ticketsTableName).Run(db.session)
-	if err != nil {
-		casError := &FailedToSetupDatabaseError
-		casError.err = &err
-		return casError
-	}
-	return nil
+	return db.setupTable(db.ticketsTableName, nil)
 }
 
 // Tear down the table that holds tickets
 func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
-	if err != nil {
-		casError := &FailedToSetupDatabaseError
-		casError.err = &err
-		return casError
-	}
-	return nil
+	return db.teardownTable(db.ticketsTableName)
 }
 
 // Set up the table that holds users
 func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableCreate(db.usersTableName, r.TableCreateOpts{ PrimaryKey: "email" }).Run(db.session)
-	if err != nil {
-		casError := &FailedToSetupDatabaseError
-		casError.err = &err
-		return casError
-	}
-	return nil
+	return db.setupTable(db.usersTableName, r.TableCreateOpts{PrimaryKey: "email"})
 }
 
 // Tear down the table that holds users
 func (db *RethinkDBAdapter) TeardownUsersTable() *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(db.servicesTableName).Run(db.session)
-	if err != nil {
+	return db.teardownTable(db.usersTableName)
+}
+
+// Dynamically setup tables - dispatch because each table might have special implementations
+func (db *RethinkDBAdapter) SetupTable(tableName string) *CASServerError {
+	switch tableName {
+	case db.ticketsTableName:
+		return db.SetupTicketsTable()
+	case db.servicesTableName:
+		return db.SetupServicesTable()
+	case db.usersTableName:
+		return db.SetupUsersTable()
+	default:
 		casError := &FailedToSetupDatabaseError
-		casError.err = &err
 		return casError
 	}
-	return nil
+}
+
+// Dynamically teardown tables - dispatch because each table might have special implementations
+func (db *RethinkDBAdapter) TeardownTable(tableName string) *CASServerError {
+	switch tableName {
+	case db.ticketsTableName:
+		return db.TeardownTicketsTable()
+	case db.servicesTableName:
+		return db.TeardownServicesTable()
+	case db.usersTableName:
+		return db.TeardownUsersTable()
+	default:
+		casError := &FailedToTeardownDatabaseError
+		return casError
+	}
 }
 
 // Load database fixture, given intended database name, table and path to fixture file (JSON)
@@ -201,14 +241,18 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 		Get(email).
 		Run(db.session)
 	if err != nil {
-		return nil, &InvalidEmailAddressError
+		casErr := &FailedToFindUserByEmailError
+		casErr.err = &err
+		return nil, casErr
 	}
 
 	// Get the user from the returned cursor
 	var returnedUser *User
 	err = cursor.One(&returnedUser)
 	if err != nil {
-		return nil, &InvalidEmailAddressError
+		casErr := &FailedToFindUserByEmailError
+		casErr.err = &err
+		return nil, casErr
 	}
 
 	return returnedUser, nil
@@ -217,7 +261,7 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 // Add a new user to the database
 func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASServerError) {
 	user := &User{
-		Email: username,
+		Email:    username,
 		Password: password,
 	}
 
@@ -227,7 +271,7 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 		Table(db.usersTableName).
 		Insert(user, r.InsertOpts{Conflict: "error"}).
 		RunWrite(db.session)
-	if err != nil {
+	if err != nil || res.Inserted == 0 {
 		return nil, &FailedToCreateUserError
 	} else if res.Errors > 0 {
 		return nil, &EmailAlreadyTakenError
@@ -243,7 +287,7 @@ func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASS
 		Table(db.ticketsTableName).
 		Insert(ticket).
 		RunWrite(db.session)
-	if err != nil {
+	if err != nil || res.Errors > 0 || len(res.GeneratedKeys) == 0 {
 		casErr := &FailedToCreateTicketError
 		casErr.err = &err
 		return nil, casErr
@@ -264,7 +308,7 @@ func (db *RethinkDBAdapter) FindTicketByIdForService(ticketId string, service *C
 		Table(db.ticketsTableName).
 		Get(ticketId).
 		Run(db.session)
-	if err != nil {
+	if err != nil || cursor.IsNil() {
 		casErr := &FailedToFindTicketError
 		casErr.err = &err
 		return nil, casErr
@@ -287,7 +331,7 @@ func (db *RethinkDBAdapter) RemoveTicketsForUserWithService(email string, servic
 	_, err := r.
 		Db(db.dbName).
 		Table(db.ticketsTableName).
-		Filter(map[string]string{"userEmail":email}).
+		Filter(map[string]string{"userEmail": email}).
 		Delete().
 		Run(db.session)
 	if err != nil {
