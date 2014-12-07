@@ -117,6 +117,11 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 212,
 	}
+	DbExistsCheckFailedError = CASServerError{
+		msg:        "Failed to check whether database existed",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 213,
+	}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{

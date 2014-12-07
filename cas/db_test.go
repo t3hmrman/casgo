@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// Utility functions for tearing down/setting up the database
+// Utility functions for setting up the database
 func setupDb(server *CAS, t *testing.T) *CASServerError {
 	casErr := server.dbAdapter.Setup()
 	if casErr != nil {
@@ -13,6 +13,7 @@ func setupDb(server *CAS, t *testing.T) *CASServerError {
 	return nil
 }
 
+// Utility function for tearing down the database
 func teardownDb(server *CAS, t *testing.T) *CASServerError {
 	casErr := server.dbAdapter.Teardown()
 	if casErr != nil {
@@ -27,7 +28,7 @@ func TestDBSetup(t *testing.T) {
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
 
-	casServer := setupCASServer(t)
+	casServer := setupTestCASServer(t)
 
 	// If the database already
 
@@ -35,9 +36,32 @@ func TestDBSetup(t *testing.T) {
 	teardownDb(casServer, t)
 }
 
+// Test Database checking function
+func TestDbExists(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DB-involved test (in short mode).")
+	}
+
+	s := setupTestCASServer(t)
+	setupDb(s, t)
+	defer teardownDb(s, t)
+
+	exists, casErr := s.dbAdapter.DbExists()
+	if casErr != nil {
+		if casErr.err != nil {
+			t.Logf("INTERNAL ERROR: %v", *casErr.err)
+		}
+		t.Errorf("Failed to check if database exists, err:", casErr)
+	}
+	
+	if !exists {
+		t.Error("Database [%s] should have been set up by setupDb, but does not exist", s.dbAdapter.getDbName())
+	}
+}
+
 // Test DB property getters with default cas server
 func TestAdapterGetters(t *testing.T) {
-	s := setupCASServer(t)
+	s := setupTestCASServer(t)
 
 	actual, expected := s.dbAdapter.getDbName(), s.Config["dbName"]
 	if actual != expected {
@@ -71,7 +95,7 @@ func TestLoadJSONFixture(t *testing.T) {
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
 
-	s := setupCASServer(t)
+	s := setupTestCASServer(t)
 	setupDb(s, t)
 
 	// Setup the services table for importing into
@@ -102,10 +126,20 @@ func dbTestHarness(t *testing.T, fixturesToLoad []StringTuple, dbTestFunc func(*
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
 
-	// Do setup
-	s := setupCASServer(t)
-	setupDb(s, t)
-	defer teardownDb(s, t)
+	// Setup CAS Server & DB modified for test
+	s := setupTestCASServer(t)
+	
+	// Setup the test database if it doesn't already exists
+	exists, err := s.dbAdapter.DbExists()
+	if err != nil {
+		t.Errorf("DB Existence check failed, err: %v", err)
+		return
+	}
+
+	// Setup the DB if it doesn't already exist
+	if !exists {
+		setupDb(s, t)
+	}
 
 	// Possibly load fixtures
 	for _, fixtureTuple := range fixturesToLoad {
@@ -131,6 +165,12 @@ func dbTestHarness(t *testing.T, fixturesToLoad []StringTuple, dbTestFunc func(*
 
 	// Run test function
 	dbTestFunc(t, s)
+
+	// Tear down tables that were loaded
+	for _, fixtureTuple := range fixturesToLoad {
+		tableName := fixtureTuple.First()
+		s.dbAdapter.TeardownTable(tableName)
+	}
 }
 
 // Test getting service by URL
@@ -203,7 +243,7 @@ func TestAddNewUser(t *testing.T) {
 		t.Skip("Skipping DB-involved test (in short mode).")
 	}
 
-	s := setupCASServer(t)
+	s := setupTestCASServer(t)
 	setupDb(s, t)
 
 	// Setup users table
@@ -283,7 +323,7 @@ func TestAddTicketForService(t *testing.T) {
 	}
 
 	// Setup server and Db
-	s := setupCASServer(t)
+	s := setupTestCASServer(t)
 	setupDb(s, t)
 
 	// Add ticket for the service
@@ -299,7 +339,7 @@ func TestFindTicketByIdForService(t *testing.T) {
 	}
 
 	// Setup server and Db
-	s := setupCASServer(t)
+	s := setupTestCASServer(t)
 	setupDb(s, t)
 
 	// Add ticket for the service
@@ -335,7 +375,7 @@ func TestRemoveTicketsForUser(t *testing.T) {
 	}
 
 	// Setup server and DB
-	s := setupCASServer(t)
+	s := setupTestCASServer(t)
 	casErr := setupDb(s, t)
 	if casErr != nil {
 		if casErr.err != nil {

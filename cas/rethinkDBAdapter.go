@@ -37,6 +37,29 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	return adapter, nil
 }
 
+// Check if the database has been setup
+func (db *RethinkDBAdapter) DbExists() (bool, *CASServerError) {
+	cursor, err := r.
+		DbList().
+		Run(db.session)
+	if err != nil {
+		casErr := &DbExistsCheckFailedError
+		casErr.err = &err
+		return false, casErr
+	}
+
+	var response []interface{}
+	err = cursor.All(&response)
+
+	// Check that the list contains the database name for the adapter
+	for _, listedDb := range response {
+		if listedDb == db.dbName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // Create/Setup all relevant tables in the database
 func (db *RethinkDBAdapter) Setup() *CASServerError {
 

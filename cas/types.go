@@ -115,6 +115,7 @@ type CASDBAdapter interface {
 	Teardown() *CASServerError
 
 	// Table setup & teardown logic
+	DbExists() (bool, *CASServerError)
 	SetupTable(string) *CASServerError
 	TeardownTable(string) *CASServerError
 	SetupServicesTable() *CASServerError

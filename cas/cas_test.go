@@ -16,7 +16,7 @@ func TestNilConfigCASServerCreation(t *testing.T) {
 }
 
 // Utility function for setting up CAS Server
-func setupCASServer(t *testing.T) *CAS {
+func setupTestCASServer(t *testing.T) *CAS {
 	config, err := NewCASServerConfig(map[string]string{
 		"companyName":        "Casgo Testing Company",
 		"dbName":             "casgo_test",
@@ -36,11 +36,11 @@ func setupCASServer(t *testing.T) *CAS {
 }
 
 // CAS Server creation should succeed if default configuration is made
-func TestDefaultConfigCASServerCreation(t *testing.T) { setupCASServer(t) }
+func TestDefaultConfigCASServerCreation(t *testing.T) { setupTestCASServer(t) }
 
 // CAS Server init should properly attach handler functions to expected addresses
 func TestCASGetAddrFn(t *testing.T) {
-	server := setupCASServer(t)
+	server := setupTestCASServer(t)
 	expectedAddress := CONFIG_DEFAULTS["host"] + ":" + CONFIG_DEFAULTS["port"]
 	actualAddress := server.GetAddr()
 
@@ -69,7 +69,7 @@ func TestMakeNewTicketForServiceFn(t *testing.T) {
 // Utility function for setting up necessary things for http test
 func setupHTTPTest(t *testing.T) (*CAS, *httptest.Server) {
 	// Setup CAS server and DB
-	server := setupCASServer(t)
+	server := setupTestCASServer(t)
 	setupDb(server, t)
 
 	httpTestServer := httptest.NewServer(server.serveMux)
