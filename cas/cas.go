@@ -20,7 +20,7 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 		Config:      nil,
 		render:      nil,
 		cookieStore: nil,
-		serveMux:    http.NewServeMux(),
+		ServeMux:    http.NewServeMux(),
 	}
 
 	// Create configuration with user overrides provided
@@ -75,18 +75,28 @@ func (c *CAS) init() {
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
 		Addr:    c.GetAddr(),
-		Handler: c.serveMux,
+		Handler: c.ServeMux,
 	}
 
 	// Setup handlers
-	c.serveMux.HandleFunc("/login", c.HandleLogin)
-	c.serveMux.HandleFunc("/logout", c.HandleLogout)
-	c.serveMux.HandleFunc("/register", c.HandleRegister)
-	c.serveMux.HandleFunc("/validate", c.HandleValidate)
-	c.serveMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
-	c.serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
-	c.serveMux.HandleFunc("/proxy", c.HandleProxy)
-	c.serveMux.HandleFunc("/", c.HandleIndex)
+	c.ServeMux.HandleFunc("/login", c.HandleLogin)
+	c.ServeMux.HandleFunc("/logout", c.HandleLogout)
+	c.ServeMux.HandleFunc("/register", c.HandleRegister)
+	c.ServeMux.HandleFunc("/validate", c.HandleValidate)
+	c.ServeMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
+	c.ServeMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
+	c.ServeMux.HandleFunc("/proxy", c.HandleProxy)
+	c.ServeMux.HandleFunc("/", c.HandleIndex)
+}
+
+// Set up the underlying database
+func (c *CAS) SetupDb() {
+	c.dbAdapter.Setup()
+}
+
+// Teardown the underlying database
+func (c *CAS) TeardownDb() {
+	c.dbAdapter.Teardown()
 }
 
 // Start the CAS server
