@@ -1,11 +1,11 @@
 package cas
 
 import (
+	r "github.com/dancannon/gorethink"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
 	"net/http"
-	r "github.com/dancannon/gorethink"
 )
 
 // Small string tuple class implementation (see util.go)
@@ -146,7 +146,7 @@ type CASDBAdapter interface {
 // CAS Server
 type CAS struct {
 	server      *http.Server
-	serveMux    *http.ServeMux
+	ServeMux    *http.ServeMux
 	Config      map[string]string
 	dbAdapter   CASDBAdapter
 	render      *render.Render
