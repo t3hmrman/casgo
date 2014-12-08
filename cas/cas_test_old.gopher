@@ -7,34 +7,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// CAS Server init should properly attach handler functions to expected addresses
-func TestCASGetAddrFn(t *testing.T) {
-	server := setupTestCASServer(t)
-	expectedAddress := CONFIG_DEFAULTS["host"] + ":" + CONFIG_DEFAULTS["port"]
-	actualAddress := server.GetAddr()
-
-	if actualAddress != expectedAddress {
-		t.Error("Expected address [%s], got [%s]", expectedAddress, actualAddress)
-	}
-}
-
-// Test retrieving service from DB
-func TestGetServiceFn(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping DB-involved test (in short mode).")
-	}
-
-	//teardownDB(server, t)
-}
-
-// Test making new tickets in DB
-func TestMakeNewTicketForServiceFn(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping DB-involved test (in short mode).")
-	}
-
-}
-
 // Utility function for setting up necessary things for http test
 func setupHTTPTest(t *testing.T) (*CAS, *httptest.Server) {
 	// Setup CAS server and DB
