@@ -7,37 +7,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// CAS Server creation should fail if no configuration is provided
-func TestNilConfigCASServerCreation(t *testing.T) {
-	server, err := NewCASServer(nil)
-	if server != nil || err == nil {
-		t.Error("CAS Server should have failed with nil configuration object")
-	}
-}
-
-// Utility function for setting up CAS Server
-func setupTestCASServer(t *testing.T) *CAS {
-	config, err := NewCASServerConfig(map[string]string{
-		"companyName":        "Casgo Testing Company",
-		"dbName":             "casgo_test",
-		"templatesDirectory": "../templates",
-		//"logLevel":           "INFO",
-	})
-	if err != nil {
-		t.Error("Error creating config:", err)
-	}
-
-	server, err := NewCASServer(config)
-	if server == nil || err != nil {
-		t.Error("Server creation failed:", err)
-	}
-
-	return server
-}
-
-// CAS Server creation should succeed if default configuration is made
-func TestDefaultConfigCASServerCreation(t *testing.T) { setupTestCASServer(t) }
-
 // CAS Server init should properly attach handler functions to expected addresses
 func TestCASGetAddrFn(t *testing.T) {
 	server := setupTestCASServer(t)

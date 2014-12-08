@@ -6,7 +6,6 @@ package cas
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
-	"errors"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
@@ -15,29 +14,34 @@ import (
 	"strings"
 )
 
-func NewCASServer(config map[string]string) (*CAS, error) {
-	if config == nil {
-		return nil, errors.New("Non-nil configuration objectrequired")
+func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
+	// Create and initialize the CAS server
+	cas := &CAS{
+		Config:      nil,
+		render:      nil,
+		cookieStore: nil,
+		serveMux:    http.NewServeMux(),
 	}
 
+	// Create configuration with user overrides provided
+	config, err := NewCASServerConfig(userConfigOverrides)
+	if err != nil {
+		log.Fatalf("Failed to create new CAS server configuration, err: %v", err)
+	}
+	cas.Config = config
+
 	// Setup rendering function
-	render := render.New(render.Options{Directory: config["templatesDirectory"]})
+	render := render.New(render.Options{Directory: cas.Config["templatesDirectory"]})
+	cas.render = render
 
 	// Cookie store setup
-	cookieStore := sessions.NewCookieStore([]byte(config["cookieSecret"]))
+	cookieStore := sessions.NewCookieStore([]byte(cas.Config["cookieSecret"]))
 	cookieStore.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 7,
 		HttpOnly: true,
 	}
-
-	// Create and initialize the CAS server
-	cas := &CAS{
-		Config:      config,
-		render:      render,
-		cookieStore: cookieStore,
-		serveMux:    http.NewServeMux(),
-	}
+	cas.cookieStore = cookieStore
 
 	cas.init()
 	cas.setLogLevel(cas.Config["logLevel"])
