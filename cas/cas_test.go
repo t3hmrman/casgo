@@ -2,7 +2,6 @@ package cas_test
 
 import (
 	. "github.com/t3hmrman/casgo/cas"
-	"net/http/httptest"
 
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/onsi/ginkgo"
@@ -45,23 +44,9 @@ var _ = Describe("Cas", func() {
 	})
 
 	Describe("CAS Website", func() {
-		// Setup CAS server
-		config, _ := NewCASServerConfig(map[string]string{
-			"companyName":        "Casgo Testing Company",
-			"dbName":             "casgo_test",
-			"templatesDirectory": "../templates",
-		})
-		server, _ := NewCASServer(config)
-		server.SetupDb()
-		defer server.TeardownDb()
-
-		// Setup http test server
-		httpTestServer := httptest.NewServer(server.ServeMux)
-		defer httpTestServer.Close()
-
 		It("Should have an working index page", func() {
 			// Visit index endpoint
-			doc, err := goquery.NewDocument(httpTestServer.URL)
+			doc, err := goquery.NewDocument(testHTTPServer.URL)
 			Expect(err).To(BeNil())
 
 			// Ensure title of index page (endpoint "") contains what we expect
