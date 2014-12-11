@@ -49,18 +49,29 @@ var _ = Describe("Cas", func() {
 			doc, err := goquery.NewDocument(testHTTPServer.URL)
 			Expect(err).To(BeNil())
 
-			// Ensure title of index page (endpoint "") contains what we expect
+			// Ensure title of index page (endpoint "") is what we expect
 			expectedText, actualText := "CasGo", doc.Find("title").Text()
 			Expect(actualText).To(Equal(expectedText))
 		})
 
 		It("Should have a working login page", func() {
-
 			// Visit login endpoint
 			doc, err := goquery.NewDocument(testHTTPServer.URL + "/login")
 			Expect(err).To(BeNil())
 
+			// Ensure title of login page is (endpoint "/login") is what we expect
 			expectedText := testCASServer.Config["companyName"] + " CasGo Login"
+			actualText := doc.Find("title").Text()
+			Expect(actualText).To(Equal(expectedText))
+		})
+
+		It("Should have a working login register", func() {
+			// Visit login endpoint
+			doc, err := goquery.NewDocument(testHTTPServer.URL + "/register")
+			Expect(err).To(BeNil())
+
+			// Ensure title of register endpoint is what we expect
+			expectedText := testCASServer.Config["companyName"] + " CasGo Register"
 			actualText := doc.Find("title").Text()
 			Expect(actualText).To(Equal(expectedText))
 		})
