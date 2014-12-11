@@ -7,37 +7,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// Utility function for setting up necessary things for http test
-func setupHTTPTest(t *testing.T) (*CAS, *httptest.Server) {
-	// Setup CAS server and DB
-	server := setupTestCASServer(t)
-	setupDb(server, t)
-
-	httpTestServer := httptest.NewServer(server.serveMux)
-	return server, httpTestServer
-}
-
-// Utility test harness for HTTP tests
-func httpTestHarness(t *testing.T, endpoint string, testFunc func(*testing.T, *CAS, *httptest.Server, *goquery.Document)) {
-	if testing.Short() {
-		t.Skip("Skipping integration test (in short mode).")
-	}
-
-	// Setup http test server
-	server, httpTestServer := setupHTTPTest(t)
-	defer httpTestServer.Close()
-	defer teardownDb(server, t)
-
-	// Visit specified endpoint
-	doc, err := goquery.NewDocument(httpTestServer.URL + endpoint)
-	if err != nil {
-		t.Error(err)
-	}
-
-	// Run the function we were given
-	testFunc(t, server, httpTestServer, doc)
-}
-
 // Test index page load
 func TestHTTPIndexPageLoad(t *testing.T) {
 	httpTestHarness(t, "", func(t *testing.T, _ *CAS, httpTestServer *httptest.Server, doc *goquery.Document) {

@@ -54,5 +54,16 @@ var _ = Describe("Cas", func() {
 			Expect(actualText).To(Equal(expectedText))
 		})
 
+		It("Should have a working login page", func() {
+
+			// Visit login endpoint
+			doc, err := goquery.NewDocument(testHTTPServer.URL + "/login")
+			Expect(err).To(BeNil())
+
+			expectedText := testCASServer.Config["companyName"] + " CasGo Login"
+			actualText := doc.Find("title").Text()
+			Expect(actualText).To(Equal(expectedText))
+		})
+
 	})
 })
