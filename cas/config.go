@@ -45,6 +45,9 @@ func NewCASServerConfig(userOverrides map[string]string) (map[string]string, err
 		}
 	}
 
+	// Override config with what is stored in env
+	serverConfig = overrideConfigWithEnv(serverConfig)
+
 	// Update filepath with absolute path
 	absDirPath, err := filepath.Abs(serverConfig["templatesDirectory"])
 	if err != nil {

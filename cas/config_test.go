@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/t3hmrman/casgo/cas"
+	"os"
 	"path/filepath"
 )
 
@@ -34,4 +35,30 @@ var _ = Describe("CAS Config", func() {
 		})
 	})
 
+	Describe("Config user overriding", func() {
+		It("Should properly override host", func() {
+			host := "fake-host-string"
+			config, err := NewCASServerConfig(map[string]string{"host": host})
+			Expect(err).To(BeNil())
+			Expect(config["host"]).To(Equal(host))
+		})
+	})
+
+	Describe("Config ENV overriding", func() {
+		It("Should properly override host", func() {
+			// Save current ENV value
+			previousEnvValue := os.Getenv("CASGO_HOST")
+			host := "TESTHOST"
+			err := os.Setenv("CASGO_HOST", host)
+			Expect(err).To(BeNil())
+
+			config, err := NewCASServerConfig(map[string]string{"host":"SHOULD NOT BE THIS"})
+			Expect(err).To(BeNil())
+			Expect(config).ToNot(BeNil())
+			Expect(config["host"]).To(Equal(host))
+			
+			// Reset ENV
+			os.Setenv("CASGO_HOST", previousEnvValue)
+		})
+	})
 })
