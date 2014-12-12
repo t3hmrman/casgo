@@ -57,7 +57,7 @@ type CASTicket struct {
 }
 
 // Compairson function for CASTickets
-func compareTickets(a, b CASTicket) bool {
+func CompareTickets(a, b CASTicket) bool {
 	if &a == &b || (a.Id == b.Id && a.UserEmail == b.UserEmail && a.WasSSO == b.WasSSO) {
 		return true
 	}

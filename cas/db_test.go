@@ -137,6 +137,7 @@ var _ = Describe("Cas DB adapter", func() {
 				WasSSO:         false,
 			}
 
+			// Create service to attach it to
 			mockService := &CASService{
 				Url:        "localhost:8080",
 				Name:       "mock_service",
@@ -147,6 +148,35 @@ var _ = Describe("Cas DB adapter", func() {
 			Expect(casErr).To(BeNil())
 			Expect(ticket).ToNot(BeNil())
 			Expect(ticket.Id).ToNot(BeEmpty())
+		})
+	})
+
+	Describe("FindTicketByIdForService function", func() {
+		It("Should find the ticket by ID, given a service from the fixtures", func() {
+			// Create a new CASTicket to store
+			ticket := &CASTicket{
+				UserEmail:      "test@test.com",
+				UserAttributes: map[string]string{},
+				WasSSO:         false,
+			}
+
+			// Create service to attach it to
+			mockService := &CASService{
+				Url:        "localhost:8080",
+				Name:       "mock_service",
+				AdminEmail: "noone@nowhere.com",
+			}
+
+			// Add ticket for the service
+			ticket, casErr := testCASServer.Db.AddTicketForService(ticket, mockService)
+			Expect(casErr).To(BeNil())
+			Expect(ticket).ToNot(BeNil())
+
+			// Find the ticket that was just added
+			foundTicket, err := testCASServer.Db.FindTicketByIdForService(ticket.Id, mockService)
+			Expect(err).To(BeNil())
+			Expect(foundTicket).ToNot(BeNil())
+			Expect(CompareTickets(*foundTicket, *ticket)).To(Equal(true))
 		})
 	})
 

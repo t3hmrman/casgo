@@ -3,51 +3,6 @@ package cas
 import (
 	"testing"
 )
-// Test adding ticket for service
-func TestAddTicketForService(t *testing.T) {
-	fixturesToLoad := []StringTuple{
-		StringTuple{"tickets", ""},
-	}
-	dbTestHarness(t, fixturesToLoad, func(t *testing.T, s *CAS) {
-
-		// Add ticket for the service
-		addTicketForService(s, t)
-
-	})
-}
-
-// Test finding tickets by Id given a service
-func TestFindTicketByIdForService(t *testing.T) {
-	fixturesToLoad := []StringTuple{
-		StringTuple{"tickets", ""},
-	}
-	dbTestHarness(t, fixturesToLoad, func(t *testing.T, s *CAS) {
-
-		// Add ticket for the service
-		originalTicket, service, casErr := addTicketForService(s, t)
-		if casErr != nil {
-			if casErr.err != nil {
-				t.Logf("DB err: %v", *casErr.err)
-			}
-			t.Errorf("Utility function to add ticket for service failed, err: %v", casErr)
-			return
-		}
-
-		// Find the ticket that was just added
-		ticket, err := testCASServer.Db.FindTicketByIdForService(originalTicket.Id, service)
-		if err != nil {
-			t.Errorf("Failed to find ticket that should have been added: %v", originalTicket)
-			return
-		}
-
-		// Ensure the tickets are the same
-		if ticket != nil && originalTicket != nil && !compareTickets(*ticket, *originalTicket) {
-			t.Errorf("Found ticket ( %v ) != original ticket ( %v )", ticket, originalTicket)
-			return
-		}
-
-	})
-}
 
 // Test removing an added tickets for a given user
 func TestRemoveTicketsForUser(t *testing.T) {
