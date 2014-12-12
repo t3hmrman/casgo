@@ -113,4 +113,19 @@ var _ = Describe("Cas DB adapter", func() {
 		})
 	})
 
+	Describe("AddNewUser function", func() {
+		It("should successfully add a new user", func() {
+			// Add the user
+			newUser, casErr := testCASServer.Db.AddNewUser("test_user@test.com", "randompassword")
+			Expect(casErr).To(BeNil())
+			Expect(newUser).ToNot(BeNil())
+
+			// Find the user by email
+			returnedUser, casErr := testCASServer.Db.FindUserByEmail(newUser.Email)
+			Expect(casErr).To(BeNil())
+			Expect(returnedUser).ToNot(BeNil())
+			Expect(returnedUser.Email).To(Equal(newUser.Email))
+		})
+	})
+
 })

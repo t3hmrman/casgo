@@ -3,36 +3,6 @@ package cas
 import (
 	"testing"
 )
-
-// Test adding new user
-func TestAddNewUser(t *testing.T) {
-	fixturesToLoad := []StringTuple{
-		StringTuple{"users", ""},
-	}
-	dbTestHarness(t, fixturesToLoad, func(t *testing.T, s *CAS) {
-
-		// Add the user
-		newUser, casErr := s.dbAdapter.AddNewUser("test_user@test.com", "randompassword")
-		if casErr != nil {
-			t.Errorf("Failed to add new user, err: %v", casErr)
-			return
-		}
-
-		// Find the user by email
-		returnedUser, casErr := s.dbAdapter.FindUserByEmail(newUser.Email)
-		if casErr != nil {
-			t.Errorf("Failed to find created temporary user, err: %v", casErr)
-			return
-		}
-
-		if returnedUser != nil && newUser.Email != returnedUser.Email {
-			t.Errorf("Newly created user and returned user's emails don't match")
-			return
-		}
-
-	})
-}
-
 // Utility function for creating a service and adding a ticket to it
 func addTicketForService(s *CAS, t *testing.T) (*CASTicket, *CASService, *CASServerError) {
 
@@ -49,7 +19,7 @@ func addTicketForService(s *CAS, t *testing.T) (*CASTicket, *CASService, *CASSer
 		AdminEmail: "noone@nowhere.com",
 	}
 
-	ticket, casErr := s.dbAdapter.AddTicketForService(ticket, mockService)
+	ticket, casErr := testCASServer.Db.AddTicketForService(ticket, mockService)
 	if casErr != nil {
 		t.Logf("Failed to add ticket to database for service [%s]", mockService.Name)
 		return nil, nil, casErr
@@ -95,7 +65,7 @@ func TestFindTicketByIdForService(t *testing.T) {
 		}
 
 		// Find the ticket that was just added
-		ticket, err := s.dbAdapter.FindTicketByIdForService(originalTicket.Id, service)
+		ticket, err := testCASServer.Db.FindTicketByIdForService(originalTicket.Id, service)
 		if err != nil {
 			t.Errorf("Failed to find ticket that should have been added: %v", originalTicket)
 			return
@@ -129,14 +99,14 @@ func TestRemoveTicketsForUser(t *testing.T) {
 		}
 
 		// Remove ticket for the user
-		err := s.dbAdapter.RemoveTicketsForUserWithService(ticket.UserEmail, service)
+		err := testCASServer.Db.RemoveTicketsForUserWithService(ticket.UserEmail, service)
 		if err != nil {
 			t.Errorf("Failed to remove tickets for user with service, err: %v", casErr)
 			return
 		}
 
 		// Attempt to find ticket (that should have been removed
-		ticket, err = s.dbAdapter.FindTicketByIdForService(ticket.Id, service)
+		ticket, err = testCASServer.Db.FindTicketByIdForService(ticket.Id, service)
 		if ticket != nil || err == nil {
 			t.Errorf("Found ticket (or did not recieve expected error) that should have been deleted: %v", ticket)
 			return
