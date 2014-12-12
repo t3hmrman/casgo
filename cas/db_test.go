@@ -46,4 +46,38 @@ var _ = Describe("Cas DB adapter", func() {
 		})
 	})
 
+	Describe("LoadJSONFixture function", func() {
+		It("should not error when loading JSON into the database", func() {
+			err := testCASServer.Db.LoadJSONFixture(
+				testCASServer.Db.GetDbName(),
+				testCASServer.Db.GetServicesTableName(),
+				"fixtures/services.json",
+			)
+			Expect(err).To(BeNil())
+		})
+
+		It("Should increase the number of items in the given table", func() {
+			err := testCASServer.Db.TeardownTable("services")
+			Expect(err).To(BeNil())
+
+			// Attempt to find a service in the fixture should fail
+			service, err := testCASServer.Db.FindServiceByUrl("localhost:9090/validateCASLogin")
+			Expect(err).ToNot(BeNil())
+			Expect(service).To(BeNil())
+
+			// Load the fixture
+			err = testCASServer.Db.LoadJSONFixture(
+				testCASServer.Db.GetDbName(),
+				testCASServer.Db.GetServicesTableName(),
+				"fixtures/services.json")
+			Expect(err).To(BeNil())
+
+			// Attempting to find a serive in the fixture shoudl pass now
+			service, err = testCASServer.Db.FindServiceByUrl("localhost:9090/validateCASLogin")
+			Expect(err).To(BeNil())
+			Expect(service).ToNot(BeNil())
+
+		})
+	})
+
 })
