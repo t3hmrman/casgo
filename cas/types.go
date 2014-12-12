@@ -137,10 +137,10 @@ type CASDBAdapter interface {
 	AddNewUser(string, string) (*User, *CASServerError)
 
 	// Property getter utility functions
-	getDbName() string
-	getTicketsTableName() string
-	getServicesTableName() string
-	getUsersTableName() string
+	GetDbName() string
+	GetTicketsTableName() string
+	GetServicesTableName() string
+	GetUsersTableName() string
 }
 
 // CAS Server
@@ -148,7 +148,7 @@ type CAS struct {
 	server      *http.Server
 	ServeMux    *http.ServeMux
 	Config      map[string]string
-	dbAdapter   CASDBAdapter
+	Db          CASDBAdapter
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 	LogLevel    int

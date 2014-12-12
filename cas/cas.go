@@ -66,11 +66,11 @@ func (c *CAS) init() {
 	c.Config = overrideConfigWithEnv(c.Config)
 
 	// Setup database adapter
-	dbAdapter, err := NewRethinkDBAdapter(c)
+	Db, err := NewRethinkDBAdapter(c)
 	if err != nil {
 		log.Fatal("Failed to setup database adapter")
 	}
-	c.dbAdapter = dbAdapter
+	c.Db = Db
 
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
@@ -91,12 +91,12 @@ func (c *CAS) init() {
 
 // Set up the underlying database
 func (c *CAS) SetupDb() {
-	c.dbAdapter.Setup()
+	c.Db.Setup()
 }
 
 // Teardown the underlying database
 func (c *CAS) TeardownDb() {
-	c.dbAdapter.Teardown()
+	c.Db.Teardown()
 }
 
 // Start the CAS server
@@ -135,7 +135,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Handle service being not set early
 	var casService *CASService
 	if len(serviceUrl) > 0 {
-		foundService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
+		foundService, err := c.Db.FindServiceByUrl(serviceUrl)
 		if err != nil {
 			context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
 			c.render.HTML(w, http.StatusNotFound, "login", context)
@@ -218,7 +218,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			}
 
 			// If service is set, redirect
-			ticket, err := c.dbAdapter.AddTicketForService(ticket, casService)
+			ticket, err := c.Db.AddTicketForService(ticket, casService)
 			if err != nil {
 				http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 				return
@@ -260,7 +260,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Get ticket for the service
-		ticket, err := c.dbAdapter.AddTicketForService(ssoTicket, casService)
+		ticket, err := c.Db.AddTicketForService(ssoTicket, casService)
 		if err != nil {
 			http.Error(w, "Failed to create new authentication ticket. Please contact administrator if problem persists.", 500)
 			return
@@ -310,7 +310,7 @@ func (c *CAS) saveUserEmailInSession(w http.ResponseWriter, req *http.Request, s
 func (c *CAS) validateUserCredentials(email string, password string) (*User, *CASServerError) {
 
 	// TODO get the user from the current database adapter
-	returnedUser, err := c.dbAdapter.FindUserByEmail(email)
+	returnedUser, err := c.Db.FindUserByEmail(email)
 	if err != nil {
 
 	}
@@ -356,7 +356,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create new user object
-	_, err = c.dbAdapter.AddNewUser(email, string(encryptedPassword))
+	_, err = c.Db.AddNewUser(email, string(encryptedPassword))
 	if err != nil {
 		context["Error"] = "An error occurred registering your user account. Please try again"
 		c.render.HTML(w, http.StatusOK, "register", context)
@@ -379,7 +379,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	// Get the CASService for this service URL
 	var casService *CASService
 	if len(serviceUrl) > 0 {
-		returnedService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
+		returnedService, err := c.Db.FindServiceByUrl(serviceUrl)
 		if err != nil {
 			context["Error"] = "Failed to find matching service with URL [" + serviceUrl + "]."
 			c.render.HTML(w, http.StatusNotFound, "login", context)
@@ -396,7 +396,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	err := c.dbAdapter.RemoveTicketsForUserWithService(userEmail.(string), casService)
+	err := c.Db.RemoveTicketsForUserWithService(userEmail.(string), casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
 	}
@@ -450,7 +450,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 
 	// Get the CASService for the given service URL
-	casService, err := c.dbAdapter.FindServiceByUrl(serviceUrl)
+	casService, err := c.Db.FindServiceByUrl(serviceUrl)
 	if err != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
@@ -462,7 +462,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Look up ticket
-	casTicket, err := c.dbAdapter.FindTicketByIdForService(ticket, casService)
+	casTicket, err := c.Db.FindTicketByIdForService(ticket, casService)
 	if err != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
