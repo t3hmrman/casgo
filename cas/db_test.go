@@ -97,4 +97,20 @@ var _ = Describe("Cas DB adapter", func() {
 		})
 	})
 
+	Describe("FindUserByEmail function", func() {
+		It("should find the user added by the loaded test fixture", func() {
+			// Create the user we're expecting to get back
+			expectedUser := &User{
+				Email:    "test@test.com",
+				Password: "thisisnotarealpassword",
+			}
+
+			// Attempt to get a user by name
+			returnedUser, casErr := testCASServer.Db.FindUserByEmail(expectedUser.Email)
+			Expect(casErr).To(BeNil())
+			Expect(returnedUser).ToNot(BeNil())
+			Expect(returnedUser).To(Equal(expectedUser))
+		})
+	})
+
 })

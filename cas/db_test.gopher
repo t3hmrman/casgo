@@ -4,37 +4,6 @@ import (
 	"testing"
 )
 
-// Test getting a user by email
-func TestFindUserByEmail(t *testing.T) {
-	fixturesToLoad := []StringTuple{
-		StringTuple{"users", "fixtures/users.json"},
-	}
-	dbTestHarness(t, fixturesToLoad, func(t *testing.T, s *CAS) {
-		// Create the user we're expecting to get back
-		expectedUser := &User{
-			Email:    "test@test.com",
-			Password: "thisisnotarealpassword",
-		}
-
-		// Attempt to get a user by name
-		returnedUser, casErr := s.dbAdapter.FindUserByEmail(expectedUser.Email)
-		if casErr != nil {
-			if casErr.err != nil {
-				t.Logf("Internal Error: %v", *casErr.err)
-			}
-			t.Errorf("Failed to find user that was expected to be present. (returnedUser: %v) err: %v", returnedUser, casErr)
-			return
-		}
-
-		// Ensure received data matches expected
-		if returnedUser != nil && !compareUsers(*returnedUser, *expectedUser) {
-			t.Errorf("Returned user %v is not equal to expected user %v", returnedUser, expectedUser)
-			return
-		}
-
-	})
-}
-
 // Test adding new user
 func TestAddNewUser(t *testing.T) {
 	fixturesToLoad := []StringTuple{
