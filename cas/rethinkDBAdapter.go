@@ -276,6 +276,31 @@ func (db *RethinkDBAdapter) Teardown() *CASServerError {
 	return nil
 }
 
+// Find a service by given URL (callback URL)
+func (db *RethinkDBAdapter) FindServiceByUrl(serviceUrl string) (*CASService, *CASServerError) {
+	// Get the first service with the given name
+	cursor, err := r.Db(db.dbName).
+		Table(db.servicesTableName).
+		Filter(map[string]string{"url": serviceUrl}).
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToLookupServiceByUrlError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Create user object from the returned data cursor
+	var returnedService *CASService
+	err = cursor.One(&returnedService)
+	if err != nil {
+		casErr := &FailedToLookupServiceByUrlError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	return returnedService, nil
+}
+
 // Find a user by email address ("username")
 func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerError) {
 	// Find the user
