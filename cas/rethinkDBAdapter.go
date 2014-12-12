@@ -4,15 +4,14 @@ import (
 	"errors"
 	"fmt"
 	r "github.com/dancannon/gorethink"
-	"log"
 	"os/exec"
 	"path/filepath"
 )
 
-func (db *RethinkDBAdapter) getDbName() string            { return db.dbName }
-func (db *RethinkDBAdapter) getTicketsTableName() string  { return db.ticketsTableName }
-func (db *RethinkDBAdapter) getServicesTableName() string { return db.servicesTableName }
-func (db *RethinkDBAdapter) getUsersTableName() string    { return db.usersTableName }
+func (db *RethinkDBAdapter) GetDbName() string            { return db.dbName }
+func (db *RethinkDBAdapter) GetTicketsTableName() string  { return db.ticketsTableName }
+func (db *RethinkDBAdapter) GetServicesTableName() string { return db.servicesTableName }
+func (db *RethinkDBAdapter) GetUsersTableName() string    { return db.usersTableName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -72,6 +71,11 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 		casError.err = &err
 		return casError
 	}
+
+	// Setup tables
+	db.SetupServicesTable()
+	db.SetupTicketsTable()
+	db.SetupUsersTable()
 
 	return nil
 }
@@ -254,8 +258,6 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 		casError.err = &err
 		return casError
 	}
-
-	log.Println("[DB IMPORT]:", string(output))
 
 	return nil
 }

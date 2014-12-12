@@ -1,11 +1,11 @@
 package cas
 
 import (
+	r "github.com/dancannon/gorethink"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
 	"net/http"
-	r "github.com/dancannon/gorethink"
 )
 
 // Small string tuple class implementation (see util.go)
@@ -57,7 +57,7 @@ type CASTicket struct {
 }
 
 // Compairson function for CASTickets
-func compareTickets(a, b CASTicket) bool {
+func CompareTickets(a, b CASTicket) bool {
 	if &a == &b || (a.Id == b.Id && a.UserEmail == b.UserEmail && a.WasSSO == b.WasSSO) {
 		return true
 	}
@@ -137,18 +137,18 @@ type CASDBAdapter interface {
 	AddNewUser(string, string) (*User, *CASServerError)
 
 	// Property getter utility functions
-	getDbName() string
-	getTicketsTableName() string
-	getServicesTableName() string
-	getUsersTableName() string
+	GetDbName() string
+	GetTicketsTableName() string
+	GetServicesTableName() string
+	GetUsersTableName() string
 }
 
 // CAS Server
 type CAS struct {
 	server      *http.Server
-	serveMux    *http.ServeMux
+	ServeMux    *http.ServeMux
 	Config      map[string]string
-	dbAdapter   CASDBAdapter
+	Db          CASDBAdapter
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 	LogLevel    int
