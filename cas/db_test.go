@@ -128,4 +128,26 @@ var _ = Describe("Cas DB adapter", func() {
 		})
 	})
 
+	Describe("AddTicketForService function", func() {
+		It("should successfully add a ticket for a given service", func() {
+			// Create a new CASTicket to store
+			ticket := &CASTicket{
+				UserEmail:      "test@test.com",
+				UserAttributes: map[string]string{},
+				WasSSO:         false,
+			}
+
+			mockService := &CASService{
+				Url:        "localhost:8080",
+				Name:       "mock_service",
+				AdminEmail: "noone@nowhere.com",
+			}
+
+			ticket, casErr := testCASServer.Db.AddTicketForService(ticket, mockService)
+			Expect(casErr).To(BeNil())
+			Expect(ticket).ToNot(BeNil())
+			Expect(ticket.Id).ToNot(BeEmpty())
+		})
+	})
+
 })

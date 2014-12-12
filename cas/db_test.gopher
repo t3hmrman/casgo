@@ -3,37 +3,6 @@ package cas
 import (
 	"testing"
 )
-// Utility function for creating a service and adding a ticket to it
-func addTicketForService(s *CAS, t *testing.T) (*CASTicket, *CASService, *CASServerError) {
-
-	// Create a new CASTicket to store
-	ticket := &CASTicket{
-		UserEmail:      "test@test.com",
-		UserAttributes: map[string]string{},
-		WasSSO:         false,
-	}
-
-	mockService := &CASService{
-		Url:        "localhost:8080",
-		Name:       "mock_service",
-		AdminEmail: "noone@nowhere.com",
-	}
-
-	ticket, casErr := testCASServer.Db.AddTicketForService(ticket, mockService)
-	if casErr != nil {
-		t.Logf("Failed to add ticket to database for service [%s]", mockService.Name)
-		return nil, nil, casErr
-	}
-
-	// Ensure that the ticket has been updated with the right ID
-	if ticket != nil && len(ticket.Id) == 0 {
-		t.Logf("Received ticket does not have a proper Id attribute set: %v", ticket)
-		return nil, nil, &FailedToCreateTicketError
-	}
-
-	return ticket, mockService, nil
-}
-
 // Test adding ticket for service
 func TestAddTicketForService(t *testing.T) {
 	fixturesToLoad := []StringTuple{
