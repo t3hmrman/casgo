@@ -180,4 +180,36 @@ var _ = Describe("Cas DB adapter", func() {
 		})
 	})
 
+	Describe("RemoveTicketsForUser function", func() {
+		It("It should remove added tickets", func() {
+			// Create a new CASTicket to store
+			ticket := &CASTicket{
+				UserEmail:      "test@test.com",
+				UserAttributes: map[string]string{},
+				WasSSO:         false,
+			}
+
+			// Create service to attach it to
+			mockService := &CASService{
+				Url:        "localhost:8080",
+				Name:       "mock_service",
+				AdminEmail: "noone@nowhere.com",
+			}
+
+			// Add ticket for the service
+			ticket, casErr := testCASServer.Db.AddTicketForService(ticket, mockService)
+			Expect(casErr).To(BeNil())
+			Expect(ticket).ToNot(BeNil())
+
+			// Remove ticket for the user
+			err := testCASServer.Db.RemoveTicketsForUserWithService(ticket.UserEmail, mockService)
+			Expect(err).To(BeNil())
+
+			// Attempt to find ticket (that should have been removed
+			foundTicket, err := testCASServer.Db.FindTicketByIdForService(ticket.Id, mockService)
+			Expect(err).ToNot(BeNil())
+			Expect(foundTicket).To(BeNil())
+		})
+	})
+
 })
