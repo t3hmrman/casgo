@@ -36,59 +36,6 @@ func TestDBSetup(t *testing.T) {
 	teardownDb(casServer, t)
 }
 
-// Test Database checking function
-func TestDbExists(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping DB-involved test (in short mode).")
-	}
-
-	s := setupTestCASServer(t)
-	setupDb(s, t)
-	defer teardownDb(s, t)
-
-	exists, casErr := s.dbAdapter.DbExists()
-	if casErr != nil {
-		if casErr.err != nil {
-			t.Logf("INTERNAL ERROR: %v", *casErr.err)
-		}
-		t.Errorf("Failed to check if database exists, err:", casErr)
-	}
-
-	if !exists {
-		t.Error("Database [%s] should have been set up by setupDb, but does not exist", s.dbAdapter.getDbName())
-	}
-}
-
-// Test DB property getters with default cas server
-func TestAdapterGetters(t *testing.T) {
-	s := setupTestCASServer(t)
-
-	actual, expected := s.dbAdapter.getDbName(), s.Config["dbName"]
-	if actual != expected {
-		t.Errorf("Expected GetDbName to return [%s], returned [%s]", actual, expected)
-		return
-	}
-
-	actual, expected = s.dbAdapter.getUsersTableName(), "users"
-	if actual != expected {
-		t.Errorf("Expected getUsersTableName to return [%s], returned [%s]", actual, expected)
-		return
-	}
-
-	actual, expected = s.dbAdapter.getServicesTableName(), "services"
-	if actual != expected {
-		t.Errorf("Expected getServicesTableName to return [%s], returned [%s]", actual, expected)
-		return
-	}
-
-	actual, expected = s.dbAdapter.getTicketsTableName(), "tickets"
-	if actual != expected {
-		t.Errorf("Expected getTicketsTableName to return [%s], returned [%s]", actual, expected)
-		return
-	}
-
-}
-
 // Test database import functionality (implemented LoadJSONFixture function should not fail to load fixtures)
 func TestLoadJSONFixture(t *testing.T) {
 	if testing.Short() {
