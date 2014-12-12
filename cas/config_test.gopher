@@ -10,36 +10,6 @@ import (
 	"testing"
 )
 
-// Ensure creating a test config produces non-nil
-func TestConfigCreation(t *testing.T) {
-	config, err := NewCASServerConfig(nil)
-	if config == nil || err != nil {
-		t.Error("Config with no options should be not fail, and should produce a non-nil pointer")
-	}
-}
-
-// Ensure defaults are valid
-func TestConfigDefaults(t *testing.T) {
-	config, err := NewCASServerConfig(nil)
-	if err != nil {
-		t.Errorf("Error creating config %s:", err)
-	}
-
-	// Get the absolute path of the config default directory
-	expectedTemplatesDirectory, err := filepath.Abs(CONFIG_DEFAULTS["templatesDirectory"])
-	if err != nil {
-		t.Errorf("Failed to retrieve absolute file path of templatesDirectory in test: %v", err)
-	}
-	CONFIG_DEFAULTS["templatesDirectory"] = expectedTemplatesDirectory
-
-	// Ensure all configurations are at defaults (or expected modified defaults)
-	for k, v := range config {
-		if config[k] != CONFIG_DEFAULTS[k] {
-			t.Errorf("Configuration key [%s] expected to be default (%s), was [%s]", k, CONFIG_DEFAULTS[k], v)
-		}
-	}
-}
-
 // Test User overriding in configuration setup
 func TestUserOverrideHost(t *testing.T) {
 
