@@ -1,7 +1,7 @@
 package cas_test
 
 import (
-	//. "github.com/t3hmrman/casgo/cas"
+	. "github.com/t3hmrman/casgo/cas"
 
 	//"github.com/PuerkitoBio/goquery"
 	. "github.com/onsi/ginkgo"
@@ -77,6 +77,23 @@ var _ = Describe("Cas DB adapter", func() {
 			Expect(err).To(BeNil())
 			Expect(service).ToNot(BeNil())
 
+		})
+	})
+
+	Describe("FindServiceByUrl function", func() {
+		It("should find the service added by the loaded test fixture", func() {
+			// Create the service we expect to find in the fixture
+			expectedService := &CASService{
+				Name:       "test_service",
+				Url:        "localhost:9090/validateCASLogin",
+				AdminEmail: "noone@nowhere.com",
+			}
+
+			// Attempt to get a service by name
+			returnedService, casErr := testCASServer.Db.FindServiceByUrl(expectedService.Url)
+			Expect(casErr).To(BeNil())
+			Expect(returnedService).ToNot(BeNil())
+			Expect(returnedService).To(Equal(expectedService))
 		})
 	})
 
