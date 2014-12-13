@@ -100,7 +100,7 @@ var _ = Describe("Cas DB adapter", func() {
 			// Create the user we're expecting to get back
 			expectedUser := &User{
 				Email:    "test@test.com",
-				Password: "thisisnotarealpassword",
+				Password: "$2a$10$P9Lm3oRPXdxW0BoBr2lsS.qZQweTqasC7Ru3mdkJn1pEW/nBRL/Dy",
 			}
 
 			// Attempt to get a user by name
