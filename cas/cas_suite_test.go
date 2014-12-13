@@ -3,8 +3,9 @@ package cas_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/t3hmrman/casgo/cas"
+	. "github.com/sclevine/agouti/dsl"
 
+	"github.com/t3hmrman/casgo/cas"
 	"log"
 	"net/http/httptest"
 	"testing"
@@ -46,6 +47,9 @@ var _ = BeforeSuite(func() {
 		testCASServer.Db.GetUsersTableName(),
 		"fixtures/users.json",
 	)
+
+	// Start PhantomJS for integration tests
+	StartPhantomJS()
 })
 
 var _ = AfterSuite(func() {

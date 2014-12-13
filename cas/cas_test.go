@@ -1,11 +1,9 @@
 package cas_test
 
 import (
-	. "github.com/t3hmrman/casgo/cas"
-
-	"github.com/PuerkitoBio/goquery"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/t3hmrman/casgo/cas"
 )
 
 var _ = Describe("Cas", func() {
@@ -41,40 +39,5 @@ var _ = Describe("Cas", func() {
 			actualAddress := server.GetAddr()
 			Expect(actualAddress).To(Equal(expectedAddress))
 		})
-	})
-
-	Describe("CAS Website", func() {
-		It("Should have an working index page", func() {
-			// Visit index endpoint
-			doc, err := goquery.NewDocument(testHTTPServer.URL)
-			Expect(err).To(BeNil())
-
-			// Ensure title of index page (endpoint "") is what we expect
-			expectedText, actualText := "CasGo", doc.Find("title").Text()
-			Expect(actualText).To(Equal(expectedText))
-		})
-
-		It("Should have a working login page", func() {
-			// Visit login endpoint
-			doc, err := goquery.NewDocument(testHTTPServer.URL + "/login")
-			Expect(err).To(BeNil())
-
-			// Ensure title of login page is (endpoint "/login") is what we expect
-			expectedText := testCASServer.Config["companyName"] + " CasGo Login"
-			actualText := doc.Find("title").Text()
-			Expect(actualText).To(Equal(expectedText))
-		})
-
-		It("Should have a working login register", func() {
-			// Visit login endpoint
-			doc, err := goquery.NewDocument(testHTTPServer.URL + "/register")
-			Expect(err).To(BeNil())
-
-			// Ensure title of register endpoint is what we expect
-			expectedText := testCASServer.Config["companyName"] + " CasGo Register"
-			actualText := doc.Find("title").Text()
-			Expect(actualText).To(Equal(expectedText))
-		})
-
 	})
 })
