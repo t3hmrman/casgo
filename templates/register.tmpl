@@ -44,8 +44,9 @@
 		{{if .Success}}
 		<h2> Thanks for registering!</h2>
 		<p>Now that you've registered, you can <a href="/login">Login</a>!</p>
-    {{else}}
-		<form action="/register" method="POST">
+		{{else}}
+
+		<form id="frmRegister" action="/register" method="POST">
 			<div>
 				<label for="email"></label>
 				<input id="email" name="email" type="email"  placeholder="Email Address"/>

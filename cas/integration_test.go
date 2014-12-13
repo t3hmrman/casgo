@@ -35,5 +35,27 @@ var _ = Feature("CASGO", func() {
 		page.Navigate(testHTTPServer.URL + "/register")
 		expectedTitle := testCASServer.Config["companyName"] + " CasGo Register"
 		Expect(page).To(HaveTitle(expectedTitle))
+		Expect(page.Find("#email")).To(BeFound())
+		Expect(page.Find("#password")).To(BeFound())
 	})
+
+	Scenario("Successfully register a new user", func() {
+		Step("Navigate to the register page", func() {
+			page.Navigate(testHTTPServer.URL + "/register")
+			Expect(page.Find("#email")).To(BeFound())
+			Expect(page.Find("#password")).To(BeFound())
+		})
+
+		Step("Fill out and submit the new user registration form", func() {
+			Fill(page.Find("#email"), "testuser@testemail.com")
+			Fill(page.Find("#password"), "testpassword")
+			Submit(page.Find("#frmRegister"))
+		})
+
+		Step("See success popup telling you that you've registered", func() {
+			Expect(page.Find("div.alert.success")).To(BeFound())
+			Expect(page.Find("div.alert.success")).To(HaveText("Registration successful!"))
+		})
+	})
+
 })

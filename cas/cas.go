@@ -356,14 +356,14 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create new user object
-	_, err = c.Db.AddNewUser(email, string(encryptedPassword))
-	if err != nil {
-		context["Error"] = "An error occurred registering your user account. Please try again"
-		c.render.HTML(w, http.StatusOK, "register", context)
+	_, casErr := c.Db.AddNewUser(email, string(encryptedPassword))
+	if casErr != nil {
+		context["Error"] = casErr.msg
+		c.render.HTML(w, http.StatusBadRequest, "register", context)
 		return
 	}
 
-	context["Success"] = "Successfully registered email and password"
+	context["Success"] = "Registration successful!"
 	c.render.HTML(w, http.StatusOK, "register", context)
 }
 
