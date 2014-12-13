@@ -87,7 +87,8 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
 	serveMux.HandleFunc("/", c.HandleIndex)
-	c.server.Handler = serveMux
+	c.ServeMux = serveMux
+	c.server.Handler = c.ServeMux
 }
 
 // Set up the underlying database

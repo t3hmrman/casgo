@@ -56,7 +56,7 @@ var _ = Feature("CASGO", func() {
 
 	Scenario("Login and log out a user created by the users.json fixture", func() {
 		StepLoginUser(INTEGRATION_TEST_DATA["fixtureUserEmail"], INTEGRATION_TEST_DATA["fixtureUserPassword"], page)
-		StepLogoutUser(INTEGRATION_TEST_DATA["fixtureUserEmail"], INTEGRATION_TEST_DATA["fixtureUserPassword"], page)
+		StepLogoutUser(page)
 	})
 
 })
@@ -104,5 +104,5 @@ var StepLoginUser func(string, string, Page) = func(email, password string, page
 var StepLogoutUser func(Page) = func(page Page) {
 		page.Navigate(testHTTPServer.URL + "/logout")
 		Expect(page.Find("div.alert.success")).To(BeFound())
-		Expect(page.Find("div.alert.success")).To(HaveText("Successful log in! Redirecting to services page..."))
+		Expect(page.Find("div.alert.success")).To(HaveText("Successfully logged out"))
 }
