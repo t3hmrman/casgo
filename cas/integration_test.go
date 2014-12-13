@@ -8,6 +8,13 @@ import (
 	. "github.com/sclevine/agouti/matchers"
 )
 
+var INTEGRATION_TEST_DATA map[string]string = map[string]string{
+	"newUserEmail":        "testuser@testemail.com",
+	"newUserPassword":     "testpassword",
+	"fixtureUserEmail":    "test@test.com",
+	"fixtureUserPassword": "test",
+}
+
 var _ = Feature("CASGO", func() {
 	var page Page
 
@@ -40,22 +47,51 @@ var _ = Feature("CASGO", func() {
 	})
 
 	Scenario("Successfully register a new user", func() {
-		Step("Navigate to the register page", func() {
-			page.Navigate(testHTTPServer.URL + "/register")
-			Expect(page.Find("#email")).To(BeFound())
-			Expect(page.Find("#password")).To(BeFound())
-		})
+		StepRegisterUser(INTEGRATION_TEST_DATA["newUserEmail"], INTEGRATION_TEST_DATA["newUserPassword"], page)
+	})
 
-		Step("Fill out and submit the new user registration form", func() {
-			Fill(page.Find("#email"), "testuser@testemail.com")
-			Fill(page.Find("#password"), "testpassword")
-			Submit(page.Find("#frmRegister"))
-		})
-
-		Step("See success popup telling you that you've registered", func() {
-			Expect(page.Find("div.alert.success")).To(BeFound())
-			Expect(page.Find("div.alert.success")).To(HaveText("Registration successful!"))
-		})
+	Scenario("Login with a user created by the users.json fixture", func() {
+		StepLoginUser(INTEGRATION_TEST_DATA["fixtureUserEmail"], INTEGRATION_TEST_DATA["fixtureUserPassword"], page)
 	})
 
 })
+
+// Reusable testing steps
+var StepRegisterUser func(string, string, Page) = func(email, password string, page Page) {
+	Step("Navigate to the register page", func() {
+		page.Navigate(testHTTPServer.URL + "/register")
+		Expect(page.Find("#email")).To(BeFound())
+		Expect(page.Find("#password")).To(BeFound())
+	})
+
+	Step("Fill out and submit the new user registration form", func() {
+		Fill(page.Find("#email"), email)
+		Fill(page.Find("#password"), password)
+		Submit(page.Find("#frmRegister"))
+	})
+
+	Step("See alert telling you that you've successfully registered", func() {
+		Expect(page.Find("div.alert.success")).To(BeFound())
+		Expect(page.Find("div.alert.success")).To(HaveText("Registration successful!"))
+	})
+}
+
+var StepLoginUser func(string, string, Page) = func(email, password string, page Page) {
+	Step("Navigate to the login page", func() {
+		page.Navigate(testHTTPServer.URL + "/login")
+		Expect(page.Find("#email")).To(BeFound())
+		Expect(page.Find("#password")).To(BeFound())
+	})
+
+	Step("Fill out and submit the user login form", func() {
+		Fill(page.Find("#email"), email)
+		Fill(page.Find("#password"), password)
+		Submit(page.Find("#frmLogin"))
+	})
+
+	Step("See alert telling you that you've successfully registered", func() {
+		Expect(page.Find("div.alert.success")).To(BeFound())
+		Expect(page.Find("div.alert.success")).To(HaveText("Successful log in! Redirecting to services page..."))
+	})
+
+}
