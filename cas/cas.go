@@ -20,7 +20,7 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 		Config:      nil,
 		render:      nil,
 		cookieStore: nil,
-		ServeMux:    http.NewServeMux(),
+		ServeMux:    nil,
 	}
 
 	// Create configuration with user overrides provided
@@ -75,18 +75,19 @@ func (c *CAS) init() {
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
 		Addr:    c.GetAddr(),
-		Handler: c.ServeMux,
 	}
 
 	// Setup handlers
-	c.ServeMux.HandleFunc("/login", c.HandleLogin)
-	c.ServeMux.HandleFunc("/logout", c.HandleLogout)
-	c.ServeMux.HandleFunc("/register", c.HandleRegister)
-	c.ServeMux.HandleFunc("/validate", c.HandleValidate)
-	c.ServeMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
-	c.ServeMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
-	c.ServeMux.HandleFunc("/proxy", c.HandleProxy)
-	c.ServeMux.HandleFunc("/", c.HandleIndex)
+	serveMux := http.NewServeMux()
+	serveMux.HandleFunc("/login", c.HandleLogin)
+	serveMux.HandleFunc("/logout", c.HandleLogout)
+	serveMux.HandleFunc("/register", c.HandleRegister)
+	serveMux.HandleFunc("/validate", c.HandleValidate)
+	serveMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
+	serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
+	serveMux.HandleFunc("/proxy", c.HandleProxy)
+	serveMux.HandleFunc("/", c.HandleIndex)
+	c.server.Handler = serveMux
 }
 
 // Set up the underlying database
@@ -388,28 +389,24 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 		casService = returnedService
 	}
 
-	// Attempt to find the session for the user, exit early if there is no session
-	userEmail := session.Values["currentUserEmail"]
-	if userEmail == nil {
-		http.Redirect(w, req, "/login", 301)
+	// Exit early if the user is not already logged in (in session), otherwise get their email
+	if _, ok := session.Values["currentUserEmail"]; !ok {
+		// Redirect if the person was never logged in
+		http.Redirect(w, req, "/login", 401)
 		return
 	}
+	userEmail := session.Values["currentUserEmail"]
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
 	err := c.Db.RemoveTicketsForUserWithService(userEmail.(string), casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
-	}
-
-	// Exit early if the user is not already logged in (in session)
-	if _, ok := session.Values["currentUserEmail"]; !ok {
-		// Redirect if the person was never logged in
-		http.Redirect(w, req, "/login", 301)
+		http.Redirect(w, req, "/login", 500)
 		return
 	}
 
 	// Remove current user information from session
-	c.removeCurrentUserFromSession(w, req, session)
+	err = c.removeCurrentUserFromSession(w, req, session)
 	if err != nil {
 		context["Error"] = "Failed to log out... Please contact your IT administrator"
 		c.render.HTML(w, err.httpCode, "login", context)
@@ -418,13 +415,6 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 
 	context["Success"] = "Successfully logged out"
 	c.render.HTML(w, http.StatusOK, "login", context)
-}
-
-// Remove the ticket granting tickets for a given user on a given service
-// If service is nil, for all services.
-func (c *CAS) removeTicketsForUser(userEmail string, service *CASService) *CASServerError {
-	// Something
-	return nil
 }
 
 // Remove all current user information from the session object
