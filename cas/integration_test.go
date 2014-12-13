@@ -36,5 +36,4 @@ var _ = Feature("CASGO", func() {
 		expectedTitle := testCASServer.Config["companyName"] + " CasGo Register"
 		Expect(page).To(HaveTitle(expectedTitle))
 	})
-
 })
