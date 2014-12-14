@@ -1,31 +1,70 @@
 package cas
 
-import "os"
+import (
+	"log"
+	"os"
+	"path/filepath"
+)
 
-// CAS server configuration object
-type CASServerConfig struct {
-	Host string
-	Port string
-	TemplatesDirectory string
-	CompanyName string
+var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
+	"host":               "CASGO_HOST",
+	"port":               "CASGO_PORT",
+	"dbHost":             "CASGO_DBHOST",
+	"dbName":             "CASGO_DBNAME",
+	"cookieSecret":       "CASGO_SECRET",
+	"templatesDirectory": "CASGO_TEMPLATES",
+	"companyName":        "CASGO_COMPNAME",
+	"authMethod":         "CASGO_DEFAULT_AUTH",
+	"logLevel":           "CASGO_LOG_LVL",
 }
 
-func (c *CASServerConfig) GetAddr() string {
-	return c.Host + ":" + c.Port
+var CONFIG_DEFAULTS map[string]string = map[string]string{
+	"host":               "0.0.0.0",
+	"port":               "9090",
+	"dbHost":             "localhost:28015",
+	"dbName":             "casgo",
+	"cookieSecret":       "secret-casgo-secret",
+	"templatesDirectory": "templates/",
+	"companyName":        "companyABC",
+	"authMethod":         "password",
+	"logLevel":           "WARN",
 }
 
-func (c *CASServerConfig) OverrideWithEnvVariables() {
-	// Environment overrides
-	if v := os.Getenv("HOST"); len(v) > 0 {
-		c.Host = os.Getenv("HOST")
+// Create default casgo configuration, with user overrides if any
+func NewCASServerConfig(userOverrides map[string]string) (map[string]string, error) {
+	// Set default config values
+	serverConfig := make(map[string]string)
+	for k, v := range CONFIG_DEFAULTS {
+		serverConfig[k] = v
 	}
-	if v := os.Getenv("PORT"); len(v) > 0 {
-		c.Port = os.Getenv("PORT")
+
+	// Override defaults with passed in map
+	for k, _ := range serverConfig {
+		if configVal, ok := userOverrides[k]; ok {
+			serverConfig[k] = configVal
+		}
 	}
-	if v := os.Getenv("TEMPLATES_DIR"); len(v) > 0 {
-		c.TemplatesDirectory = os.Getenv("TEMPLATES_DIR")
+
+	// Override config with what is stored in env
+	serverConfig = overrideConfigWithEnv(serverConfig)
+
+	// Update filepath with absolute path
+	absDirPath, err := filepath.Abs(serverConfig["templatesDirectory"])
+	if err != nil {
+		log.Printf("[WARNING] Failed to resolve absolute path for templatesDirectory %s", serverConfig["templatesDirectory"])
+	} else {
+		serverConfig["templatesDirectory"] = absDirPath
 	}
-	if v := os.Getenv("COMPANY_NAME"); len(v) > 0 {
-		c.CompanyName = os.Getenv("COMPANY_NAME")
+
+	return serverConfig, nil
+}
+
+// Override a configuration hash with values provided by ENV
+func overrideConfigWithEnv(config map[string]string) map[string]string {
+	for configKey, envVarName := range CONFIG_ENV_OVERRIDE_MAP {
+		if envValue := os.Getenv(envVarName); len(envValue) > 0 {
+			config[configKey] = envValue
+		}
 	}
+	return config
 }
