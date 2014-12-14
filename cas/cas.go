@@ -86,6 +86,7 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
 	serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
+	serveMux.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
 	serveMux.HandleFunc("/", c.HandleIndex)
 	c.ServeMux = serveMux
 	c.server.Handler = c.ServeMux
@@ -105,8 +106,6 @@ func (c *CAS) TeardownDb() {
 func (c *CAS) Start() {
 	// Start server
 	log.Fatal(c.server.ListenAndServe())
-
-	//TODO: Start the TLS endpoint as well
 }
 
 // Get the address of the server based on server configuration
