@@ -44,7 +44,21 @@
 		{{if .currentUserEmail}}
 
 		<h2>Signed in as user with email address {{.currentUserEmail}}</h2>
-		<h2>Redirecting to services page...</h2>
+		<h2>Redirecting in <span id="count">5</span> seconds...</h2>
+
+		<script type="text/javascript">
+		 setTimeout(function countdownFunc() {
+				 var countDOM = document.getElementById("count");
+				 var nextCount = parseInt(countDOM.innerHTML) - 1;
+				 console.log("nextCount:", nextCount);
+				 countDOM.innerHTML = nextCount;
+				 if (nextCount > 0) {
+						 setTimeout(countdownFunc, 1000);
+				 } else {
+						 location.href="/";
+				 }
+		 }, 1000)
+		</script>
 
 		{{else}}
 

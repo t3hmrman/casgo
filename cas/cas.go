@@ -116,7 +116,15 @@ func (c *CAS) GetAddr() string {
 
 // (Optional) Handles Index route
 func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
-	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.Config["companyName"]})
+	context := map[string]string{"CompanyName": c.Config["companyName"]}
+
+	session, _ := c.cookieStore.Get(req, "casgo-session")
+	if userEmail, ok := session.Values["currentUserEmail"]; ok {
+		context["userEmail"] = userEmail.(string)
+		c.render.HTML(w, http.StatusOK, "index", context)
+	} else {
+		c.render.HTML(w, http.StatusOK, "landing", context)
+	}
 }
 
 // Handle logins (functions as both a credential acceptor and requestor)
