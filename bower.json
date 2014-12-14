@@ -1,0 +1,28 @@
+{
+  "name": "casgo",
+  "version": "0.0.0",
+  "homepage": "https://github.com/t3hmrman/casgo",
+  "authors": [
+    "t3hmrman <t3hmrman@gmail.com>"
+  ],
+  "description": "Single Sign On drop in service",
+  "main": "main.go",
+  "keywords": [
+    "single",
+    "sign",
+    "on",
+    "sso",
+    "service",
+    "golang",
+    "go"
+  ],
+  "license": "ISC",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
