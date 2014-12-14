@@ -1,4 +1,8 @@
-/* global app */
+// Create App namespace on global scope
+window.App = {
+  VM: null,
+  Routes: null
+};
 
 // Routes for App
 window.App.Routes = {
