@@ -1,3 +1,51 @@
 body, html {
     width: 100%
 }
+
+#topnav {
+    background: #444;
+    color: white;
+    font-size: 20px;
+    padding-top: 20px;
+}
+
+#topnav ul {
+    list-style: hidden;
+    display: inline;
+}
+
+#topnav .brand {
+    margin-right: 2em;
+    margin-left: 2em;
+}
+
+#topnav ul li {
+    margin-left: 1em;
+    margin-right: 1em;
+    display: inline;
+}
+
+#topnav ul > li a {
+    text-decoration: none;
+    color: inherit;
+}
+
+#topnav > ul > li a:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.jumbotron {
+    padding: 4em 1em 4em 1em;
+}
+
+/* Utility classes */
+.centered-text {
+    text-align: center;
+}
+
+/* Skeleton overrides */
+.container {
+    width: 100%;
+    max-width: 100%;
+}

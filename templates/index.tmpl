@@ -10,13 +10,37 @@
 		<link rel="stylesheet" href="../public/style/css/casgo.css"/>
 
 		<script src="../public/vendor/director/build/director.min.js"></script>
+		<script type="text/javascript" src="../public/js/routes.js"></script>
 	</head>
 	<body>
-		<h1>CasGo Single Sign On Portal</h1>
-		<h2>Welcome to CasGO, {{.userEmail}}!</h2>
+      <div class="container">
+          <div id="topnav" class="row">
+              <!-- left side -->
+              <div class="eight column">
+                  <span class="brand">Casgo</span>
+                  <ul>
+                      <li><a href="#">Services</a></li>
+                      <li><a href="#">Permissions</a></li>
+                  </ul>
+              </div>
 
-		<script type="text/javascript" src="../public/vendor/knockout/dist/knockout.js"></script>
-		<script type="text/javascript" src="../public/js/casgo.js"></script>
-		<script type="text/javascript" src="../public/js/routes.js"></script>
+              <!-- Right side -->
+              <div class="four column">
+                  <ul>
+                      <li><i class="fa fa-user"></i> {{.userEmail}}</li>
+                  </ul>
+              </div>
+          </div>
+
+          <div class="row jumbotron">
+              <div class="one column"></div>
+              <div class="ten column centered-text">
+		              <h2>CasGo Single Sign On Portal</h2>
+              </div>
+              <div class="one column"></div>
+          </div>
+      </div>
+		  <script type="text/javascript" src="../public/vendor/knockout/dist/knockout.js"></script>
+		  <script type="text/javascript" src="../public/js/casgo.js"></script>
 	</body>
 </html>
