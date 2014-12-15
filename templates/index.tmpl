@@ -1,46 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<title>CasGo</title>
+	  <head>
+		    <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+		    <title>CasGo</title>
 
-		<link rel="stylesheet" href="../public/vendor/skeleton/css/normalize.css"/>
-		<link rel="stylesheet" href="../public/vendor/skeleton/css/skeleton.css"/>
-		<link rel="stylesheet" href="../public/vendor/font-awesome/css/font-awesome.min.css"/>
-		<link rel="stylesheet" href="../public/style/css/casgo.css"/>
+		    <link rel="stylesheet" href="../public/vendor/pure/pure-min.css"/>
+		    <link rel="stylesheet" href="../public/vendor/pure/grids-responsive-min.css"/>
+		    <link rel="stylesheet" href="../public/vendor/pure/buttons-min.css"/>
+		    <link rel="stylesheet" href="../public/vendor/font-awesome/css/font-awesome.min.css"/>
+		    <link rel="stylesheet" href="../public/style/css/casgo.css"/>
 
-		<script src="../public/vendor/director/build/director.min.js"></script>
-		<script type="text/javascript" src="../public/js/routes.js"></script>
-	</head>
-	<body>
-      <div class="container">
-          <div id="topnav" class="row">
-              <!-- left side -->
-              <div class="eight column">
-                  <span class="brand">Casgo</span>
-                  <ul>
-                      <li><a href="#">Services</a></li>
-                      <li><a href="#">Permissions</a></li>
-                  </ul>
-              </div>
+		    <script src="../public/vendor/director/build/director.min.js"></script>
+		    <script type="text/javascript" src="../public/js/routes.js"></script>
+	  </head>
+	  <body>
+        <div id="topnav" class="pure-g">
+            <!-- left side -->
+            <div class="pure-u-1 pure-u-sm-2-3 pure-u-md-3-5 pure-u-lg-4-5 pure-u-xl-4-5">
+                <span class="brand">CASGO</span>
+                <ul>
+                    <li><a href="#">Services</a></li>
+                </ul>
+            </div>
 
-              <!-- Right side -->
-              <div class="four column">
-                  <ul>
-                      <li><i class="fa fa-user"></i> {{.userEmail}}</li>
-                  </ul>
-              </div>
-          </div>
+            <!-- Right side -->
+            <div class="pure-u-1 pure-u-sm-1-3 pure-u-md-2-5 pure-u-lg-1-5 pure-u-xl-1-5">
+                <ul>
+                    <li><i class="fa fa-user"></i> {{.userEmail}}</li>
+                </ul>
+            </div>
+        </div>
 
-          <div class="row jumbotron">
-              <div class="one column"></div>
-              <div class="ten column centered-text">
-		              <h2>CasGo Single Sign On Portal</h2>
-              </div>
-              <div class="one column"></div>
-          </div>
-      </div>
-		  <script type="text/javascript" src="../public/vendor/knockout/dist/knockout.js"></script>
-		  <script type="text/javascript" src="../public/js/casgo.js"></script>
-	</body>
+        <div class="pure-g jumbotron">
+            <div class="pure-u-1-5"></div>
+            <div class="pure-u-3-5 centered-text">
+		            <h2>CasGo Single Sign On Portal</h2>
+            </div>
+            <div class="pure-u-1-5"></div>
+        </div>
+
+        <!-- Scripts -->
+		    <script type="text/javascript" src="../public/vendor/knockout/dist/knockout.js"></script>
+		    <script type="text/javascript" src="../public/js/casgo.js"></script>
+	  </body>
 </html>
