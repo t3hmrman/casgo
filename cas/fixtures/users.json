@@ -1,6 +1,11 @@
 [
-	{
-		"email": "test@test.com",
+  {
+    "email": "test@test.com",
     "password": "$2a$10$P9Lm3oRPXdxW0BoBr2lsS.qZQweTqasC7Ru3mdkJn1pEW/nBRL/Dy"
-	}
+  }
+  {
+    "email": "admin@test.com",
+    "password": "$2a$10$P9Lm3oRPXdxW0BoBr2lsS.qZQweTqasC7Ru3mdkJn1pEW/nBRL/Dy",
+    "isAdmin": true
+  }
 ]
