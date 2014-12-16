@@ -1,3 +1,10 @@
+/*
+ * Styles for CASGO
+ *
+ * UI colors (based off of http://flatuicolors.com/)
+ * Emerald (green): #2ecc71
+*/
+
 body, html {
   width: 100%;
 }
@@ -23,6 +30,7 @@ body, html {
   margin-right: 1em;
   display: inline-block;
 }
+.topnav-list-item.active { border-bottom: .3em solid #2ecc71; }
 
 .topnav-list-item-link {
   text-decoration: none;

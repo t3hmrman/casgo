@@ -20,16 +20,22 @@
             <div class="pure-u-1 pure-u-sm-2-3 pure-u-md-2-3 pure-u-lg-4-5 pure-u-xl-4-5">
                 <span class="topnav-brand">CASGO</span>
                 <ul class="topnav-list">
-                    <li class="topnav-list-item">
-                        <a class="topnav-list-item-link" href="#/services">Services</a>
+                    <li class="topnav-list-item active">
+                        <a class="topnav-list-item-link" href="#/services">
+                            <i class="fa fa-cloud"></i> Services
+                        </a>
                     </li>
                     {{if .userIsAdmin}}
                     <li class="topnav-list-item">
-                        <a class="topnav-list-item-link" href="#/admin">Manage</a>
+                        <a class="topnav-list-item-link" href="#/admin">
+                            <i class="fa fa-cogs"></i> Manage
+                        </a>
                         <!-- drop down with services, users, the basic /admin endpoint -->
                     </li>
                     <li class="topnav-list-item">
-                        <a class="topnav-list-item-link" href="#/statistics">Statistics</a>
+                        <a class="topnav-list-item-link" href="#/statistics">
+                            <i class="fa fa-area-chart"></i> Statistics
+                        </a>
                     </li>
                     {{end}}
                 </ul>
