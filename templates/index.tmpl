@@ -10,9 +10,6 @@
         <link rel="stylesheet" href="../public/vendor/pure/buttons-min.css"/>
         <link rel="stylesheet" href="../public/vendor/font-awesome/css/font-awesome.min.css"/>
         <link rel="stylesheet" href="../public/style/css/casgo.css"/>
-
-        <script src="../public/vendor/director/build/director.min.js"></script>
-        <script type="text/javascript" src="../public/js/routes.js"></script>
     </head>
     <body>
         <div class="pure-g topnav">
@@ -27,7 +24,7 @@
                     </li>
                     {{if .userIsAdmin}}
                     <li class="topnav-list-item">
-                        <a class="topnav-list-item-link" href="#/admin">
+                        <a class="topnav-list-item-link" href="#/manage">
                             <i class="fa fa-cogs"></i> Manage
                         </a>
                         <!-- drop down with services, users, the basic /admin endpoint -->
@@ -71,7 +68,9 @@
         </div>
 
         <!-- Scripts -->
+        <script src="../public/vendor/director/build/director.min.js"></script>
         <script type="text/javascript" src="../public/vendor/knockout/dist/knockout.js"></script>
         <script type="text/javascript" src="../public/js/casgo.js"></script>
+        <script type="text/javascript" src="../public/js/routes.js"></script>
     </body>
 </html>
