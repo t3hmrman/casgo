@@ -10,9 +10,10 @@ body, html {
 }
 
 .topnav {
-  background: #444;
+  background: #333;
   color: white;
   font-size: 20px;
+  height: 4em;
 }
 
 .topnav-list {
@@ -26,11 +27,15 @@ body, html {
 .topnav-brand {  margin-left: 1em; }
 
 .topnav-list-item {
-  margin-left: 1em;
-  margin-right: 1em;
+  padding-left: 1em;
+  padding-right: 1em;
   display: inline-block;
+  color: #BBB;
 }
-.topnav-list-item.active { border-bottom: .3em solid #2ecc71; }
+.topnav-list-item.active {
+  color: white;
+  background-color: #2ecc71;
+}
 
 .topnav-list-item-link {
   text-decoration: none;
@@ -39,8 +44,7 @@ body, html {
 
 .topnav-list-item-link:hover {
   text-decoration: none;
-  border-bottom: dashed white 2px;
-  color: inherit;
+  color: white;
 }
 
 .jumbotron { padding: 4em 1em 4em 1em; }
