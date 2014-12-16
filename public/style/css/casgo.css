@@ -6,13 +6,14 @@ body, html {
   background: #444;
   color: white;
   font-size: 20px;
-  padding-top: 1.5em;
-  padding-bottom: 1.5em;
 }
 
 .topnav-list {
   list-style: hidden;
-  display: inline;
+  display: inline-block;
+  line-height: 4em;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .topnav-brand {  margin-left: 1em; }
@@ -20,7 +21,7 @@ body, html {
 .topnav-list-item {
   margin-left: 1em;
   margin-right: 1em;
-  display: inline;
+  display: inline-block;
 }
 
 .topnav-list-item-link {
@@ -39,3 +40,4 @@ body, html {
 /* Utility classes */
 .centered-text { text-align: center; }
 
+.medium-font { font-size: medium; }
