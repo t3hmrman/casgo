@@ -1,86 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf8">
-		<title>{{.CompanyName}} CasGo Login</title>
+	  <head>
+		    <meta charset="utf8">
+		    <title>{{.CompanyName}} CasGo Login</title>
 
-		<!-- Inline styles -->
-		<style>
-		 .alerts-container {
-			 margin-top: 1em;
-			 margin-bottom: 1em;
-		 }
-		 .alert {
-			 padding: 1em;
-			 color: white;
-		 }
-		 .alert.error {
-			 background-color: #FF6961;
-		 }
-		 .alert.success {
-			 background-color: #77DD77;
-		 }
+		    <!-- Inline styles -->
+		    <style>
+		     .alerts-container {
+			       margin-top: 1em;
+			       margin-bottom: 1em;
+		     }
+		     .alert {
+			       padding: 1em;
+			       color: white;
+		     }
+		     .alert.error {
+			       background-color: #FF6961;
+		     }
+		     .alert.success {
+			       background-color: #77DD77;
+		     }
 
-		</style>
+		    </style>
 
-	</head>
-	<body>
-		<h1>{{.CompanyName}} - Login</h1>
+	  </head>
+	  <body>
+		    <h1>{{.CompanyName}} - Login</h1>
 
-		<div class="alerts-container">
-			{{if .Error}}
-			<div class="alert error">
-				{{.Error}}
-			</div>
-			{{end}}
+		    <div class="alerts-container">
+			      {{if .Error}}
+			      <div class="alert error">
+				        {{.Error}}
+			      </div>
+			      {{end}}
 
-			{{if .Success}}
-			<div class="alert success">
-				{{.Success}}
-			</div>
-			{{end}}
-		</div>
+			      {{if .Success}}
+			      <div class="alert success">
+				        {{.Success}}
+			      </div>
+			      {{end}}
+		    </div>
 
-		{{if .currentUserEmail}}
+		    {{if .userEmail}}
 
-		<h2>Signed in as user with email address {{.currentUserEmail}}</h2>
-		<h2>Redirecting in <span id="count">5</span> seconds...</h2>
+		    <h2>Signed in as user with email address {{.userEmail}}</h2>
+		    <h2>Redirecting in <span id="count">3</span> seconds...</h2>
 
-		<script type="text/javascript">
-     // Countdown redirect
-		 setTimeout(function countdownFunc() {
-				 var countDOM = document.getElementById("count");
-				 var nextCount = parseInt(countDOM.innerHTML) - 1;
-				 console.log("nextCount:", nextCount);
-				 countDOM.innerHTML = nextCount;
-				 if (nextCount > 0) {
-						 setTimeout(countdownFunc, 1000);
-				 } else {
-						 location.href="/";
-				 }
-		 }, 1000)
-		</script>
+		    <script type="text/javascript">
+         // Countdown redirect
+		     setTimeout(function countdownFunc() {
+				     var countDOM = document.getElementById("count");
+				     var nextCount = parseInt(countDOM.innerHTML) - 1;
+				     console.log("nextCount:", nextCount);
+				     countDOM.innerHTML = nextCount;
+				     if (nextCount > 0) {
+						     setTimeout(countdownFunc, 1000);
+				     } else {
+						     location.href="/";
+				     }
+		     }, 1000)
+		    </script>
 
-		{{else}}
+		    {{else}}
 
-		<form id="frmLogin" action="/login" method="POST">
-			<div>
-				<label for="email"></label>
-				<input id="email" name="email" type="email"  placeholder="Email Address"/>
-			</div>
+		    <form id="frmLogin" action="/login" method="POST">
+			      <div>
+				        <label for="email"></label>
+				        <input id="email" name="email" type="email"  placeholder="Email Address"/>
+			      </div>
 
-			<div>
-				<label for="password"></label>
-				<input id="password" name="password" type="password"  placeholder="Password"/>
-				<div>
+			      <div>
+				        <label for="password"></label>
+				        <input id="password" name="password" type="password"  placeholder="Password"/>
+				        <div>
 
-					<div>
-						<button type="submit">Login</button>
-						<p>Don't have a username/password? Maybe you should <a href="/register">register</a>?</p>
-					</div>
-		</form>
+					          <div>
+						            <button type="submit">Login</button>
+						            <p>Don't have a username/password? Maybe you should <a href="/register">register</a>?</p>
+					          </div>
+		    </form>
 
-		{{end}}
+		    {{end}}
 
-	</body>
+	  </body>
 </html>
