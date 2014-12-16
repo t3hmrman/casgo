@@ -7,13 +7,15 @@
 
 body, html {
   width: 100%;
+  height: 100%;
 }
 
 .topnav {
+  float: left;
   background: #333;
   color: white;
   font-size: 20px;
-  height: 4em;
+  width:100%;
 }
 
 .topnav-list {
@@ -49,7 +51,33 @@ body, html {
 
 .jumbotron { padding: 4em 1em 4em 1em; }
 
+.content-wrap {
+  height: 100%;
+  padding-top: 4em;
+  margin-bottom: -5em;
+}
+
+.footer {
+  height: 5em;
+}
+
 /* Utility classes */
 .centered-text { text-align: center; }
 
 .medium-font { font-size: medium; }
+
+.light-black {
+  padding-top: 1em;
+  background-color: #333;
+  color: white;
+}
+
+a.plain {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.plain:hover {
+  text-decoration: none
+  border-bottom: dashed 1px;
+}
