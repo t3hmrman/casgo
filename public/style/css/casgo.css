@@ -2,7 +2,7 @@ body, html {
   width: 100%;
 }
 
-#topnav {
+.topnav {
   background: #444;
   color: white;
   font-size: 20px;
@@ -10,25 +10,25 @@ body, html {
   padding-bottom: 1.5em;
 }
 
-#topnav ul {
+.topnav-list {
   list-style: hidden;
   display: inline;
 }
 
-#topnav span.brand {  margin-left: 1em; }
+.topnav-brand {  margin-left: 1em; }
 
-#topnav ul li {
+.topnav-list-item {
   margin-left: 1em;
   margin-right: 1em;
   display: inline;
 }
 
-#topnav ul > li a {
+.topnav-list-item-link {
   text-decoration: none;
   color: inherit;
 }
 
-#topnav li a:hover {
+.topnav-list-item-link:hover {
   text-decoration: none;
   border-bottom: dashed white 2px;
   color: inherit;
