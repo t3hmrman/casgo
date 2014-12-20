@@ -10,13 +10,13 @@
             </li>
             {{if .userIsAdmin}}
             <li class="topnav-list-item" data-bind="css: {active: currentRouteIs('/manage')}">
-                <a class="topnav-list-item-link" href="#/manage">
+                <a class="topnav-list-item-link white-on-hover" href="#/manage">
                     <i class="fa fa-cogs"></i> Manage
                 </a>
                 <!-- drop down with services, users, the basic /admin endpoint -->
             </li>
             <li class="topnav-list-item" data-bind="css: {active: currentRouteIs('/statistics')}">
-                <a class="topnav-list-item-link" href="#/statistics">
+                <a class="topnav-list-item-link white-on-hover" href="#/statistics">
                     <i class="fa fa-area-chart"></i> Statistics
                 </a>
             </li>
@@ -35,7 +35,7 @@
             </li>
             <li class="topnav-list-item medium-font">
                 <div>
-                    <a class="plain" href="/logout"><i class="fa fa-sign-out"></i> Logout</a>
+                    <a class="plain white-on-hover" href="/logout"><i class="fa fa-sign-out"></i> Logout</a>
                 </div>
                 <!-- drop down with option to logout -->
             </li>
