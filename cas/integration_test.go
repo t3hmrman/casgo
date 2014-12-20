@@ -34,14 +34,14 @@ var _ = Feature("CASGO", func() {
 
 	Scenario("Find the expected title on the login page", func() {
 		page.Navigate(testHTTPServer.URL + "/login")
-		expectedTitle := testCASServer.Config["companyName"] + " CasGo Login"
-		Expect(page).To(HaveTitle(expectedTitle))
+		expectedTitle := testCASServer.Config["companyName"] + " - Login"
+		Expect(page.Find("#page-title")).To(HaveText(expectedTitle))
 	})
 
 	Scenario("Find the expected title on the register page", func() {
 		page.Navigate(testHTTPServer.URL + "/register")
-		expectedTitle := testCASServer.Config["companyName"] + " CasGo Register"
-		Expect(page).To(HaveTitle(expectedTitle))
+		expectedTitle := testCASServer.Config["companyName"] + " - Register"
+		Expect(page.Find("#page-title")).To(HaveText(expectedTitle))
 		Expect(page.Find("#email")).To(BeFound())
 		Expect(page.Find("#password")).To(BeFound())
 	})

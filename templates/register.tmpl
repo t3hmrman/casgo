@@ -1,67 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf8">
-		<title>{{.CompanyName}} CasGo Register</title>
+<div class="landing-wrap full-height theme-background">
+    <div class="pure-g">
+        <div class="pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+        <div class="landing pure-u-xs-1 pure-u-sm-1 pure-u-md-3-5 pure-u-lg-3-5 pure-u-xl-3-5">
+            <div class="jumbotron">
+                <h1 id="page-title">{{.CompanyName}} - Register</h1>
+                <div class="alerts-container">
+                    {{if .Error}}
+                    <div class="alert error">
+                        {{.Error}}
+                    </div>
+                    {{end}}
 
-		<!-- Inline styles -->
-		<style>
-		 .alerts-container {
-			 margin-top: 1em;
-			 margin-bottom: 1em;
-		 }
-		 .alert {
-			 padding: 1em;
-			 color: white;
-		 }
-		 .alert.error {
-			 background-color: #FF6961;
-		 }
-		 .alert.success {
-			 background-color: #77DD77;
-		 }
+                    {{if .Success}}
+                    <div class="alert success">
+                        {{.Success}}
+                    </div>
+                    {{end}}
+                </div>
 
-		</style>
+                {{if .Success}}
+                <h2> Thanks for registering!</h2>
+                <p>Now that you've registered, you can <a href="/login">Login</a>!</p>
+                {{else}}
+                <div class="pure-g">
+                    <div class="pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+                    <div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-3-5 pure-u-lg-3-5 pure-u-xl-3-5 left-aligned-text">
+                        <form id="frmRegister" class="pure-form pure-form-stacked" action="/register" method="POST">
+                            <fieldset>
+                                <label for="email">Email</label>
+                                <input id="email" name="email" type="email"  placeholder="Email Address"/>
 
-	</head>
-	<body>
-		<h1>{{.CompanyName}} - Register</h1>
+                                <label for="password">Password</label>
+                                <input id="password" name="password" type="password"  placeholder="Password"/>
 
-		<div class="alerts-container">
-			{{if .Error}}
-			<div class="alert error">
-				{{.Error}}
-			</div>
-			{{end}}
+                                <br/>
+                                <button class="pure-button pure-button-primary" type="submit">
+                                    Register <i class="fa fa-plus"></i>
+                                </button>
+                        </form>
+                        <p>Already have an account? Go ahead and <strong><a class="plain" href="/login">Login</a></strong>?</p>
+                    </div>
+                    <div class="pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+                </div>
+                {{end}}
 
-			{{if .Success}}
-			<div class="alert success">
-				{{.Success}}
-			</div>
-			{{end}}
-		</div>
-
-		{{if .Success}}
-		<h2> Thanks for registering!</h2>
-		<p>Now that you've registered, you can <a href="/login">Login</a>!</p>
-		{{else}}
-
-		<form id="frmRegister" action="/register" method="POST">
-			<div>
-				<label for="email"></label>
-				<input id="email" name="email" type="email"  placeholder="Email Address"/>
-			</div>
-
-			<div>
-				<label for="password"></label>
-				<input id="password" name="password" type="password"  placeholder="Password"/>
-				<div>
-
-					<div>
-						<button type="submit">Register</button>
-					</div>
-		</form>
-		{{end}}
-
-	</body>
-</html>
+            </div> <!-- /.jumbotron -->
+            <div class="pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+        </div>
+    </div>
+</div>
