@@ -29,6 +29,7 @@ body, html {
 .topnav-brand {  margin-left: 1em; }
 
 .topnav-list-item {
+  line-height: 5em;
   padding-left: 1em;
   padding-right: 1em;
   display: inline-block;
