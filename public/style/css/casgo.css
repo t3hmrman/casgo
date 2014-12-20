@@ -1,0 +1,150 @@
+/*
+ * Styles for CASGO
+ *
+ * UI colors (based off of http://flatuicolors.com/)
+ * Emerald (green): #2ecc71
+ */
+
+body, html {
+  width: 100%;
+  height: 100%;
+}
+
+.topnav {
+  float: left;
+  background: #333;
+  color: white;
+  font-size: 20px;
+  width:100%;
+}
+
+.topnav-list {
+  list-style: hidden;
+  display: inline-block;
+  line-height: 4em;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.topnav-brand {  margin-left: 1em; }
+
+.topnav-list-item {
+  line-height: 5em;
+  padding-left: 1em;
+  padding-right: 1em;
+  display: inline-block;
+  color: #BBB;
+}
+
+.topnav-list-item.active {
+  color: white;
+  background-color: #2ecc71;
+}
+
+.topnav-list-item-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.topnav-list-item-link:hover {
+  text-decoration: none;
+  color: white;
+}
+
+.jumbotron { padding: 4em 1em 4em 1em; }
+
+.theme-background {
+  background: url("../../images/footer_lodyas/footer_lodyas.png") #333 repeat fixed;
+  color: white;
+}
+
+.landing {
+  padding-top: 5em;
+  text-align: center;
+}
+
+.landing > .jumbotron {
+  background-color: rgba(51, 51, 51, .3);
+  text-shadow: black 1px 1px;
+}
+
+#btnLandingLogin {
+  color: black;
+  text-shadow: none;
+}
+
+.content-wrap {
+  height: 100%;
+  padding-top: 4em;
+  margin-bottom: -5em;
+}
+
+.footer {
+  height: 5em;
+}
+
+.alerts-container {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+.alert {
+  padding: 1em;
+  color: white;
+}
+.alert.error {
+  background-color: #FF6961;
+}
+.alert.success {
+  background-color: #77DD77;
+}
+
+/* Utility classes */
+.centered-text { text-align: center; }
+.left-aligned-text { text-align: left; }
+
+.medium-font { font-size: medium; }
+
+.full-height { height: 100%; }
+
+.light-black {
+  padding-top: 1em;
+  background-color: #333;
+  color: white;
+}
+
+a.plain {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.plain:hover {
+  text-decoration: none
+  border-bottom: dashed 1px;
+}
+
+/* Pure overrides */
+
+.button-success,
+.button-error,
+.button-warning,
+.button-secondary {
+  color: white;
+  border-radius: 4px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.button-success {
+  background: rgb(28, 184, 65); /* this is a green */
+}
+
+.button-error {
+  background: rgb(202, 60, 60); /* this is a maroon */
+}
+
+.button-warning {
+  background: rgb(223, 117, 20); /* this is an orange */
+}
+
+.button-secondary {
+  background: rgb(66, 184, 221); /* this is a light blue */
+}
