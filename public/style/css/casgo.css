@@ -3,7 +3,7 @@
  *
  * UI colors (based off of http://flatuicolors.com/)
  * Emerald (green): #2ecc71
-*/
+ */
 
 body, html {
   width: 100%;
@@ -35,6 +35,7 @@ body, html {
   display: inline-block;
   color: #BBB;
 }
+
 .topnav-list-item.active {
   color: white;
   background-color: #2ecc71;
@@ -52,6 +53,26 @@ body, html {
 
 .jumbotron { padding: 4em 1em 4em 1em; }
 
+.theme-background {
+  background: url("../../images/footer_lodyas/footer_lodyas.png") #333 repeat fixed;
+  color: white;
+}
+
+.landing {
+  padding-top: 5em;
+  text-align: center;
+}
+
+.landing > .jumbotron {
+  background-color: rgba(51, 51, 51, .3);
+  text-shadow: black 1px 1px;
+}
+
+#btnLandingLogin {
+  color: black;
+  text-shadow: none;
+}
+
 .content-wrap {
   height: 100%;
   padding-top: 4em;
@@ -62,10 +83,29 @@ body, html {
   height: 5em;
 }
 
+.alerts-container {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+.alert {
+  padding: 1em;
+  color: white;
+}
+.alert.error {
+  background-color: #FF6961;
+}
+.alert.success {
+  background-color: #77DD77;
+}
+
+
+
 /* Utility classes */
 .centered-text { text-align: center; }
 
 .medium-font { font-size: medium; }
+
+.full-height { height: 100%; }
 
 .light-black {
   padding-top: 1em;

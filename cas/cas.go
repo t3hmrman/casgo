@@ -31,7 +31,10 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 	cas.Config = config
 
 	// Setup rendering function
-	render := render.New(render.Options{Directory: cas.Config["templatesDirectory"]})
+	render := render.New(render.Options{
+		Directory: cas.Config["templatesDirectory"],
+		Layout: "layout",
+	})
 	cas.render = render
 
 	// Cookie store setup
