@@ -81,7 +81,10 @@ body, html {
 
 .services-list-item {
   box-shadow: 1px 3px 3px #333;
-  min-height: 10em;
+  min-height: 200px;
+  font-size: xx-large;
+  border-radius: 1em;
+  border: solid 3px #555;
 }
 
 .footer {
