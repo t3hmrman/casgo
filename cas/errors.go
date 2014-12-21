@@ -41,7 +41,7 @@ var (
 		casErrCode: 104,
 	}
 	FailedToFindUserError = CASServerError{
-		msg:        "Failed to find matching user",
+		msg:        "Failed to find matching email/password combination",
 		httpCode:   http.StatusBadRequest,
 		casErrCode: 105,
 	}

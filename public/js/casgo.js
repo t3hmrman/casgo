@@ -62,8 +62,6 @@ function CasgoViewModel() {
   self.ManageServicesCtrl = {services: []};
   self.StatisticsCtrl = {};
 
-
-
 }
 
 // Attach VM

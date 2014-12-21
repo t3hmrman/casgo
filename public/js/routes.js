@@ -47,6 +47,6 @@ window.App.Router = Router(window.App.Routes);
 window.App.Router.init();
 
 // Go to default route
-if (location.hash == '' && 'default' in window.App.Routes) {
-  window.App.VM.gotoRoute('#' + window.App.Routes.default);
+if (location.hash === '' && _.has(window.App.Routes, 'default')) {
+  window.App.VM.gotoRoute(window.App.Routes.default);
 }
