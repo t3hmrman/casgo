@@ -79,6 +79,11 @@ body, html {
   margin-bottom: -5em;
 }
 
+.services-list-item {
+  box-shadow: 1px 3px 3px #333;
+  min-height: 10em;
+}
+
 .footer {
   height: 5em;
 }
