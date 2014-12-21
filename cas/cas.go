@@ -1,8 +1,8 @@
 package cas
 
 import (
-	"encoding/gob"
 	"code.google.com/p/go.crypto/bcrypt"
+	"encoding/gob"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"

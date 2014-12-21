@@ -14,7 +14,7 @@ func (c *CAS) handleListServices(w http.ResponseWriter, req *http.Request) {
 	session, err := c.cookieStore.Get(req, "casgo-session")
 	if err != nil {
 		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
-			"status": "error",
+			"status":  "error",
 			"message": "Failed to retrieve services for logged in user. Please ensure you are logged in.",
 		})
 		return
@@ -24,15 +24,15 @@ func (c *CAS) handleListServices(w http.ResponseWriter, req *http.Request) {
 	services, ok := session.Values["userServices"]
 	if !ok {
 		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
-			"status": "error",
+			"status":  "error",
 			"message": "Failed to retrieve services for the given user. Please try again later. If the problem persists, please contact your network administrator.",
 		})
 		return
 	}
-	
+
 	// Return the user's services
 	c.render.JSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",
-		"data": services,
+		"data":   services,
 	})
 }
