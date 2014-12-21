@@ -1,4 +1,6 @@
 /* global ko */
+/* global fetch */
+/* global q */
 'use strict';
 
 // Create App namespace on global scope
@@ -29,6 +31,22 @@ function CasgoViewModel() {
     window.location.href = '#' + route;
     self.currentRoute(window.location.hash.slice(1));
   };
+
+  // Services
+  self.ServicesService = {
+    service: ko.observableArray([]),
+
+    /**
+     * Load all services for the logged in user from the API endpoint
+     */
+    loadServices: function() {
+      fetch('/api/services')
+      .then(function(resp) {
+        console.log("got resp:", resp);
+      })
+    }
+
+  }
 
 
   // Controllers

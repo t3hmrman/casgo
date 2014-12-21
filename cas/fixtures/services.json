@@ -1,7 +1,7 @@
 [
   {
     "name": "test_service",
-    "url": "localhost:9090/validateCASLogin",
-    "adminEmail": "noone@nowhere.com"
+    "url": "localhost:3000/validateCASLogin",
+    "adminEmail": "admin@test.com"
   }
 ]

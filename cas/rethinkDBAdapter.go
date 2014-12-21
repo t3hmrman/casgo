@@ -134,7 +134,7 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions i
 
 // Set up the table that holds services
 func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
-	return db.setupTable(db.servicesTableName, nil)
+	return db.setupTable(db.servicesTableName, r.TableCreateOpts{PrimaryKey: "name"})
 }
 
 // Tear down the table that holds services

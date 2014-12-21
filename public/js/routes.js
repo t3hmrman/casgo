@@ -7,7 +7,7 @@
 window.App.VM.ServicesRoute = {
   controllers: ['ServicesController'],
   fn: function() {
-    // Setup for services route would go here
+    window.App.VM.ServicesService.loadServices();
   }
 };
 

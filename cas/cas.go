@@ -1,9 +1,5 @@
 package cas
 
-/**
- * CAS protocol API implementation
- */
-
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/gorilla/sessions"
@@ -13,6 +9,10 @@ import (
 	"strconv"
 	"strings"
 )
+
+/*
+ * CAS server implementation
+ */
 
 func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 	// Create and initialize the CAS server
@@ -33,7 +33,7 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 	// Setup rendering function
 	render := render.New(render.Options{
 		Directory: cas.Config["templatesDirectory"],
-		Layout: "layout",
+		Layout:    "layout",
 	})
 	cas.render = render
 
@@ -82,15 +82,22 @@ func (c *CAS) init() {
 
 	// Setup handlers
 	serveMux := http.NewServeMux()
+
+	// Front end endpoints
 	serveMux.HandleFunc("/login", c.HandleLogin)
 	serveMux.HandleFunc("/logout", c.HandleLogout)
 	serveMux.HandleFunc("/register", c.HandleRegister)
+
+	// CAS-specific endpoints
 	serveMux.HandleFunc("/validate", c.HandleValidate)
 	serveMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
 	serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
+
+	// Static file serving
 	serveMux.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
 	serveMux.HandleFunc("/", c.HandleIndex)
+
 	c.ServeMux = serveMux
 	c.server.Handler = c.ServeMux
 }
@@ -338,6 +345,7 @@ func (c *CAS) saveUserInfoInSession(w http.ResponseWriter, req *http.Request, se
 
 	// Save user information onto session
 	session.Values["userEmail"] = user.Email
+	session.Values["userServices"] = user.Services
 	if user.IsAdmin {
 		session.Values["userIsAdmin"] = "true"
 	} else {
