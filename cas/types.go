@@ -15,6 +15,7 @@ type User struct {
   Email      string            `gorethink:"email" json:"email"`
   Attributes map[string]string `gorethink:"attributes" json:"attributes"`
   Password   string            `gorethink:"password" json:"password"`
+	Services   []map[string]string `gorethink:"services" json:"services"`
   IsAdmin    bool              `gorethink:"isAdmin" json:"isAdmin"`
 }
 
