@@ -28,7 +28,6 @@
                  setTimeout(function countdownFunc() {
                      var countDOM = document.getElementById("count");
                      var nextCount = parseInt(countDOM.innerHTML) - 1;
-                     console.log("nextCount:", nextCount);
                      countDOM.innerHTML = nextCount;
                      if (nextCount > 0) {
                          setTimeout(countdownFunc, 1000);

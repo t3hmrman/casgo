@@ -3,13 +3,14 @@
 
 'use strict';
 
+var AppVM = window.App.VM;
+
 // Routes for App
-window.App.VM.ServicesRoute = {
-  controllers: ['ServicesController'],
-  fn: function() {
-    window.App.VM.ServicesService.loadServices();
-  }
-};
+AppVM.ServicesRoute = { controllers: ['ServicesCtrl'] };
+AppVM.ManageRoute = { controllers: [] };
+AppVM.ManageUsersRoute = { controllers: [] };
+AppVM.ManageServicesRoute = { controllers: [] };
+AppVM.StatisticsRoute = { controllers: [] };
 
 /**
  * Generate pre-route utility function
@@ -21,7 +22,7 @@ function generatePreRouteHelper(route) {
   if (!_.isString(route)) { throw new Error("Only string routes are allowed, invalid route: [" + route + "]"); }
   return function() {
     // Go to a route when it is navigated to
-    window.App.VM.gotoRoute(route);
+    AppVM.gotoRoute(route);
   };
 }
 
@@ -29,24 +30,31 @@ function generatePreRouteHelper(route) {
 // Route registration
 window.App.Routes = {
   default: '/services',
-  '/services': window.App.VM.ServicesRoute.fn,
-  '/manage': window.App.VM.ManageRoute,
-  '/manage/users': window.App.VM.ManageUsersRoute,
-  '/manage/services': window.App.VM.ManageServicesRoute,
-  '/statistics': window.App.VM.StatisticsRoute
+  '/services': AppVM.ServicesRoute,
+  '/manage': AppVM.ManageRoute,
+  '/manage/users': AppVM.ManageUsersRoute,
+  '/manage/services': AppVM.ManageServicesRoute,
+  '/statistics': AppVM.StatisticsRoute
 };
 
 // Add PreRouteHelper to all routes
 _.forEach(window.App.Routes, function(v, k) {
-  if (k !== "default") window.App.Routes[k] = [generatePreRouteHelper(k), window.App.Routes[k]];
+  if (k !== "default") {
+    // Create an internal list of functions to call when the route happens
+    window.App.Routes[k]._fns = [generatePreRouteHelper(k), window.App.Routes[k].fn || null];
+  }
 });
 
-
-// Create and initialize Director's router
-window.App.Router = Router(window.App.Routes);
+/**
+ * Create and initialize Director's router with the internal list of functions for each route
+ */
+window.App.Router = Router(
+  _.zipObject(_.keys(window.App.Routes),
+              _.map(window.App.Routes, '_fns'))
+);
 window.App.Router.init();
 
 // Go to default route
 if (location.hash === '' && _.has(window.App.Routes, 'default')) {
-  window.App.VM.gotoRoute(window.App.Routes.default);
+  AppVM.gotoRoute(window.App.Routes.default);
 }
