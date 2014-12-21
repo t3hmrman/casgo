@@ -27,7 +27,6 @@ function CasgoViewModel() {
   self.currentRoute =  ko.observable(window.location.hash.slice(1));
   self.currentRouteIs = function(route) {return self.currentRoute() === route; };
   self.gotoRoute =  function(route) {
-    console.log("Going to route:", route);
     window.location.href = '#' + route;
     self.currentRoute(window.location.hash.slice(1));
   };

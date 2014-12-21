@@ -1,6 +1,7 @@
 package cas
 
 import (
+	"encoding/gob"
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
@@ -46,6 +47,9 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 	}
 	cas.cookieStore = cookieStore
 
+	// Register types for encoding/decoding
+	gob.Register([]CASService{})
+
 	cas.init()
 	cas.setLogLevel(cas.Config["logLevel"])
 	return cas, nil
@@ -87,6 +91,9 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/login", c.HandleLogin)
 	serveMux.HandleFunc("/logout", c.HandleLogout)
 	serveMux.HandleFunc("/register", c.HandleRegister)
+
+	// Front end facing API endpoints
+	serveMux.HandleFunc("/api/services", c.handleListServices)
 
 	// CAS-specific endpoints
 	serveMux.HandleFunc("/validate", c.HandleValidate)
@@ -369,7 +376,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 	// TODO get the user from the current database adapter
 	returnedUser, err := c.Db.FindUserByEmail(email)
 	if err != nil {
-
+		return nil, &FailedToFindUserError
 	}
 
 	// Use default authentication typeDepending on the authentication type

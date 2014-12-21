@@ -40,15 +40,10 @@ var (
 		httpCode:   http.StatusBadRequest,
 		casErrCode: 104,
 	}
-	FailedToFindServiceByUrlError = CASServerError{
-		msg:        "Failed to find service with given URL",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 208,
-	}
-	FailedToFindUserByEmailError = CASServerError{
-		msg:        "Failed to find user with given email address",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 209,
+	FailedToFindUserError = CASServerError{
+		msg:        "Failed to find matching user",
+		httpCode:   http.StatusBadRequest,
+		casErrCode: 105,
 	}
 
 	// Internal Server errors (error codes 200 - 299)
@@ -121,6 +116,16 @@ var (
 		msg:        "Failed to check whether database existed",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 213,
+	}
+	FailedToFindServiceByUrlError = CASServerError{
+		msg:        "Failed to find service with given URL",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 214,
+	}
+	FailedToFindUserByEmailError = CASServerError{
+		msg:        "Failed to find user with given email address",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 215,
 	}
 
 	// Other (error codes 300 - 399)

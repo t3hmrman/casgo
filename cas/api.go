@@ -9,7 +9,7 @@ import (
  */
 
 // Get the services for a logged in user
-func (c *CAS) getServicesForUser(w http.ResponseWriter, req *http.Request) {
+func (c *CAS) handleListServices(w http.ResponseWriter, req *http.Request) {
 	// Get the current session
 	session, err := c.cookieStore.Get(req, "casgo-session")
 	if err != nil {
@@ -25,7 +25,7 @@ func (c *CAS) getServicesForUser(w http.ResponseWriter, req *http.Request) {
 	if !ok {
 		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
 			"status": "error",
-			"message": "Failed to retrieve services for logged in user. Please ensure you are logged in.",
+			"message": "Failed to retrieve services for the given user. Please try again later. If the problem persists, please contact your network administrator.",
 		})
 		return
 	}
