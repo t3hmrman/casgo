@@ -46,24 +46,52 @@ function CasgoViewModel() {
 
 
 	/**
-   * Service that maintains user sessions and information retrieved from the backend
-   */
+	 * Service that maintains user sessions and information retrieved from the backend
+	 */
 	vm.SessionService = {
 		currentUser: ko.observable({}),
 
-		getSession: function() {
+		/**
+		 * Get the current user
+		 *
+		 * @returns A Promise that will resolve to the user object
+		 */
+		getCurrentUser: function() {
 			var svc = vm.SessionService;
-			fetch('/api/sessions')
-				.then(function(resp){
-					return resp.json();
-				}).then(function(json) {
-					if (json.status === "success")
-						svc.currentUser(json.data);
-					else
-						throw new Error("API call failed", json.message);
+			return new Promise(function(resolve, reject) {
+				if (_.isEmpty(svc.currentUser())) {
+					svc
+						.fetchCurrentUser()
+						.then(resolve);
+				} else {
+					resolve(svc.currentUser());
+				}
+			});
+		},
+
+		/**
+		 * Fetch the current user in the session from the backend, updating the service
+		 *
+		 * @returns a promise that will resolve to the user object
+		 */
+		fetchCurrentUser: function() {
+			var svc = vm.SessionService;
+			return new Promise(function(resolve, reject) {
+				fetch('/api/sessions')
+					.then(function(resp){
+						return resp.json();
+					}).then(function(json) {
+						if (json.status === "success") {
+							svc.currentUser(json.data);
+							resolve(svc.currentUser());
+						} else {
+							reject(new Error("API call failed", json.message));
+						}
 				}).catch(function(err) {
-					console.log("An error occurred retrieving user session", err);
+					reject(err);
 				});
+
+			});
 		}
 
 	},
@@ -74,25 +102,51 @@ function CasgoViewModel() {
 
 		/**
 		 * Get services for given user
-     *
-     * @param {string} userEmail - The username for which to retrieve services
+		 *
+		 * @param {string} userEmail - The username for which to retrieve services
 		 */
 		getServices: function(userEmail) {
 			var svc = vm.ServicesService;
-			userEmail = userEmail || vm.SessionService.currentUser().email;
 
-      // Get user's services
-			fetch('/api/sessions/' + userEmail + "/services")
+			// Get the user
+			var getUserFn;
+			if (_.isUndefined(userEmail)) {
+				getUserFn = vm.SessionService.getCurrentUser();
+			} else {
+				new Promise(function(resolve, reject) {resolve(userEmail);});
+			}
+
+			getUserFn
+				.then(svc.fetchServicesForUser)
+				.then(function(services) {
+					svc.services(services);
+				});
+		},
+
+		/**
+		 * Fetch user's services and update observables
+		 *
+		 * @param {string} user - current user
+		 * @returns A Promise which evaluates to the users' services
+		 */
+		fetchServicesForUser: function(user) {
+			var svc = vm.ServicesService;
+			// Get user's services
+			return new Promise(function(resolve, reject) {
+				fetch('/api/sessions/' + user.email + "/services")
 				.then(function(resp) {
 					return resp.json();
 				}).then(function(json) {
-					if (json.status === "success")
+					if (json.status === "success") {
 						svc.services(json.data);
-					else
-						throw new Error("API call failed", json.message);
+						resolve(svc.services());
+					} else {
+						reject(new Error("API call failed", json.message));
+					}
 				}).catch(function(err) {
-					console.log("An Error occurred retrieving services", err);
+					reject(err);
 				});
+			});
 		}
 
 	},
@@ -133,7 +187,7 @@ function CasgoViewModel() {
 	 * App initialization function, to be run once, when the app starts
 	 */
 	vm.init = function() {
-		vm.SessionService.getSession();
+		vm.SessionService.fetchCurrentUser();
 	};
 
 	vm.init();
