@@ -107,7 +107,7 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
 
 	// Static file serving
-	serveMux.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
+	serveMux.PathPrefix("/public/").Handler(http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
 	serveMux.HandleFunc("/", c.HandleIndex)
 
 	c.ServeMux = serveMux
@@ -163,13 +163,7 @@ func (c *CAS) augmentTemplateContext(context map[string]interface{}, session *se
 		}
 
 		if isAdmin, ok := session.Values["userIsAdmin"]; ok {
-			casted := isAdmin.(bool)
-			context["userIsAdmin"] = casted
-			// if isAdmin.(bool) {
-			// 	context["userIsAdmin"] = "true"
-			// } else {
-			// 	context["userIsAdmin"] = ""
-			// }
+			context["userIsAdmin"] = isAdmin
 		}
 	}
 
