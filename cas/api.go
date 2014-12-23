@@ -25,7 +25,7 @@ func (c *CAS) handleListServices(w http.ResponseWriter, req *http.Request) {
 	if !ok {
 		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
 			"status":  "error",
-			"message": "Failed to retrieve services for the given user. Please try again later. If the problem persists, please contact your network administrator.",
+			"message": "Failed to retrieve services the given user. Please try again later. If the problem persists, please contact your network administrator.",
 		})
 		return
 	}

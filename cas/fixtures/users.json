@@ -4,7 +4,13 @@
     "attributes": {},
     "password": "$2a$10$P9Lm3oRPXdxW0BoBr2lsS.qZQweTqasC7Ru3mdkJn1pEW/nBRL/Dy",
     "isAdmin": false,
-    "services": []
+    "services": [
+      {
+        "name": "test_service",
+        "url": "localhost:3000/validateCASLogin",
+        "adminEmail": "admin@test.com"
+      }
+    ]
   },
   {
     "email": "admin@test.com",

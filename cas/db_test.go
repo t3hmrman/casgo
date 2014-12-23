@@ -1,10 +1,16 @@
 package cas_test
 
 import (
-	. "github.com/t3hmrman/casgo/cas"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/t3hmrman/casgo/cas"
 )
+
+var DB_TEST_DATA map[string]string = map[string]string{
+	"fixtureServiceName":       "test_service",
+	"fixtureServiceUrl":        "localhost:3000/validateCASLogin",
+	"fixtureServiceAdminEmail": "admin@test.com",
+}
 
 var _ = Describe("Cas DB adapter", func() {
 
@@ -59,7 +65,7 @@ var _ = Describe("Cas DB adapter", func() {
 			Expect(err).To(BeNil())
 
 			// Attempt to find a service in the fixture should fail
-			service, err := testCASServer.Db.FindServiceByUrl("localhost:9090/validateCASLogin")
+			service, err := testCASServer.Db.FindServiceByUrl(DB_TEST_DATA["fixtureServiceUrl"])
 			Expect(err).ToNot(BeNil())
 			Expect(service).To(BeNil())
 
@@ -71,7 +77,7 @@ var _ = Describe("Cas DB adapter", func() {
 			Expect(err).To(BeNil())
 
 			// Attempting to find a serive in the fixture shoudl pass now
-			service, err = testCASServer.Db.FindServiceByUrl("localhost:9090/validateCASLogin")
+			service, err = testCASServer.Db.FindServiceByUrl(DB_TEST_DATA["fixtureServiceUrl"])
 			Expect(err).To(BeNil())
 			Expect(service).ToNot(BeNil())
 
@@ -82,9 +88,9 @@ var _ = Describe("Cas DB adapter", func() {
 		It("should find the service added by the loaded test fixture", func() {
 			// Create the service we expect to find in the fixture
 			expectedService := &CASService{
-				Name:       "test_service",
-				Url:        "localhost:9090/validateCASLogin",
-				AdminEmail: "noone@nowhere.com",
+				Name:       DB_TEST_DATA["fixtureServiceName"],
+				Url:        DB_TEST_DATA["fixtureServiceUrl"],
+				AdminEmail: DB_TEST_DATA["fixtureServiceAdminEmail"],
 			}
 
 			// Attempt to get a service by name
@@ -99,8 +105,17 @@ var _ = Describe("Cas DB adapter", func() {
 		It("should find the user added by the loaded test fixture", func() {
 			// Create the user we're expecting to get back
 			expectedUser := &User{
-				Email:    "test@test.com",
-				Password: "$2a$10$P9Lm3oRPXdxW0BoBr2lsS.qZQweTqasC7Ru3mdkJn1pEW/nBRL/Dy",
+				Email:      "test@test.com",
+				Password:   "$2a$10$P9Lm3oRPXdxW0BoBr2lsS.qZQweTqasC7Ru3mdkJn1pEW/nBRL/Dy",
+				Attributes: map[string]string{},
+				IsAdmin:    false,
+				Services: []CASService{
+					CASService{
+						Url:        DB_TEST_DATA["fixtureServiceUrl"],
+						Name:       DB_TEST_DATA["fixtureServiceName"],
+						AdminEmail: DB_TEST_DATA["fixtureServiceAdminEmail"],
+					},
+				},
 			}
 
 			// Attempt to get a user by name

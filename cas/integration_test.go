@@ -13,6 +13,8 @@ var INTEGRATION_TEST_DATA map[string]string = map[string]string{
 	"newUserPassword":     "testpassword",
 	"fixtureUserEmail":    "test@test.com",
 	"fixtureUserPassword": "test",
+	"fixtureAdminEmail":    "admin@test.com",
+	"fixtureAdminPassword": "test",
 }
 
 var _ = Feature("CASGO", func() {
@@ -52,6 +54,7 @@ var _ = Feature("CASGO", func() {
 
 	Scenario("Login with a user created by the users.json fixture", func() {
 		StepLoginUser(INTEGRATION_TEST_DATA["fixtureUserEmail"], INTEGRATION_TEST_DATA["fixtureUserPassword"], page)
+		StepLogoutUser(page)
 	})
 
 	Scenario("Login and log out a user created by the users.json fixture", func() {
@@ -59,9 +62,31 @@ var _ = Feature("CASGO", func() {
 		StepLogoutUser(page)
 	})
 
+	Scenario("The casgo SPA contains a reduced set of navigation options if logged in as a regular user(in users.json fixture)", func() {
+		StepLoginUser(INTEGRATION_TEST_DATA["fixtureUserEmail"], INTEGRATION_TEST_DATA["fixtureUserPassword"], page)
+		Step("Ensure the casgo SPA shows more navigation options to the admin user", func() {
+			page.Navigate(testHTTPServer.URL + "/")
+			Expect(page.Find("#topnav-services-link")).To(BeFound())
+			// Expect(page.Find("#topnav-manage-link")).ToNot(BeFound())
+			// Expect(page.Find("#topnav-statistics-link")).ToNot(BeFound())
+		})
+		StepLogoutUser(page)
+	})
+
+	Scenario("The casgo SPA contains extra navigation options if logged in as an admin user (in users.json fixture)", func() {
+		StepLoginUser(INTEGRATION_TEST_DATA["fixtureAdminEmail"], INTEGRATION_TEST_DATA["fixtureAdminPassword"], page)
+		Step("Ensure the casgo SPA shows more navigation options to the admin user", func() {
+			page.Navigate(testHTTPServer.URL + "/")
+			Expect(page.Find("#topnav-manage-link")).To(BeFound())
+			Expect(page.Find("#topnav-statistics-link")).To(BeFound())
+		})
+		StepLogoutUser(page)
+	})
 })
 
-// Reusable testing steps
+/** Reusable testing steps **/
+
+// Steps to register a user
 var StepRegisterUser func(string, string, Page) = func(email, password string, page Page) {
 	Step("Navigate to the register page", func() {
 		page.Navigate(testHTTPServer.URL + "/register")
@@ -81,6 +106,7 @@ var StepRegisterUser func(string, string, Page) = func(email, password string, p
 	})
 }
 
+// Steps to simulate login
 var StepLoginUser func(string, string, Page) = func(email, password string, page Page) {
 	Step("Navigate to the login page", func() {
 		page.Navigate(testHTTPServer.URL + "/login")
@@ -101,6 +127,7 @@ var StepLoginUser func(string, string, Page) = func(email, password string, page
 
 }
 
+// Steps to simulate logout
 var StepLogoutUser func(Page) = func(page Page) {
 		page.Navigate(testHTTPServer.URL + "/logout")
 		Expect(page.Find("div.alert.success")).To(BeFound())

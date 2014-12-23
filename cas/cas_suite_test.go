@@ -22,6 +22,9 @@ func TestCas(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	// Start PhantomJS for integration tests
+	StartPhantomJS()
+
 	// Setup CAS server & DB
 	testCASConfig, _ = cas.NewCASServerConfig(map[string]string{
 		"companyName":        "Casgo Testing Company",
@@ -48,11 +51,10 @@ var _ = BeforeSuite(func() {
 		"fixtures/users.json",
 	)
 
-	// Start PhantomJS for integration tests
-	StartPhantomJS()
 })
 
 var _ = AfterSuite(func() {
 	testHTTPServer.Close()
 	testCASServer.TeardownDb()
+	StopWebdriver()
 })
