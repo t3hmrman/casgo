@@ -2,6 +2,8 @@ package cas
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
+	"log"
 	"net/http"
 )
 
@@ -15,67 +17,40 @@ func NewCasgoFrontendAPI(c *CAS) (*FrontendAPI, error) {
 
 // Hook up API endpoints to given mux
 func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
+	// Session information endpoints
 	m.HandleFunc("/api/sessions/{userEmail}/services", api.listSessionUserServices).Methods("GET")
 	m.HandleFunc("/api/sessions", api.SessionsHandler).Methods("GET")
-	m.HandleFunc("/api/services", api.GetService).Methods("GET")
+
+	// Service endpoints
+	m.HandleFunc("/api/services", api.GetServices).Methods("GET")
 	m.HandleFunc("/api/services", api.CreateService).Methods("POST")
 	m.HandleFunc("/api/services/{serviceName}", api.RemoveService).Methods("DELETE")
 }
 
 // Handle sessions endpoint
 func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request) {
-	// Get the current session
-	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
-	if err != nil {
-		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
+	_, user, casErr := getSessionAndUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
-			"message": "Failed to retrieve services for logged in user. Please ensure you are logged in.",
-		})
-		return
-	}
-
-	// Retrieve information from Check whether the user is an admin
-	userIsAdmin, isAdminOk := session.Values["userIsAdmin"].(bool)
-	userEmail, emailOk := session.Values["userEmail"].(string)
-	userServices, servicesOk := session.Values["userServices"].([]CASService)
-	if !isAdminOk || !emailOk || !servicesOk {
-		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
-			"status":  "error",
-			"message": "Internal server error, Failed to retrieve user information from session.",
+			"message": casErr.msg,
 		})
 		return
 	}
 
 	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",
-		"data": map[string]interface{}{
-			"email":    userEmail,
-			"isAdmin":  userIsAdmin,
-			"services": userServices,
-		},
+		"data":   user,
 	})
 }
 
 // Get the services for a logged in user
 func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http.Request) {
-	// Get the current session
-	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
-	if err != nil {
-		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
+	_, user, casErr := getSessionAndUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
-			"message": "Failed to retrieve services for logged in user. Please ensure you are logged in.",
-		})
-		return
-	}
-
-	// Retrieve information from Check whether the user is an admin
-	userIsAdmin, isAdminOk := session.Values["userIsAdmin"].(bool)
-	userEmail, emailOk := session.Values["userEmail"].(string)
-	userServices, servicesOK := session.Values["userServices"].([]CASService)
-	if !isAdminOk || !emailOk || !servicesOK {
-		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
-			"status":  "error",
-			"message": "Internal server error, Failed to retrieve user information from session.",
+			"message": casErr.msg,
 		})
 		return
 	}
@@ -85,7 +60,7 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	routeUserEmail := routeVars["userEmail"]
 
 	// Ensure non-admin user is not trying to lookup another users session information
-	if !userIsAdmin && userEmail != routeUserEmail {
+	if !user.IsAdmin && user.Email != routeUserEmail {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions",
@@ -96,12 +71,45 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	// Return the user's services
 	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",
-		"data":   userServices,
+		"data":   user.Services,
 	})
 }
 
-// Get a service
-func (api *FrontendAPI) GetService(w http.ResponseWriter, req *http.Request) {
+// Utility function to retrieve session and user information
+func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, *User, *CASServerError) {
+	// Get the current session
+	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
+	if err != nil {
+		casErr := &FailedToRetrieveServicesError
+		casErr.err = &err
+		return nil, nil, casErr
+	}
+
+	// Retrieve information from Check whether the user is an admin
+	user, ok := session.Values["currentUser"].(User)
+	if !ok {
+		casErr := &FailedToRetrieveInformationFromSessionError
+		casErr.err = &err
+		return nil, nil, casErr
+	}
+
+	return session, &user, nil
+}
+
+// Get list of services (admin only)
+func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
+
+	session, userInfo, casErr := getSessionAndUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.msg,
+		})
+		return
+	}
+
+	log.Println("session:", session)
+	log.Println("userInfo:", userInfo)
 }
 
 // Create a new service

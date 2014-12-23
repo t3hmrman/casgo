@@ -45,6 +45,12 @@ var (
 		httpCode:   http.StatusBadRequest,
 		casErrCode: 105,
 	}
+	FailedToRetrieveServicesError = CASServerError{
+		msg: "Failed to retrieve services for logged in user. Please ensure you are logged in.",
+		httpCode: http.StatusBadRequest,
+		casErrCode: 106,
+	}
+
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
@@ -126,6 +132,11 @@ var (
 		msg:        "Failed to find user with given email address",
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 215,
+	}
+	FailedToRetrieveInformationFromSessionError = CASServerError{
+		msg:        "Failed to retrieve information from session",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 216,
 	}
 
 	// Other (error codes 300 - 399)

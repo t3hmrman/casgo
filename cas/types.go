@@ -107,7 +107,7 @@ type CasgoFrontendAPI interface {
 	HookupAPIEndpoints(*mux.Router)
 
 	// Services Endpoint
-	GetService(http.ResponseWriter, *http.Request)
+	GetServices(http.ResponseWriter, *http.Request)
 	RemoveService(http.ResponseWriter, *http.Request)
 	CreateService(http.ResponseWriter, *http.Request)
 

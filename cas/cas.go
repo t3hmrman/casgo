@@ -50,6 +50,7 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 
 	// Register types for encoding/decoding
 	gob.Register([]CASService{})
+	gob.Register(User{})
 
 	cas.init()
 	cas.setLogLevel(cas.Config["logLevel"])
@@ -143,7 +144,7 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 	templateContext := c.augmentTemplateContext(map[string]interface{}{}, session)
 
 	// Exit early (and show landing page) if not user not logged in (in session)
-	if _, ok := templateContext["userEmail"]; !ok {
+	if _, ok := templateContext["currentUser"]; !ok {
 		c.render.HTML(w, http.StatusOK, "landing", templateContext)
 		return
 	}
@@ -158,12 +159,8 @@ func (c *CAS) augmentTemplateContext(context map[string]interface{}, session *se
 
 	// Add information from session
 	if session != nil {
-		if userEmail, ok := session.Values["userEmail"]; ok {
-			context["userEmail"] = userEmail.(string)
-		}
-
-		if isAdmin, ok := session.Values["userIsAdmin"]; ok {
-			context["userIsAdmin"] = isAdmin
+		if currentUser, ok := session.Values["currentUser"]; ok {
+			context["currentUser"] = currentUser.(User)
 		}
 	}
 
@@ -223,7 +220,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 		// Finish early if the user is already logged in (has session)
 		session, _ := c.cookieStore.Get(req, "casgo-session")
-		if _, ok := session.Values["userEmail"]; ok {
+		if _, ok := session.Values["currentUser"]; ok {
 
 			// If session is not set and gateway is set, behavior is undefined, act as if nothing was given, let user know they are logged in
 			// Otherwiser make new ticket and properly redirect to service
@@ -254,7 +251,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Save session since non-interactive auth succeeded
-		_, err = c.saveUserInfoInSession(w, req, "casgo-session", returnedUser)
+		_, err = c.saveCurrentUserInSession(w, req, "casgo-session", returnedUser)
 		if err != nil {
 			log.Fatal("Failed to save session!")
 		}
@@ -297,7 +294,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Save session in cookies
-	session, err := c.saveUserInfoInSession(w, req, "casgo-session", returnedUser)
+	session, err := c.saveCurrentUserInSession(w, req, "casgo-session", returnedUser)
 	if err != nil {
 		log.Fatal("Failed to save session, err:", err)
 	}
@@ -351,14 +348,12 @@ func (c *CAS) makeNewTicketAndRedirect(w http.ResponseWriter, req *http.Request,
 }
 
 // Save session in cookiestore
-func (c *CAS) saveUserInfoInSession(w http.ResponseWriter, req *http.Request, sessionName string, user *User) (*sessions.Session, *CASServerError) {
+func (c *CAS) saveCurrentUserInSession(w http.ResponseWriter, req *http.Request, sessionName string, user *User) (*sessions.Session, *CASServerError) {
 	// Save session in cookies
 	session, _ := c.cookieStore.Get(req, sessionName)
 
 	// Save user information onto session
-	session.Values["userEmail"] = user.Email
-	session.Values["userServices"] = user.Services
-	session.Values["userIsAdmin"] = user.IsAdmin
+	session.Values["currentUser"] = *user
 
 	// Save the session
 	sessionSaveErr := session.Save(req, w)
@@ -454,17 +449,18 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Exit early if the user is not already logged in (in session), otherwise get their email
-	if _, ok := session.Values["userEmail"]; !ok {
+	currentUserRef, ok := session.Values["currentUser"]
+	if !ok {
 		// Redirect if the person was never logged in
 		http.Redirect(w, req, "/login", 401)
 		return
 	}
-	userEmail := session.Values["userEmail"]
+	currentUser := currentUserRef.(User)
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	err := c.Db.RemoveTicketsForUserWithService(userEmail.(string), casService)
+	err := c.Db.RemoveTicketsForUserWithService(currentUser.Email, casService)
 	if err != nil {
-		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
+		log.Printf("Failed to remove ticket for user %s", currentUser.Email)
 		http.Redirect(w, req, "/login", 500)
 		return
 	}
@@ -484,7 +480,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 // Remove all current user information from the session object
 func (c *CAS) removeCurrentUserFromSession(w http.ResponseWriter, req *http.Request, session *sessions.Session) *CASServerError {
 	// Delete current user from session
-	delete(session.Values, "userEmail")
+	delete(session.Values, "currentUser")
 
 	// Save the modified session
 	err := session.Save(req, w)
