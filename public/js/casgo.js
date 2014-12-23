@@ -130,7 +130,7 @@ function CasgoViewModel() {
 	vm.StatisticsCtrl = {};
 
 	/**
-	 * App initialization code, to be run once, when the app start
+	 * App initialization function, to be run once, when the app starts
 	 */
 	vm.init = function() {
 		vm.SessionService.getSession();
