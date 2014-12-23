@@ -6,14 +6,28 @@ import (
 )
 
 /*
- * CAS API implementation
+ * CAS FrontendAPI implementation
  */
 
-func (c *CAS) SessionHandler(w http.ResponseWriter, req *http.Request) {
+func NewCasgoFrontendAPI(c *CAS) (*FrontendAPI, error) {
+	return &FrontendAPI{casServer: c}, nil
+}
+
+// Hook up API endpoints to given mux
+func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
+	m.HandleFunc("/api/sessions/{userEmail}/services", api.listSessionUserServices).Methods("GET")
+	m.HandleFunc("/api/sessions", api.SessionsHandler).Methods("GET")
+	m.HandleFunc("/api/services", api.GetService).Methods("GET")
+	m.HandleFunc("/api/services", api.CreateService).Methods("POST")
+	m.HandleFunc("/api/services/{serviceName}", api.RemoveService).Methods("DELETE")
+}
+
+// Handle sessions endpoint
+func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request) {
 	// Get the current session
-	session, err := c.cookieStore.Get(req, "casgo-session")
+	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
 	if err != nil {
-		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
+		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
 			"status":  "error",
 			"message": "Failed to retrieve services for logged in user. Please ensure you are logged in.",
 		})
@@ -25,29 +39,29 @@ func (c *CAS) SessionHandler(w http.ResponseWriter, req *http.Request) {
 	userEmail, emailOk := session.Values["userEmail"].(string)
 	userServices, servicesOk := session.Values["userServices"].([]CASService)
 	if !isAdminOk || !emailOk || !servicesOk {
-		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
+		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
 			"status":  "error",
 			"message": "Internal server error, Failed to retrieve user information from session.",
 		})
 		return
 	}
 
-	c.render.JSON(w, http.StatusOK, map[string]interface{}{
+	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",
 		"data": map[string]interface{}{
-			"email": userEmail,
-			"isAdmin": userIsAdmin,
+			"email":    userEmail,
+			"isAdmin":  userIsAdmin,
 			"services": userServices,
 		},
 	})
 }
 
 // Get the services for a logged in user
-func (c *CAS) listSessionUserServices(w http.ResponseWriter, req *http.Request) {
+func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http.Request) {
 	// Get the current session
-	session, err := c.cookieStore.Get(req, "casgo-session")
+	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
 	if err != nil {
-		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
+		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
 			"status":  "error",
 			"message": "Failed to retrieve services for logged in user. Please ensure you are logged in.",
 		})
@@ -59,7 +73,7 @@ func (c *CAS) listSessionUserServices(w http.ResponseWriter, req *http.Request) 
 	userEmail, emailOk := session.Values["userEmail"].(string)
 	userServices, servicesOK := session.Values["userServices"].([]CASService)
 	if !isAdminOk || !emailOk || !servicesOK {
-		c.render.JSON(w, http.StatusInternalServerError, map[string]string{
+		api.casServer.render.JSON(w, http.StatusInternalServerError, map[string]string{
 			"status":  "error",
 			"message": "Internal server error, Failed to retrieve user information from session.",
 		})
@@ -72,7 +86,7 @@ func (c *CAS) listSessionUserServices(w http.ResponseWriter, req *http.Request) 
 
 	// Ensure non-admin user is not trying to lookup another users session information
 	if !userIsAdmin && userEmail != routeUserEmail {
-		c.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions",
 		})
@@ -80,18 +94,21 @@ func (c *CAS) listSessionUserServices(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Return the user's services
-	c.render.JSON(w, http.StatusOK, map[string]interface{}{
+	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",
 		"data":   userServices,
 	})
 }
 
-// Services Handler
-func (c *CAS) ServicesHandler(w http.ResponseWriter, req *http.Request) {
-
+// Get a service
+func (api *FrontendAPI) GetService(w http.ResponseWriter, req *http.Request) {
 }
 
-// Users Handler
-func (c *CAS) UsersHandler(w http.ResponseWriter, req *http.Request) {
+// Create a new service
+func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) {
+}
+
+// Remove a service
+func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) {
 
 }

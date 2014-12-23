@@ -103,12 +103,25 @@ type CASDBAdapter interface {
 	GetUsersTableName() string
 }
 
+type CasgoFrontendAPI interface {
+	HookupAPIEndpoints(*mux.Router)
+
+	// Services Endpoint
+	GetService(http.ResponseWriter, *http.Request)
+	RemoveService(http.ResponseWriter, *http.Request)
+	CreateService(http.ResponseWriter, *http.Request)
+
+	listSessionUserServices(http.ResponseWriter, *http.Request)
+	SessionsHandler(http.ResponseWriter, *http.Request)
+}
+
 // CAS Server
 type CAS struct {
 	server      *http.Server
 	ServeMux    *mux.Router
 	Config      map[string]string
 	Db          CASDBAdapter
+	Api         CasgoFrontendAPI
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 	LogLevel    int
@@ -125,4 +138,9 @@ type RethinkDBAdapter struct {
 	usersTableName       string
 	usersTableOptions    *r.TableCreateOpts
 	LogLevel             string
+}
+
+// CasGo frontend RESTful API
+type FrontendAPI struct {
+	casServer *CAS
 }

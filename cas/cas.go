@@ -74,16 +74,20 @@ func (c *CAS) init() {
 	c.Config = overrideConfigWithEnv(c.Config)
 
 	// Setup database adapter
-	Db, err := NewRethinkDBAdapter(c)
+	db, err := NewRethinkDBAdapter(c)
 	if err != nil {
 		log.Fatal("Failed to setup database adapter", err)
 	}
-	c.Db = Db
+	c.Db = db
 
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
 		Addr: c.GetAddr(),
 	}
+
+	// Setup front-end API
+	api, err := NewCasgoFrontendAPI(c)
+	c.Api = api
 
 	// Setup handlers
 	serveMux := mux.NewRouter()
@@ -93,13 +97,8 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/logout", c.HandleLogout)
 	serveMux.HandleFunc("/register", c.HandleRegister)
 
-	// User-accessible API endpoints
-	serveMux.HandleFunc("/api/sessions/{userEmail}/services", c.listSessionUserServices).Methods("GET")
-	serveMux.HandleFunc("/api/sessions", c.SessionHandler).Methods("GET")
-
-	// Admin-only endpoints
-	serveMux.HandleFunc("/api/users", c.UsersHandler)
-	serveMux.HandleFunc("/api/services", c.ServicesHandler)
+	// Hook up API endpoints
+	c.Api.HookupAPIEndpoints(serveMux)
 
 	// CAS-specific endpoints
 	serveMux.HandleFunc("/validate", c.HandleValidate)
