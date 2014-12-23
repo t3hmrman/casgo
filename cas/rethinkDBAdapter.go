@@ -349,6 +349,26 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 	return user, nil
 }
 
+func (db *RethinkDBAdapter) AddNewService(service *CASService) *CASServerError {
+	res, err := r.
+		Db(db.dbName).
+		Table(db.servicesTableName).
+		Insert(service, r.InsertOpts{Conflict: "error"}).
+		RunWrite(db.session)
+	if err != nil || res.Inserted == 0 {
+		return &FailedToCreateServiceError
+	} else if res.Errors > 0 {
+		return &ServiceNameAlreadyTakenError
+	}
+
+	// Update the passed in ticket with the ID that was given by the database
+	if len(res.GeneratedKeys) > 0 {
+		service.Name = res.GeneratedKeys[0]
+	}
+
+	return nil
+}
+
 // Add new CASTicket to the database for the given service
 func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError) {
 	res, err := r.
@@ -405,6 +425,22 @@ func (db *RethinkDBAdapter) RemoveTicketsForUserWithService(email string, servic
 		Run(db.session)
 	if err != nil {
 		casErr := &FailedToDeleteTicketsForUserError
+		casErr.err = &err
+		return casErr
+	}
+
+	return nil
+}
+
+func (db *RethinkDBAdapter) RemoveServiceByName(serviceName string) *CASServerError {
+	_, err := r.
+		Db(db.dbName).
+		Table(db.servicesTableName).
+		Get(serviceName).
+		Delete().
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToDeleteServiceError
 		casErr.err = &err
 		return casErr
 	}

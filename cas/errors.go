@@ -50,6 +50,11 @@ var (
 		httpCode: http.StatusBadRequest,
 		casErrCode: 106,
 	}
+	ServiceNameAlreadyTakenError = CASServerError{
+		msg:        "Looks like that service name is already taken. Please use a different service name.",
+		httpCode:   http.StatusBadRequest,
+		casErrCode: 107,
+	}
 
 
 	// Internal Server errors (error codes 200 - 299)
@@ -138,6 +143,17 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 216,
 	}
+	FailedToCreateServiceError = CASServerError{
+		msg:        "An error occurred while creating the service... Please verify fields and try again",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 217,
+	}
+	FailedToDeleteServiceError = CASServerError{
+		msg:        "Failed to delete service.",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 210,
+	}
+
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{
