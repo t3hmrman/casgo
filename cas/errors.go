@@ -55,6 +55,11 @@ var (
 		httpCode:   http.StatusBadRequest,
 		casErrCode: 107,
 	}
+	InvalidServiceNameError = CASServerError{
+		msg:        "Invalid service name provided.",
+		httpCode:   http.StatusBadRequest,
+		casErrCode: 107,
+	}
 
 
 	// Internal Server errors (error codes 200 - 299)
@@ -151,7 +156,12 @@ var (
 	FailedToDeleteServiceError = CASServerError{
 		msg:        "Failed to delete service.",
 		httpCode:   http.StatusInternalServerError,
-		casErrCode: 210,
+		casErrCode: 218,
+	}
+	FailedToListServicesError = CASServerError{
+		msg:        "Failed to list services.",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 219,
 	}
 
 

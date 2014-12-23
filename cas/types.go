@@ -96,6 +96,11 @@ type CASDBAdapter interface {
 	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
 	AddNewUser(string, string) (*User, *CASServerError)
 
+	// REST API functions
+	AddNewService(*CASService) *CASServerError
+	RemoveServiceByName(string) *CASServerError
+	GetAllServices() ([]CASService, *CASServerError)
+
 	// Property getter utility functions
 	GetDbName() string
 	GetTicketsTableName() string

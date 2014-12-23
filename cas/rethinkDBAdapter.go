@@ -432,7 +432,12 @@ func (db *RethinkDBAdapter) RemoveTicketsForUserWithService(email string, servic
 	return nil
 }
 
+// Remove a service by name (key)
 func (db *RethinkDBAdapter) RemoveServiceByName(serviceName string) *CASServerError {
+	if len(serviceName) == 0 {
+		return &InvalidServiceNameError
+	}
+
 	_, err := r.
 		Db(db.dbName).
 		Table(db.servicesTableName).
@@ -446,4 +451,27 @@ func (db *RethinkDBAdapter) RemoveServiceByName(serviceName string) *CASServerEr
 	}
 
 	return nil
+}
+
+// Get all services
+func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
+	cursor, err := r.
+		Db(db.dbName).
+		Table(db.servicesTableName).
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToListServicesError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	var services []CASService
+	err = cursor.All(services)
+	if err != nil {
+		casErr := &FailedToListServicesError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	return services, nil
 }
