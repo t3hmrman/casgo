@@ -3,6 +3,7 @@ package cas
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"encoding/gob"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
@@ -75,7 +76,7 @@ func (c *CAS) init() {
 	// Setup database adapter
 	Db, err := NewRethinkDBAdapter(c)
 	if err != nil {
-		log.Fatal("Failed to setup database adapter")
+		log.Fatal("Failed to setup database adapter", err)
 	}
 	c.Db = Db
 
@@ -85,15 +86,19 @@ func (c *CAS) init() {
 	}
 
 	// Setup handlers
-	serveMux := http.NewServeMux()
+	serveMux := mux.NewRouter()
 
 	// Front end endpoints
 	serveMux.HandleFunc("/login", c.HandleLogin)
 	serveMux.HandleFunc("/logout", c.HandleLogout)
 	serveMux.HandleFunc("/register", c.HandleRegister)
 
-	// Front end facing API endpoints
-	serveMux.HandleFunc("/api/services", c.handleListServices)
+	// User-accessible API endpoints
+	serveMux.HandleFunc("/api/session/{userEmail}/services", c.listSessionUserServices).Methods("GET")
+
+	// Admin-only endpoints
+	serveMux.HandleFunc("/api/users", c.UsersHandler)
+	serveMux.HandleFunc("/api/services", c.ServicesHandler)
 
 	// CAS-specific endpoints
 	serveMux.HandleFunc("/validate", c.HandleValidate)
@@ -135,7 +140,7 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 
 	// Attempt to retrieve user session and populate template context
 	session, _ := c.cookieStore.Get(req, "casgo-session")
-	templateContext := c.augmentTemplateContext(map[string]string{}, session)
+	templateContext := c.augmentTemplateContext(map[string]interface{}{}, session)
 
 	// Exit early (and show landing page) if not user not logged in (in session)
 	if _, ok := templateContext["userEmail"]; !ok {
@@ -148,7 +153,7 @@ func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
 
 // Augment information in given context with information from given session
 // Will overwrite any fields that are already filled
-func (c *CAS) augmentTemplateContext(context map[string]string, session *sessions.Session) map[string]string {
+func (c *CAS) augmentTemplateContext(context map[string]interface{}, session *sessions.Session) map[string]interface{} {
 	context["CompanyName"] = c.Config["companyName"]
 
 	// Add information from session
@@ -158,7 +163,13 @@ func (c *CAS) augmentTemplateContext(context map[string]string, session *session
 		}
 
 		if isAdmin, ok := session.Values["userIsAdmin"]; ok {
-			context["userIsAdmin"] = isAdmin.(string)
+			casted := isAdmin.(bool)
+			context["userIsAdmin"] = casted
+			// if isAdmin.(bool) {
+			// 	context["userIsAdmin"] = "true"
+			// } else {
+			// 	context["userIsAdmin"] = ""
+			// }
 		}
 	}
 
@@ -168,7 +179,7 @@ func (c *CAS) augmentTemplateContext(context map[string]string, session *session
 // Handle logins (functions as both a credential acceptor and requestor)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
-	context := map[string]string{"CompanyName": c.Config["companyName"]}
+	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Trim and lightly pre-process/validate service
 	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
@@ -353,11 +364,7 @@ func (c *CAS) saveUserInfoInSession(w http.ResponseWriter, req *http.Request, se
 	// Save user information onto session
 	session.Values["userEmail"] = user.Email
 	session.Values["userServices"] = user.Services
-	if user.IsAdmin {
-		session.Values["userIsAdmin"] = "true"
-	} else {
-		session.Values["userIsAdmin"] = ""
-	}
+	session.Values["userIsAdmin"] = user.IsAdmin
 
 	// Save the session
 	sessionSaveErr := session.Save(req, w)
@@ -399,7 +406,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 
 // Endpoint for registering new users
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.Config["companyName"]}
+	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Show login page if credentials are not provided, attempt login otherwise
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -433,7 +440,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.Config["companyName"]}
+	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Get the user's session
 	session, _ := c.cookieStore.Get(req, "casgo-session")
