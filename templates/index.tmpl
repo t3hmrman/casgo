@@ -29,7 +29,7 @@
         <ul class="pull-right topnav-list">
             <li class="topnav-list-item medium-font">
                 <div>
-                    <i class="fa fa-user"></i> {{.userEmail}}
+                    <i class="fa fa-user"></i> <span data-bind="text: SessionService.currentUser().email"></span>
                 </div>
                 <!-- drop down with option to logout -->
             </li>
