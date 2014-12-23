@@ -56,7 +56,7 @@ func (c *CAS) listSessionUserServices(w http.ResponseWriter, req *http.Request) 
 
 	// Retrieve information from Check whether the user is an admin
 	userIsAdmin, isAdminOk := session.Values["userIsAdmin"].(bool)
-	userEmail, emailOk := session.Values["userIsAdmin"].(string)
+	userEmail, emailOk := session.Values["userEmail"].(string)
 	userServices, servicesOK := session.Values["userServices"].([]CASService)
 	if !isAdminOk || !emailOk || !servicesOK {
 		c.render.JSON(w, http.StatusInternalServerError, map[string]string{

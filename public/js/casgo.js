@@ -73,14 +73,17 @@ function CasgoViewModel() {
 		services: ko.observableArray([]),
 
 		/**
-		 * Load all services for the logged in user from the API endpoint
+		 * Get services for given user
+     *
+     * @param {string} userEmail - The username for which to retrieve services
 		 */
-		loadServices: function() {
+		getServices: function(userEmail) {
 			var svc = vm.ServicesService;
+			userEmail = userEmail || vm.SessionService.currentUser().email;
 
-			fetch('/api/services')
+      // Get user's services
+			fetch('/api/sessions/' + userEmail + "/services")
 				.then(function(resp) {
-					console.log("response:", resp);
 					return resp.json();
 				}).then(function(json) {
 					if (json.status === "success")
@@ -117,7 +120,7 @@ function CasgoViewModel() {
 		 * Setup function for the ServicesCtrl (only run once)
 		 */
 		setup: function() {
-			vm.ServicesService.loadServices();
+			vm.ServicesService.getServices();
 		}
 	};
 

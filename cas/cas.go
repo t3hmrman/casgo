@@ -94,7 +94,7 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/register", c.HandleRegister)
 
 	// User-accessible API endpoints
-	serveMux.HandleFunc("/api/session/{userEmail}/services", c.listSessionUserServices).Methods("GET")
+	serveMux.HandleFunc("/api/sessions/{userEmail}/services", c.listSessionUserServices).Methods("GET")
 	serveMux.HandleFunc("/api/sessions", c.SessionHandler).Methods("GET")
 
 	// Admin-only endpoints
