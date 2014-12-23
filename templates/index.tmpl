@@ -8,7 +8,7 @@
                     <i class="fa fa-cloud"></i> Services
                 </a>
             </li>
-            {{if .userIsAdmin}}
+            {{if .currentUser.IsAdmin}}
             <li class="topnav-list-item" data-bind="css: {active: currentRouteIs('/manage')}">
                 <a id="topnav-manage-link" class="topnav-list-item-link white-on-hover" href="#/manage">
                     <i class="fa fa-cogs"></i> Manage
