@@ -18,9 +18,9 @@
                     {{end}}
                 </div>
 
-                {{if .userEmail}}
+                {{if .currentUser}}
 
-                <h2>Signed in as user with email address {{.userEmail}}</h2>
+                <h2>Signed in as user with email address {{.currentUser.Email}}</h2>
                 <h2>Redirecting in <span id="count">3</span> seconds...</h2>
 
                 <script type="text/javascript">
