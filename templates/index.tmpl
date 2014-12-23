@@ -3,19 +3,19 @@
 		<div class="pure-u-1 pure-u-sm-2-3 pure-u-md-2-3 pure-u-lg-4-5 pure-u-xl-4-5">
 				<span class="topnav-brand">CASGO</span>
 				<ul class="topnav-list">
-						<li class="topnav-list-item" data-bind="css: {active: currentRouteIs('/services')}">
+						<li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/services')}">
 								<a id="topnav-services-link" class="topnav-list-item-link" href="#/services">
 										<i class="fa fa-cloud"></i> Services
 								</a>
 						</li>
 						{{if .currentUser.IsAdmin}}
-						<li class="topnav-list-item" data-bind="css: {active: currentRouteIs('/manage')}">
+						<li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/manage')}">
 								<a id="topnav-manage-link" class="topnav-list-item-link white-on-hover" href="#/manage">
 										<i class="fa fa-cogs"></i> Manage
 								</a>
 								<!-- drop down with services, users, the basic /admin endpoint -->
 						</li>
-						<li class="topnav-list-item" data-bind="css: {active: currentRouteIs('/statistics')}">
+						<li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/statistics')}">
 								<a id="topnav-statistics-link" class="topnav-list-item-link white-on-hover" href="#/statistics">
 										<i class="fa fa-area-chart"></i> Statistics
 								</a>
@@ -48,12 +48,9 @@
 				<div class="pure-u-1 centered-text">
 
 						<!-- Pages -->
-
-						<div data-bind="visible: currentRoute() === '/services', template: {name: 'ServicesTemplate', data: ServicesCtrl}"></div>
-						<div data-bind="visible: currentRoute() === '/manage', template: {name: 'ManageTemplate', data: ManageCtrl}"></div>
-						<div data-bind="visible: currentRoute() === '/statistics', template: {name: 'StatisticsTemplate', data: StatisticsCtrl}"></div>
-
-
+						<div data-bind="visible: currentRouteUrlHasPrefix('/services'), template: {name: 'ServicesTemplate', data: ServicesCtrl}"></div>
+						<div data-bind="visible: currentRouteUrlHasPrefix('/manage'), template: {name: 'ManageTemplate', data: ManageCtrl}"></div>
+						<div data-bind="visible: currentRouteUrlHasPrefix('/statistics'), template: {name: 'StatisticsTemplate', data: StatisticsCtrl}"></div>
 				</div>
 		</div>
 </div>
@@ -90,11 +87,12 @@
 						</ul>
 				</div>
 				<div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-2-3 pure-u-lg-4-5 pure-u-xl-5-6 content">
-						<h2>Manage Casgo</h2>
-						<h3>Manage your Casgo instance and server</h3>
-
-						<div data-bind="visible: $root.currentRoute() === '/manage/users', template: {name: 'ManageUsersTemplate', data: $root.ManageUsersCtrl}"></div>
-						<div data-bind="visible: $root.currentRoute() === '/manage/services', template: {name: 'ManageServicesTemplate', data: $root.ManageServicesCtrl}"></div>
+						<div data-bind="visible: $root.currentRouteUrl() === '/manage'">
+						    <h2>Manage Casgo</h2>
+						    <h3>Manage your Casgo instance and server</h3>
+            </div>
+						<div data-bind="visible: $root.currentRouteUrl() === '/manage/users', template: {name: 'ManageUsersTemplate', data: $root.ManageUsersCtrl}"></div>
+						<div data-bind="visible: $root.currentRouteUrl() === '/manage/services', template: {name: 'ManageServicesTemplate', data: $root.ManageServicesCtrl}"></div>
 				</div>
 		</div>
 </script>
