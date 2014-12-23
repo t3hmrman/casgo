@@ -75,8 +75,30 @@ body, html {
 
 .content-wrap {
   height: 100%;
-  padding-top: 4em;
-  margin-bottom: -5em;
+  padding-top: 6em;
+  padding-bottom: -5em;
+}
+
+.leftnav {
+  background-color: #333;
+  color: white;
+}
+
+.leftnav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.leftnav-list-item {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.leftnav-list-item.active {
+  font-weight: bold;
+  background-color: #777;
+  color: white;
 }
 
 .services-list-item {
