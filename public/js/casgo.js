@@ -45,7 +45,9 @@ function CasgoViewModel() {
 	};
 
 
-	// SessionService
+	/**
+   * Service that maintains user sessions and information retrieved from the backend
+   */
 	vm.SessionService = {
 		currentUser: ko.observable({}),
 
