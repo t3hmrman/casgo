@@ -60,11 +60,10 @@ function CasgoViewModel() {
     vm.currentRouteUrl(window.location.hash.slice(1));
 
     // Run setup functions for all specified controllers, if any
-    if (_.has(window.App.Routes, route) &&
-        _.has(window.App.Routes[route], 'controllers') &&
-        _.isArray(window.App.Routes[route].controllers)) {
+    if (_.has(route, 'controllers') && _.isArray(route.controllers)) {
 
-      _.forEach(window.App.Routes[route].controllers, function(c) {
+      // Run setup relevant all controllers
+      _.forEach(route.controllers, function(c) {
         if (_.isString(c) &&
             _.has(vm, c) &&
             _.has(vm[c], 'setup') &&
@@ -131,7 +130,8 @@ function CasgoViewModel() {
 
   // Services
   vm.ServicesService = {
-    services: ko.observableArray([]),
+    currentUserServices: ko.observableArray([]),
+    allServices: ko.observableArray([]),
 
     /**
      * Get services for given user
@@ -152,8 +152,29 @@ function CasgoViewModel() {
       getUserFn
         .then(svc.fetchServicesForUser)
         .then(function(services) {
-          svc.services(services);
+          svc.currentUserServices(services);
         });
+    },
+
+    /**
+     * Get all services (admins only)
+     */
+    getAllServices: function() {
+      var svc = vm.ServicesService;
+      return new Promise(function(resolve, reject) {
+        fetch('/api/services')
+        .then(function(resp) { return resp.json(); })
+        .then(function(json) {
+          if (json.status === "success") {
+            svc.allServices(json.data);
+            resolve(svc.allServices());
+          } else {
+            reject(json.message);
+          }
+        }).catch(function(err) {
+          reject(err);
+        });
+      });
     },
 
     /**
@@ -167,12 +188,11 @@ function CasgoViewModel() {
       // Get user's services
       return new Promise(function(resolve, reject) {
         fetch('/api/sessions/' + user.email + "/services")
-        .then(function(resp) {
-          return resp.json();
-        }).then(function(json) {
+          .then(function(resp) { return resp.json();})
+          .then(function(json) {
           if (json.status === "success") {
-            svc.services(json.data);
-            resolve(svc.services());
+            svc.currentUserServices(json.data);
+            resolve(svc.currentUserServices());
           } else {
             reject(new Error("API call failed", json.message));
           }
@@ -190,17 +210,19 @@ function CasgoViewModel() {
     currentPage: ko.observable(0),
     numPages: ko.pureComputed(function() {
       var ctrl = vm.ServicesCtrl;
-      return Math.Ceil(vm.ServicesService.services() / ctrl.pageSize()) + 1;
+      return Math.Ceil(vm.ServicesService.currentUserServices() / ctrl.pageSize()) + 1;
     }),
     pagedServices: ko.pureComputed(function() {
       var ctrl = vm.ServicesCtrl;
       var startingIndex = ctrl.currentPage() * ctrl.pageSize();
-      var services = vm.ServicesService.services();
+      var services = vm.ServicesService.currentUserServices();
 
       // Return early if not enough data
       if (services.length == 0 || startingIndex > services.length) { return []; }
 
-      return vm.ServicesService.services().slice(ctrl.currentPage() * ctrl.pageSize(), ctrl.pageSize());
+      return vm.ServicesService
+        .currentUserServices()
+        .slice(ctrl.currentPage() * ctrl.pageSize(), ctrl.pageSize());
     }),
 
     /**
@@ -211,10 +233,42 @@ function CasgoViewModel() {
     }
   };
 
+  /**
+   * Manage services controller
+   */
+  vm.ManageServicesCtrl = {
+    pageSize: ko.observable(10),
+    currentPage: ko.observable(0),
+    numPages: ko.pureComputed(function() {
+      var ctrl = vm.ServicesCtrl;
+      return Math.Ceil(vm.ServicesService.allServices() / ctrl.pageSize()) + 1;
+    }),
+    pagedServices: ko.pureComputed(function() {
+      var ctrl = vm.ServicesCtrl;
+      var startingIndex = ctrl.currentPage() * ctrl.pageSize();
+      var services = vm.ServicesService.allServices();
+
+      // Return early if not enough data
+      if (services.length == 0 || startingIndex > services.length) { return []; }
+
+      return vm.ServicesService
+        .allServices()
+        .slice(ctrl.currentPage() * ctrl.pageSize(), ctrl.pageSize());
+    }),
+
+    /**
+     * Setup function for the ManageServicesCtrl
+     */
+    setup: function() {
+      vm.ServicesService.getAllServices();
+    }
+  };
+
+
   vm.ManageCtrl = {};
   vm.ManageUsersCtrl = {users: []};
-  vm.ManageServicesCtrl = {services: []};
   vm.StatisticsCtrl = {};
+
 
   /**
    * App initialization function, to be run once, when the app starts
