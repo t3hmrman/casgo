@@ -67,8 +67,8 @@ var _ = Feature("CASGO", func() {
 		Step("Ensure the casgo SPA shows more navigation options to the admin user", func() {
 			page.Navigate(testHTTPServer.URL + "/")
 			Expect(page.Find("#topnav-services-link")).To(BeFound())
-			// Expect(page.Find("#topnav-manage-link")).ToNot(BeFound())
-			// Expect(page.Find("#topnav-statistics-link")).ToNot(BeFound())
+			Expect(page.Find("#topnav-manage-link")).ToNot(BeFound())
+			Expect(page.Find("#topnav-statistics-link")).ToNot(BeFound())
 		})
 		StepLogoutUser(page)
 	})
@@ -77,6 +77,7 @@ var _ = Feature("CASGO", func() {
 		StepLoginUser(INTEGRATION_TEST_DATA["fixtureAdminEmail"], INTEGRATION_TEST_DATA["fixtureAdminPassword"], page)
 		Step("Ensure the casgo SPA shows more navigation options to the admin user", func() {
 			page.Navigate(testHTTPServer.URL + "/")
+			Expect(page.Find("#topnav-services-link")).To(BeFound())
 			Expect(page.Find("#topnav-manage-link")).To(BeFound())
 			Expect(page.Find("#topnav-statistics-link")).To(BeFound())
 		})
