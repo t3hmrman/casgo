@@ -466,7 +466,7 @@ func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
 	}
 
 	var services []CASService
-	err = cursor.All(services)
+	err = cursor.All(&services)
 	if err != nil {
 		casErr := &FailedToListServicesError
 		casErr.err = &err
