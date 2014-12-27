@@ -1,4 +1,4 @@
-package cas_test
+package db_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -55,7 +55,7 @@ var _ = Describe("Cas DB adapter", func() {
 			err := testCASServer.Db.LoadJSONFixture(
 				testCASServer.Db.GetDbName(),
 				testCASServer.Db.GetServicesTableName(),
-				"fixtures/services.json",
+				"../../fixtures/services.json",
 			)
 			Expect(err).To(BeNil())
 		})
@@ -73,7 +73,7 @@ var _ = Describe("Cas DB adapter", func() {
 			err = testCASServer.Db.LoadJSONFixture(
 				testCASServer.Db.GetDbName(),
 				testCASServer.Db.GetServicesTableName(),
-				"fixtures/services.json")
+				"../../fixtures/services.json")
 			Expect(err).To(BeNil())
 
 			// Attempting to find a serive in the fixture shoudl pass now
