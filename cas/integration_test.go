@@ -9,10 +9,10 @@ import (
 )
 
 var INTEGRATION_TEST_DATA map[string]string = map[string]string{
-	"newUserEmail":        "testuser@testemail.com",
-	"newUserPassword":     "testpassword",
-	"fixtureUserEmail":    "test@test.com",
-	"fixtureUserPassword": "test",
+	"newUserEmail":         "testuser@testemail.com",
+	"newUserPassword":      "testpassword",
+	"fixtureUserEmail":     "test@test.com",
+	"fixtureUserPassword":  "test",
 	"fixtureAdminEmail":    "admin@test.com",
 	"fixtureAdminPassword": "test",
 }
@@ -130,7 +130,7 @@ var StepLoginUser func(string, string, Page) = func(email, password string, page
 
 // Steps to simulate logout
 var StepLogoutUser func(Page) = func(page Page) {
-		page.Navigate(testHTTPServer.URL + "/logout")
-		Expect(page.Find("div.alert.success")).To(BeFound())
-		Expect(page.Find("div.alert.success")).To(HaveText("Successfully logged out"))
+	page.Navigate(testHTTPServer.URL + "/logout")
+	Expect(page.Find("div.alert.success")).To(BeFound())
+	Expect(page.Find("div.alert.success")).To(HaveText("Successfully logged out"))
 }

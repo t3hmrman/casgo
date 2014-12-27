@@ -46,8 +46,8 @@ var (
 		casErrCode: 105,
 	}
 	FailedToRetrieveServicesError = CASServerError{
-		msg: "Failed to retrieve services for logged in user. Please ensure you are logged in.",
-		httpCode: http.StatusBadRequest,
+		msg:        "Failed to retrieve services for logged in user. Please ensure you are logged in.",
+		httpCode:   http.StatusBadRequest,
 		casErrCode: 106,
 	}
 	ServiceNameAlreadyTakenError = CASServerError{
@@ -60,7 +60,6 @@ var (
 		httpCode:   http.StatusBadRequest,
 		casErrCode: 107,
 	}
-
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
@@ -168,7 +167,6 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 220,
 	}
-
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{

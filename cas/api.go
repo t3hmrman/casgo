@@ -232,14 +232,14 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 	casErr := api.casServer.Db.UpdateService(&service)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
-			"status": "error",
+			"status":  "error",
 			"message": casErr.msg,
 		})
 		return
 	}
 
-	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{} {
+	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
 		"status": "success",
-		"data": service,
+		"data":   service,
 	})
 }
