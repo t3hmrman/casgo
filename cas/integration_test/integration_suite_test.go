@@ -1,4 +1,4 @@
-package cas_test
+package integration_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -16,9 +16,9 @@ var testHTTPServer *httptest.Server
 var testCASConfig map[string]string
 var testCASServer *cas.CAS
 
-func TestCas(t *testing.T) {
+func TestCasgoEndToEnd(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Cas Suite")
+	RunSpecs(t, "CasGo integration Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -26,12 +26,19 @@ var _ = BeforeSuite(func() {
 	StartPhantomJS()
 
 	// Setup CAS server & DB
-	testCASConfig, _ = cas.NewCASServerConfig(map[string]string{
+	testCASConfig, err := cas.NewCASServerConfig(map[string]string{
 		"companyName":        "Casgo Testing Company",
 		"dbName":             "casgo_test",
-		"templatesDirectory": "../templates",
+		"templatesDirectory": "../../templates",
 	})
-	testCASServer, _ = cas.NewCASServer(testCASConfig)
+	if err != nil {
+		log.Fatalf("Failed to generate cas server config, err: %v", err)
+	}
+
+	testCASServer, err = cas.NewCASServer(testCASConfig)
+	if err != nil {
+		log.Fatalf("Failed to generate setup cas server, err: %v", err)
+	}
 	testCASServer.SetupDb()
 
 	// Setup http test server

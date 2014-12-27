@@ -1,4 +1,4 @@
-package cas_test
+package integration_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -17,7 +17,7 @@ var INTEGRATION_TEST_DATA map[string]string = map[string]string{
 	"fixtureAdminPassword": "test",
 }
 
-var _ = Feature("CASGO", func() {
+var _ = Feature("CasGo", func() {
 	var page Page
 
 	Background(func() {
