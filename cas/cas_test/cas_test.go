@@ -6,7 +6,7 @@ import (
 	. "github.com/t3hmrman/casgo/cas"
 )
 
-var _ = Describe("Cas", func() {
+var _ = Describe("CasGo", func() {
 	Describe("CAS Server", func() {
 		It("Should be creatable with nil configuration", func() {
 			server, err := NewCASServer(nil)
