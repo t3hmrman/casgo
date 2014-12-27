@@ -99,6 +99,7 @@ type CASDBAdapter interface {
 	// REST API functions
 	AddNewService(*CASService) *CASServerError
 	RemoveServiceByName(string) *CASServerError
+	UpdateService(*CASService) *CASServerError
 	GetAllServices() ([]CASService, *CASServerError)
 
 	// Property getter utility functions

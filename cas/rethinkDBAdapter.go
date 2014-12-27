@@ -453,6 +453,27 @@ func (db *RethinkDBAdapter) RemoveServiceByName(serviceName string) *CASServerEr
 	return nil
 }
 
+// Update service with a similar name to the passed in service (key)
+func (db *RethinkDBAdapter) UpdateService(service *CASService) *CASServerError {
+	if len(service.Name) == 0 {
+		return &InvalidServiceNameError
+	}
+
+	res, err := r.
+		Db(db.dbName).
+		Table(db.servicesTableName).
+		Get(service.Name).
+		Update(service, r.UpdateOpts{ReturnChanges: true}).
+		RunWrite(db.session)
+	if err != nil || res.Replaced == 0 || len(res.Changes) == 0 {
+		casErr := &FailedToUpdateServiceError
+		casErr.err = &err
+		return casErr
+	}
+
+	return nil
+}
+
 // Get all services
 func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
 	cursor, err := r.

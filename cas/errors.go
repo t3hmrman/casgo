@@ -163,6 +163,11 @@ var (
 		httpCode:   http.StatusInternalServerError,
 		casErrCode: 219,
 	}
+	FailedToUpdateServiceError = CASServerError{
+		msg:        "Failed to update service.",
+		httpCode:   http.StatusInternalServerError,
+		casErrCode: 220,
+	}
 
 
 	// Other (error codes 300 - 399)

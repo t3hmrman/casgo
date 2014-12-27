@@ -179,6 +179,7 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 }
 
 // Remove a service
+// Returns the removed service's name
 func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) {
 	// Get session and user
 	_, user, casErr := getSessionAndUser(api, req)
@@ -218,7 +219,27 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 }
 
 // Update an existing service
+// Returns the modified service
 func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) {
-	// Build service object from passed in data
-	// api.casServer.Db.UpdateService(service)
+
+	service := CASService{
+		Name:       strings.TrimSpace(req.FormValue("name")),
+		Url:        strings.TrimSpace(strings.ToLower(req.FormValue("url"))),
+		AdminEmail: strings.TrimSpace(strings.ToLower(req.FormValue("adminEmail"))),
+	}
+
+	// Attempt to update the service
+	casErr := api.casServer.Db.UpdateService(&service)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+			"status": "error",
+			"message": casErr.msg,
+		})
+		return
+	}
+
+	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{} {
+		"status": "success",
+		"data": service,
+	})
 }
