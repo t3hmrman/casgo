@@ -61,7 +61,7 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	routeUserEmail := routeVars["userEmail"]
 
 	// Ensure non-admin user is not trying to lookup another users session information
-	if !user.IsAdmin && user.Email != routeUserEmail {
+	if !api.casServer.DebugMode && !user.IsAdmin && user.Email != routeUserEmail {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions",
@@ -86,7 +86,7 @@ func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, 
 		return nil, nil, casErr
 	}
 
-	// Retrieve information from Check whether the user is an admin
+	// Retrive current user from session
 	user, ok := session.Values["currentUser"].(User)
 	if !ok {
 		casErr := &FailedToRetrieveInformationFromSessionError
@@ -110,7 +110,7 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Ensure user is admin
-	if !user.IsAdmin {
+	if !api.casServer.DebugMode && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",
@@ -154,7 +154,7 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Ensure user is admin
-	if !user.IsAdmin {
+	if !api.casServer.DebugMode && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",
@@ -192,7 +192,7 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Ensure user is admin
-	if !user.IsAdmin {
+	if !api.casServer.DebugMode && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",
@@ -221,6 +221,24 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 // Update an existing service
 // Returns the modified service
 func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) {
+	// Get session and user
+	_, user, casErr := getSessionAndUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.msg,
+		})
+		return
+	}
+
+	// Ensure user is admin
+	if !api.casServer.DebugMode && !user.IsAdmin {
+		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+			"status":  "error",
+			"message": "Insufficient permissions.",
+		})
+		return
+	}
 
 	service := CASService{
 		Name:       strings.TrimSpace(req.FormValue("name")),
@@ -229,7 +247,7 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Attempt to update the service
-	casErr := api.casServer.Db.UpdateService(&service)
+	casErr = api.casServer.Db.UpdateService(&service)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",

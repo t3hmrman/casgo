@@ -23,6 +23,7 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 		render:      nil,
 		cookieStore: nil,
 		ServeMux:    nil,
+		DebugMode:       false,
 	}
 
 	// Create configuration with user overrides provided

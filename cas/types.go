@@ -131,6 +131,7 @@ type CAS struct {
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 	LogLevel    int
+	DebugMode   bool
 }
 
 // RethinkDB Adapter
