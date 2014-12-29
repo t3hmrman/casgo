@@ -8,13 +8,12 @@ import (
 	"testing"
 )
 
-// Testing globals for HTTP tests
 var testCASConfig map[string]string
 var testCASServer *cas.CAS
 
 func TestCas(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "CasGo DB Adapter Suite")
+	RunSpecs(t, "CasGo API Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -23,6 +22,7 @@ var _ = BeforeSuite(func() {
 		"companyName":        "Casgo Testing Company",
 		"dbName":             "casgo_test",
 		"templatesDirectory": "../templates",
+		"apiNoAdminCheck":    "1",
 	})
 	testCASServer, _ = cas.NewCASServer(testCASConfig)
 	testCASServer.SetupDb()

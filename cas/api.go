@@ -61,7 +61,7 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	routeUserEmail := routeVars["userEmail"]
 
 	// Ensure non-admin user is not trying to lookup another users session information
-	if !api.casServer.DebugMode && !user.IsAdmin && user.Email != routeUserEmail {
+	if len(api.casServer.Config["apiNoAdminCheck"]) > 0 && !user.IsAdmin && user.Email != routeUserEmail {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions",
@@ -110,7 +110,7 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Ensure user is admin
-	if !api.casServer.DebugMode && !user.IsAdmin {
+	if len(api.casServer.Config["apiNoAdminCheck"]) > 0 && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",
@@ -154,7 +154,7 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Ensure user is admin
-	if !api.casServer.DebugMode && !user.IsAdmin {
+	if len(api.casServer.Config["apiNoAdminCheck"]) > 0 && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",
@@ -192,7 +192,7 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Ensure user is admin
-	if !api.casServer.DebugMode && !user.IsAdmin {
+	if len(api.casServer.Config["apiNoAdminCheck"]) > 0 && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",
@@ -232,7 +232,7 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Ensure user is admin
-	if !api.casServer.DebugMode && !user.IsAdmin {
+	if len(api.casServer.Config["apiNoAdminCheck"]) > 0 && !user.IsAdmin {
 		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
 			"status":  "error",
 			"message": "Insufficient permissions.",

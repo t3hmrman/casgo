@@ -16,6 +16,7 @@ var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
 	"companyName":        "CASGO_COMPNAME",
 	"authMethod":         "CASGO_DEFAULT_AUTH",
 	"logLevel":           "CASGO_LOG_LVL",
+	"apiNoAdminCheck":    "CASGO_API_NOADMINCHECK",
 }
 
 var CONFIG_DEFAULTS map[string]string = map[string]string{
@@ -28,6 +29,7 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 	"companyName":        "companyABC",
 	"authMethod":         "password",
 	"logLevel":           "WARN",
+	"apiNoAdminCheck":    "",
 }
 
 // Create default casgo configuration, with user overrides if any
