@@ -1,0 +1,26 @@
+[
+  {
+    "key": "this is not a valid API key",
+    "user": {
+      "email": "test@test.com",
+      "attributes": {},
+      "isAdmin": false,
+      "services": [
+        {
+          "name": "test_service",
+          "url": "localhost:3000/validateCASLogin",
+          "adminEmail": "admin@test.com"
+        }
+      ]
+    }
+  },
+  {
+    "key": "this is not a valid API key",
+    "user": {
+      "email": "admin@test.com",
+      "attributes": {},
+      "isAdmin": true,
+      "services": []
+    }
+  }
+]

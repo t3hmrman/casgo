@@ -15,6 +15,27 @@ func NewCasgoFrontendAPI(c *CAS) (*FrontendAPI, error) {
 	return &FrontendAPI{casServer: c}, nil
 }
 
+// Utility function to retrieve session and user information
+func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, *User, *CASServerError) {
+	// Get the current session
+	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
+	if err != nil {
+		casErr := &FailedToRetrieveServicesError
+		casErr.err = &err
+		return nil, nil, casErr
+	}
+
+	// Retrive current user from session
+	user, ok := session.Values["currentUser"].(User)
+	if !ok {
+		casErr := &FailedToRetrieveInformationFromSessionError
+		casErr.err = &err
+		return nil, nil, casErr
+	}
+
+	return session, &user, nil
+}
+
 // Hook up API endpoints to given mux
 func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 	// Session information endpoints
@@ -76,26 +97,6 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	})
 }
 
-// Utility function to retrieve session and user information
-func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, *User, *CASServerError) {
-	// Get the current session
-	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
-	if err != nil {
-		casErr := &FailedToRetrieveServicesError
-		casErr.err = &err
-		return nil, nil, casErr
-	}
-
-	// Retrive current user from session
-	user, ok := session.Values["currentUser"].(User)
-	if !ok {
-		casErr := &FailedToRetrieveInformationFromSessionError
-		casErr.err = &err
-		return nil, nil, casErr
-	}
-
-	return session, &user, nil
-}
 
 // Get list of services (admin only)
 func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
