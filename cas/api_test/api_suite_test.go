@@ -22,7 +22,6 @@ var _ = BeforeSuite(func() {
 		"companyName":        "Casgo Testing Company",
 		"dbName":             "casgo_test",
 		"templatesDirectory": "../templates",
-		"apiNoAdminCheck":    "1",
 	})
 	testCASServer, _ = cas.NewCASServer(testCASConfig)
 	testCASServer.SetupDb()
