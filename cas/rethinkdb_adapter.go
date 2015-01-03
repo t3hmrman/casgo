@@ -12,6 +12,7 @@ func (db *RethinkDBAdapter) GetDbName() string            { return db.dbName }
 func (db *RethinkDBAdapter) GetTicketsTableName() string  { return db.ticketsTableName }
 func (db *RethinkDBAdapter) GetServicesTableName() string { return db.servicesTableName }
 func (db *RethinkDBAdapter) GetUsersTableName() string    { return db.usersTableName }
+func (db *RethinkDBAdapter) GetAPIKeysTableName() string  { return db.apiKeysTableName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -25,12 +26,17 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 
 	// Create the adapter
 	adapter := &RethinkDBAdapter{
-		session:           dbSession,
-		dbName:            c.Config["dbName"],
-		ticketsTableName:  "tickets",
-		servicesTableName: "services",
-		usersTableName:    "users",
-		LogLevel:          c.Config["logLevel"],
+		session:              dbSession,
+		dbName:               c.Config["dbName"],
+		ticketsTableName:     "tickets",
+		ticketsTableOptions:  nil,
+		servicesTableName:    "services",
+		servicesTableOptions: &r.TableCreateOpts{PrimaryKey: "name"},
+		usersTableName:       "users",
+		usersTableOptions:    &r.TableCreateOpts{PrimaryKey: "email"},
+		apiKeysTableName:     "api_keys",
+		apiKeysTableOptions:  &r.TableCreateOpts{PrimaryKey: "key"},
+		LogLevel:             c.Config["logLevel"],
 	}
 
 	return adapter, nil
@@ -76,6 +82,7 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 	db.SetupServicesTable()
 	db.SetupTicketsTable()
 	db.SetupUsersTable()
+	db.SetupApiKeysTable()
 
 	return nil
 }
@@ -134,7 +141,7 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions i
 
 // Set up the table that holds services
 func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
-	return db.setupTable(db.servicesTableName, r.TableCreateOpts{PrimaryKey: "name"})
+	return db.setupTable(db.servicesTableName, db.servicesTableOptions)
 }
 
 // Tear down the table that holds services
@@ -144,7 +151,7 @@ func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
 
 // Set up the table that holds tickets
 func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
-	return db.setupTable(db.ticketsTableName, nil)
+	return db.setupTable(db.ticketsTableName, db.ticketsTableOptions)
 }
 
 // Tear down the table that holds tickets
@@ -154,12 +161,22 @@ func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
 
 // Set up the table that holds users
 func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
-	return db.setupTable(db.usersTableName, r.TableCreateOpts{PrimaryKey: "email"})
+	return db.setupTable(db.usersTableName, db.usersTableOptions)
 }
 
 // Tear down the table that holds users
 func (db *RethinkDBAdapter) TeardownUsersTable() *CASServerError {
 	return db.teardownTable(db.usersTableName)
+}
+
+// Set up the table that holds apikeys
+func (db *RethinkDBAdapter) SetupApiKeysTable() *CASServerError {
+	return db.setupTable(db.apiKeysTableName, db.apiKeysTableOptions)
+}
+
+// Tear down the table that holds apikeys
+func (db *RethinkDBAdapter) TeardownApiKeysTable() *CASServerError {
+	return db.teardownTable(db.apiKeysTableName)
 }
 
 // Dynamically setup tables - dispatch because each table might have special implementations
@@ -171,6 +188,8 @@ func (db *RethinkDBAdapter) SetupTable(tableName string) *CASServerError {
 		return db.SetupServicesTable()
 	case db.usersTableName:
 		return db.SetupUsersTable()
+	case db.apiKeysTableName:
+		return db.SetupApiKeysTable()
 	default:
 		casError := &FailedToSetupDatabaseError
 		return casError
@@ -201,6 +220,8 @@ func (db *RethinkDBAdapter) getTableSetupOptions(tableName string) (*r.TableCrea
 		return db.servicesTableOptions, nil
 	case db.usersTableName:
 		return db.usersTableOptions, nil
+	case db.apiKeysTableName:
+		return db.apiKeysTableOptions, nil
 	default:
 		return nil, errors.New(fmt.Sprintf("Invalid tableName, can't find setup options for table [%s]", tableName))
 	}
@@ -215,6 +236,8 @@ func (db *RethinkDBAdapter) setTableSetupOptions(tableName string, opts *r.Table
 		db.servicesTableOptions = opts
 	case db.usersTableName:
 		db.usersTableOptions = opts
+	case db.apiKeysTableName:
+		db.apiKeysTableOptions = opts
 	default:
 		return errors.New(fmt.Sprintf("Failed to set table setup options for table [%s]", tableName))
 	}

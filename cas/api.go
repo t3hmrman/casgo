@@ -2,7 +2,6 @@ package cas
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"net/http"
 	"strings"
 )
@@ -15,14 +14,33 @@ func NewCasgoFrontendAPI(c *CAS) (*FrontendAPI, error) {
 	return &FrontendAPI{casServer: c}, nil
 }
 
-// Utility function to retrieve session and user information
-func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, *User, *CASServerError) {
+// Utility function to authenticate an API user, whether user is using a web-session or passed an API key
+func authenticateAPIUser(api *FrontendAPI, req *http.Request) (*User, *CASServerError) {
+
+	// Attempt to authenticate with HTTP session
+	user, casErr := authenticateWithSession(api, req)
+	if casErr == nil {
+		return user, nil
+	}
+
+	// Attempt to authenticate with API key and secret if present
+	user, casErr = api.authenticateWithAPIKey(req)
+	if casErr == nil {
+		return user, nil
+	}
+
+	// If all authentication methods fail, return error
+	return nil, &FailedToAuthenticateUserError
+}
+
+// Authenticate user with session
+func authenticateWithSession(api *FrontendAPI, req *http.Request) (*User, *CASServerError) {
 	// Get the current session
 	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
 	if err != nil {
 		casErr := &FailedToRetrieveServicesError
 		casErr.err = &err
-		return nil, nil, casErr
+		return nil, casErr
 	}
 
 	// Retrive current user from session
@@ -30,10 +48,22 @@ func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, 
 	if !ok {
 		casErr := &FailedToRetrieveInformationFromSessionError
 		casErr.err = &err
-		return nil, nil, casErr
+		return nil, casErr
 	}
 
-	return session, &user, nil
+	return &user, nil
+}
+
+func (api *FrontendAPI) authenticateWithAPIKey(req *http.Request) (*User, *CASServerError) {
+	// Get the api key and secret
+	apiKey := req.Header.Get("X-Api-Key")
+	apiSecret := req.Header.Get("X-Api-Secret")
+	if len(apiKey) == 0 || len(apiSecret) == 0 {
+		return nil, &FailedToAuthenticateUserError
+	}
+
+	// Query the database?
+	return nil, nil
 }
 
 // Hook up API endpoints to given mux
@@ -51,7 +81,7 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 
 // Handle sessions endpoint
 func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request) {
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
@@ -68,7 +98,7 @@ func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request
 
 // Get the services for a logged in user
 func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http.Request) {
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
@@ -97,11 +127,10 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	})
 }
 
-
 // Get list of services (admin only)
 func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	// Get the current session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
@@ -138,7 +167,7 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 // Create a new service
 func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) {
 	// Get session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
@@ -183,7 +212,7 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 // Returns the removed service's name
 func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) {
 	// Get session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",
@@ -223,7 +252,7 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 // Returns the modified service
 func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) {
 	// Get session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
 			"status":  "error",

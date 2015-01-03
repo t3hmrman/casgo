@@ -58,7 +58,12 @@ var (
 	InvalidServiceNameError = CASServerError{
 		msg:        "Invalid service name provided.",
 		httpCode:   http.StatusBadRequest,
-		casErrCode: 107,
+		casErrCode: 108,
+	}
+	FailedToAuthenticateUserError = CASServerError{
+		msg:        "Failed to authenticate API user. Please ensure that you have provided sufficient credentials (whether through relevant headers or session information)..",
+		httpCode:   http.StatusUnauthorized,
+		casErrCode: 109,
 	}
 
 	// Internal Server errors (error codes 200 - 299)

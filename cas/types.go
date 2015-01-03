@@ -143,6 +143,8 @@ type RethinkDBAdapter struct {
 	servicesTableOptions *r.TableCreateOpts
 	usersTableName       string
 	usersTableOptions    *r.TableCreateOpts
+	apiKeysTableName     string
+	apiKeysTableOptions  *r.TableCreateOpts
 	LogLevel             string
 }
 

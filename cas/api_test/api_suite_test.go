@@ -6,12 +6,15 @@ import (
 
 	"github.com/t3hmrman/casgo/cas"
 	"testing"
+	"net/http/httptest"
 )
 
+// Testing globals for HTTP tests
+var testHTTPServer *httptest.Server
 var testCASConfig map[string]string
 var testCASServer *cas.CAS
 
-func TestCas(t *testing.T) {
+func TestCasgoAPI(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "CasGo API Suite")
 }
@@ -25,6 +28,9 @@ var _ = BeforeSuite(func() {
 	})
 	testCASServer, _ = cas.NewCASServer(testCASConfig)
 	testCASServer.SetupDb()
+
+	// Setup http test server
+	testHTTPServer = httptest.NewServer(testCASServer.ServeMux)
 
 	// Load database fixtures
 	testCASServer.Db.LoadJSONFixture(
@@ -41,5 +47,6 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	testHTTPServer.Close()
 	testCASServer.TeardownDb()
 })
