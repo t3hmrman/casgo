@@ -116,13 +116,13 @@ func (c *CAS) init() {
 }
 
 // Set up the underlying database
-func (c *CAS) SetupDb() {
-	c.Db.Setup()
+func (c *CAS) SetupDb() *CASServerError {
+	return c.Db.Setup()
 }
 
 // Teardown the underlying database
-func (c *CAS) TeardownDb() {
-	c.Db.Teardown()
+func (c *CAS) TeardownDb() *CASServerError {
+	return c.Db.Teardown()
 }
 
 // Start the CAS server
