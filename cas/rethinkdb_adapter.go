@@ -98,15 +98,10 @@ func (db *RethinkDBAdapter) teardownTable(tableName string) *CASServerError {
 }
 
 func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) *CASServerError {
-	// Catch nil options
-	if dbOptions == nil {
-		return db.createTableWithOptions(tableName, nil)
-	}
-
-	// Ensure dbOptions is of correct type, if non-nil
+	// Ensure rdbOptions is of correct type, if non-nil
 	switch t := dbOptions.(type) {
-	case r.TableCreateOpts:
-		return db.createTableWithOptions(tableName, dbOptions)
+	case *r.TableCreateOpts:
+		return db.createTableWithOptions(tableName, dbOptions.(*r.TableCreateOpts))
 	default:
 		casError := &FailedToSetupTableError
 		err := fmt.Errorf("Unexpected type of dbOptions: %T", t)
@@ -116,26 +111,37 @@ func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) 
 	return nil
 }
 
-func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions interface{}) *CASServerError {
-	logMessagef(db.LogLevel, "INFO", "Creating table [%s], options: %v", tableName, dbOptions)
+func (db *RethinkDBAdapter) createTableWithOptions(tableName string, rdbOptions *r.TableCreateOpts) *CASServerError {
+	logMessagef(db.LogLevel, "INFO", "Creating table [%s], options: %v", tableName, rdbOptions)
 
-	// Check again that dbOptions is not nil, optionally leave out argument
+	// Check again that rdbOptions is not nil, optionally leave out argument
 	var err error
-	if dbOptions == nil {
+	if rdbOptions == nil {
+		
+		// Create table with no options
 		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
-	} else {
-		// Cast the options to the type we expect them to be
-		castedOptions := dbOptions.(r.TableCreateOpts)
 
-		// Perform query & save the options for later use
-		_, err = r.Db(db.dbName).TableCreate(tableName, castedOptions).Run(db.session)
-		db.setTableSetupOptions(tableName, &castedOptions)
+	} else {
+
+		// Set and get the table options (so that they can be retrieved later
+		db.setTableSetupOptions(tableName, rdbOptions)
+		options, err := db.getTableSetupOptions(tableName)
+		if err != nil {
+			casError := &FailedToCreateTableError
+			casError.err = &err
+			return casError
+		}
+
+		// Create table
+		_, err = r.Db(db.dbName).TableCreate(tableName, *options).Run(db.session)
 	}
+
 	if err != nil {
 		casError := &FailedToCreateTableError
 		casError.err = &err
 		return casError
 	}
+
 	return nil
 }
 
