@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/t3hmrman/casgo/cas"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -22,8 +22,7 @@ var _ = Describe("CasGo API", func() {
 			var respJSON map[string]interface{}
 			json.Unmarshal(rawBody, &respJSON)
 			Expect(respJSON["status"]).To(Equal("error"))
-
-			log.Println("Response: %v", respJSON)
+			Expect(respJSON["message"]).To(Equal(FailedToAuthenticateUserError.Msg))
 		})
 		// It("Should authenticate a user without a session who has passed an API key", func() {
 		//	http.Get(testHTTPServer.URL + "/api/services")

@@ -264,7 +264,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 	// Add special options based on table information from setup
 	options, err := db.getTableSetupOptions(tableName)
 	if err != nil {
-		return &CASServerError{msg: "Failed to find table setup options for table!", err: &err}
+		return &CASServerError{Msg: "Failed to find table setup options for table!", err: &err}
 	}
 
 	// Check for and apply special options
@@ -277,7 +277,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 	output, err := importCmd.CombinedOutput()
 	if err != nil {
 		casError := &FailedToLoadJSONFixtureError
-		casError.msg = string(output)
+		casError.Msg = string(output)
 		casError.err = &err
 		return casError
 	}

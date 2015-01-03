@@ -83,9 +83,9 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request) {
 	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -100,9 +100,9 @@ func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request
 func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http.Request) {
 	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -132,9 +132,9 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	// Get the current session and user
 	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -151,9 +151,9 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	// Grab list of all services
 	services, casErr := api.casServer.Db.GetAllServices()
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -169,9 +169,9 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	// Get session and user
 	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -195,9 +195,9 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	// Attempt to add service
 	casErr = api.casServer.Db.AddNewService(&service)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -214,9 +214,9 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 	// Get session and user
 	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -236,9 +236,9 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 
 	casErr = api.casServer.Db.RemoveServiceByName(serviceName)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 	}
 
@@ -254,9 +254,9 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 	// Get session and user
 	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -279,9 +279,9 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 	// Attempt to update the service
 	casErr = api.casServer.Db.UpdateService(&service)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}

@@ -51,9 +51,9 @@ func CompareTickets(a, b CASTicket) bool {
 }
 
 type CASServerError struct {
-	msg        string // Message string
-	httpCode   int    // HTTP error code, if applicable
-	casErrCode int    // CASGO specific error code
+	Msg        string // Message string
+	HttpCode   int    // HTTP error code, if applicable
+	CasgoErrCode int    // CASGO specific error code
 	err        *error // Actual error that was thrown (if any)
 }
 
