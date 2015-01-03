@@ -19,13 +19,18 @@ func TestCas(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// Setup CAS server & DB
-	testCASConfig, _ = cas.NewCASServerConfig(map[string]string{
+	testCASConfig, err := cas.NewCASServerConfig(map[string]string{
 		"companyName":        "Casgo Testing Company",
 		"dbName":             "casgo_test",
 		"templatesDirectory": "../templates",
 	})
-	testCASServer, _ = cas.NewCASServer(testCASConfig)
-	testCASServer.SetupDb()
+	Expect(err).To(BeNil())
+
+	testCASServer, err = cas.NewCASServer(testCASConfig)
+	Expect(err).To(BeNil())
+
+	err = testCASServer.SetupDb()
+	Expect(err).To(BeNil())
 
 	// Load database fixtures
 	testCASServer.Db.LoadJSONFixture(
