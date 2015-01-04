@@ -42,6 +42,13 @@ type CASTicket struct {
 	WasSSO         bool              `gorethink:"wasSSO" json:"wasSSO"`
 }
 
+// CasGo API keypair
+type CasgoAPIKeyPair struct {
+	Key    string `gorethink:"key" json:"key"`
+	Secret string `gorethink:"secret" json:"secret"`
+	User   *User  `gorethink:"user" json:"user"`
+}
+
 // Compairson function for CASTickets
 func CompareTickets(a, b CASTicket) bool {
 	if &a == &b || (a.Id == b.Id && a.UserEmail == b.UserEmail && a.WasSSO == b.WasSSO) {
@@ -51,10 +58,10 @@ func CompareTickets(a, b CASTicket) bool {
 }
 
 type CASServerError struct {
-	Msg        string // Message string
-	HttpCode   int    // HTTP error code, if applicable
+	Msg          string // Message string
+	HttpCode     int    // HTTP error code, if applicable
 	CasgoErrCode int    // CASGO specific error code
-	err        *error // Actual error that was thrown (if any)
+	err          *error // Actual error that was thrown (if any)
 }
 
 // CAS server interface
@@ -91,6 +98,7 @@ type CASDBAdapter interface {
 	// App functions
 	FindServiceByUrl(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
+	FindUserByApiKeyAndSecret(string, string) (*User, *CASServerError)
 	AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError)
 	RemoveTicketsForUserWithService(string, *CASService) *CASServerError
 	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
@@ -107,6 +115,7 @@ type CASDBAdapter interface {
 	GetTicketsTableName() string
 	GetServicesTableName() string
 	GetUsersTableName() string
+	GetApiKeysTableName() string
 }
 
 type CasgoFrontendAPI interface {

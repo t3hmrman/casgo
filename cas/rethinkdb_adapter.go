@@ -12,7 +12,7 @@ func (db *RethinkDBAdapter) GetDbName() string            { return db.dbName }
 func (db *RethinkDBAdapter) GetTicketsTableName() string  { return db.ticketsTableName }
 func (db *RethinkDBAdapter) GetServicesTableName() string { return db.servicesTableName }
 func (db *RethinkDBAdapter) GetUsersTableName() string    { return db.usersTableName }
-func (db *RethinkDBAdapter) GetAPIKeysTableName() string  { return db.apiKeysTableName }
+func (db *RethinkDBAdapter) GetApiKeysTableName() string  { return db.apiKeysTableName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -117,7 +117,7 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, rdbOptions 
 	// Check again that rdbOptions is not nil, optionally leave out argument
 	var err error
 	if rdbOptions == nil {
-		
+
 		// Create table with no options
 		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
 
@@ -354,6 +354,38 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 	}
 
 	return returnedUser, nil
+}
+
+// Find a user by API secret and key
+func (db *RethinkDBAdapter) FindUserByApiKeyAndSecret(key, secret string) (*User, *CASServerError) {
+	// Find the user
+	cursor, err := r.
+		Db(db.dbName).
+		Table(db.apiKeysTableName).
+		Get(key).
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToFindUserByApiKeyAndSecretError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Get the user from the returned cursor
+	var apiKeyPair *CasgoAPIKeyPair
+	err = cursor.One(&apiKeyPair)
+	if err != nil {
+		casErr := &FailedToFindUserByApiKeyAndSecretError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Return error of the secret is invalid
+	if apiKeyPair.Secret != secret {
+		casErr := &FailedToFindUserByApiKeyAndSecretError
+		return nil, casErr
+	}
+
+	return apiKeyPair.User, nil
 }
 
 // Add a new user to the database

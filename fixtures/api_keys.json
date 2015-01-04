@@ -1,6 +1,7 @@
 [
   {
-    "key": "this is not a valid API key",
+    "key": "userapikey",
+    "secret": "badsecret",
     "user": {
       "email": "test@test.com",
       "attributes": {},
@@ -15,7 +16,8 @@
     }
   },
   {
-    "key": "this is not a valid API key",
+    "key": "adminapikey",
+    "secret": "badsecret",
     "user": {
       "email": "admin@test.com",
       "attributes": {},
