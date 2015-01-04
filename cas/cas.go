@@ -116,13 +116,13 @@ func (c *CAS) init() {
 }
 
 // Set up the underlying database
-func (c *CAS) SetupDb() {
-	c.Db.Setup()
+func (c *CAS) SetupDb() *CASServerError {
+	return c.Db.Setup()
 }
 
 // Teardown the underlying database
-func (c *CAS) TeardownDb() {
-	c.Db.Teardown()
+func (c *CAS) TeardownDb() *CASServerError {
+	return c.Db.Teardown()
 }
 
 // Start the CAS server
@@ -238,12 +238,12 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Attempt non-interactive authentication
-		returnedUser, err := c.validateUserCredentials(email, password)
-		if err != nil {
+		returnedUser, casErr := c.validateUserCredentials(email, password)
+		if casErr != nil {
 			// In the case of an error, redirect to the service with no ticket
 			if casService == nil {
-				context["Error"] = err.msg
-				c.render.HTML(w, err.httpCode, "login", context)
+				context["Error"] = casErr.Msg
+				c.render.HTML(w, casErr.HttpCode, "login", context)
 			} else {
 				http.Redirect(w, req, casService.Url, 401)
 			}
@@ -251,14 +251,14 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Save session since non-interactive auth succeeded
-		_, err = c.saveCurrentUserInSession(w, req, "casgo-session", returnedUser)
+		_, err := c.saveCurrentUserInSession(w, req, "casgo-session", returnedUser)
 		if err != nil {
 			log.Fatal("Failed to save session!")
 		}
 
 		if casService == nil {
 			// If service is not set, render login with context
-			c.render.HTML(w, err.httpCode, "login", context)
+			c.render.HTML(w, http.StatusBadRequest, "login", context)
 		} else {
 			// Create a new ticket
 			ticket := &CASTicket{
@@ -286,10 +286,10 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Find user, and attempt to validate provided credentials
-	returnedUser, err := c.validateUserCredentials(email, password)
-	if err != nil {
-		context["Error"] = err.msg
-		c.render.HTML(w, err.httpCode, "login", context)
+	returnedUser, casErr := c.validateUserCredentials(email, password)
+	if casErr != nil {
+		context["Error"] = casErr.Msg
+		c.render.HTML(w, casErr.HttpCode, "login", context)
 		return
 	}
 
@@ -418,7 +418,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	// Create new user object
 	_, casErr := c.Db.AddNewUser(email, string(encryptedPassword))
 	if casErr != nil {
-		context["Error"] = casErr.msg
+		context["Error"] = casErr.Msg
 		c.render.HTML(w, http.StatusBadRequest, "register", context)
 		return
 	}
@@ -466,10 +466,10 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Remove current user information from session
-	err = c.removeCurrentUserFromSession(w, req, session)
-	if err != nil {
+	casErr := c.removeCurrentUserFromSession(w, req, session)
+	if casErr != nil {
 		context["Error"] = "Failed to log out... Please contact your IT administrator"
-		c.render.HTML(w, err.httpCode, "login", context)
+		c.render.HTML(w, casErr.HttpCode, "login", context)
 		return
 	}
 
@@ -500,25 +500,25 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 
 	// Get the CASService for the given service URL
-	casService, err := c.Db.FindServiceByUrl(serviceUrl)
-	if err != nil {
+	casService, casErr := c.Db.FindServiceByUrl(serviceUrl)
+	if casErr != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
-			"code":    strconv.Itoa(*&FailedToFindServiceError.casErrCode),
-			"message": *&FailedToFindServiceError.msg,
+			"code":    strconv.Itoa(*&FailedToFindServiceError.CasgoErrCode),
+			"message": *&FailedToFindServiceError.Msg,
 		})
 		return
 	}
 
 	// Look up ticket
-	casTicket, err := c.Db.FindTicketByIdForService(ticket, casService)
-	if err != nil {
+	casTicket, casErr := c.Db.FindTicketByIdForService(ticket, casService)
+	if casErr != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
-			"code":    strconv.Itoa(*&FailedToFindTicketError.casErrCode),
-			"message": *&FailedToFindTicketError.msg,
+			"code":    strconv.Itoa(*&FailedToFindTicketError.CasgoErrCode),
+			"message": *&FailedToFindTicketError.Msg,
 		})
 		return
 	}
@@ -527,8 +527,8 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	if renew == "true" && casTicket.WasSSO {
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
-			"code":    strconv.Itoa(*&SSOAuthenticatedUserRenewError.casErrCode),
-			"message": *&SSOAuthenticatedUserRenewError.msg,
+			"code":    strconv.Itoa(*&SSOAuthenticatedUserRenewError.CasgoErrCode),
+			"message": *&SSOAuthenticatedUserRenewError.Msg,
 		})
 		return
 	}
@@ -545,17 +545,17 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 // Endpoint for validating service tickets for possible proxies (CAS 2.0)
 func (c *CAS) HandleServiceValidate(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /serviceValidate, feature not supported yet")
-	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
+	c.render.JSON(w, UnsupportedFeatureError.HttpCode, map[string]string{"error": UnsupportedFeatureError.Msg})
 }
 
 // Endpoint for validating proxy tickets (CAS 2.0)
 func (c *CAS) HandleProxyValidate(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /proxyValidate, feature not supported yet")
-	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
+	c.render.JSON(w, UnsupportedFeatureError.HttpCode, map[string]string{"error": UnsupportedFeatureError.Msg})
 }
 
 // Endpoint for handling proxy tickets (CAS 2.0)
 func (c *CAS) HandleProxy(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /proxy, feature not supported yet")
-	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
+	c.render.JSON(w, UnsupportedFeatureError.HttpCode, map[string]string{"error": UnsupportedFeatureError.Msg})
 }

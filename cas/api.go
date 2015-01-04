@@ -2,7 +2,6 @@ package cas
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"net/http"
 	"strings"
 )
@@ -13,6 +12,62 @@ import (
 
 func NewCasgoFrontendAPI(c *CAS) (*FrontendAPI, error) {
 	return &FrontendAPI{casServer: c}, nil
+}
+
+// Utility function to authenticate an API user, whether user is using a web-session or passed an API key
+func authenticateAPIUser(api *FrontendAPI, req *http.Request) (*User, *CASServerError) {
+
+	// Attempt to authenticate with HTTP session
+	user, casErr := authenticateWithSession(api, req)
+	if user != nil && casErr == nil {
+		return user, nil
+	}
+
+	// Attempt to authenticate with API key and secret if present
+	user, casErr = api.authenticateWithAPIKey(req)
+	if user != nil && casErr == nil {
+		return user, nil
+	}
+
+	// If all authentication methods fail, return error
+	return nil, &FailedToAuthenticateUserError
+}
+
+// Authenticate user with session
+func authenticateWithSession(api *FrontendAPI, req *http.Request) (*User, *CASServerError) {
+	// Get the current session
+	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
+	if err != nil {
+		casErr := &FailedToRetrieveServicesError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Retrive current user from session
+	user, ok := session.Values["currentUser"].(User)
+	if !ok {
+		casErr := &FailedToRetrieveInformationFromSessionError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	return &user, nil
+}
+
+func (api *FrontendAPI) authenticateWithAPIKey(req *http.Request) (*User, *CASServerError) {
+	// Get the api key and secret
+	apiKey := req.Header.Get("X-Api-Key")
+	apiSecret := req.Header.Get("X-Api-Secret")
+	if len(apiKey) == 0 || len(apiSecret) == 0 {
+		return nil, &FailedToAuthenticateUserError
+	}
+
+	user, casErr := api.casServer.Db.FindUserByApiKeyAndSecret(apiKey, apiSecret)
+	if casErr != nil {
+		return nil, casErr
+	}
+
+	return user, nil
 }
 
 // Hook up API endpoints to given mux
@@ -30,11 +85,11 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 
 // Handle sessions endpoint
 func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request) {
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -47,11 +102,11 @@ func (api *FrontendAPI) SessionsHandler(w http.ResponseWriter, req *http.Request
 
 // Get the services for a logged in user
 func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http.Request) {
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -62,9 +117,9 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 
 	// Ensure non-admin user is not trying to lookup another users session information
 	if !user.IsAdmin && user.Email != routeUserEmail {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -76,44 +131,23 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 	})
 }
 
-// Utility function to retrieve session and user information
-func getSessionAndUser(api *FrontendAPI, req *http.Request) (*sessions.Session, *User, *CASServerError) {
-	// Get the current session
-	session, err := api.casServer.cookieStore.Get(req, "casgo-session")
-	if err != nil {
-		casErr := &FailedToRetrieveServicesError
-		casErr.err = &err
-		return nil, nil, casErr
-	}
-
-	// Retrieve information from Check whether the user is an admin
-	user, ok := session.Values["currentUser"].(User)
-	if !ok {
-		casErr := &FailedToRetrieveInformationFromSessionError
-		casErr.err = &err
-		return nil, nil, casErr
-	}
-
-	return session, &user, nil
-}
-
 // Get list of services (admin only)
 func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	// Get the current session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
 
 	// Ensure user is admin
 	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -121,9 +155,9 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 	// Grab list of all services
 	services, casErr := api.casServer.Db.GetAllServices()
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -137,11 +171,11 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 // Create a new service
 func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) {
 	// Get session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -149,15 +183,24 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	// Build service from passed in data
 	service := CASService{
 		Name:       strings.TrimSpace(req.FormValue("name")),
-		Url:        strings.TrimSpace(strings.ToLower(req.FormValue("url"))),
-		AdminEmail: strings.TrimSpace(strings.ToLower(req.FormValue("adminEmail"))),
+		Url:        strings.TrimSpace(req.FormValue("url")),
+		AdminEmail: strings.TrimSpace(req.FormValue("adminEmail")),
 	}
 
-	// Ensure user is admin
-	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+	// Ensure service is valid
+	if !service.IsValid() {
+		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InvalidServiceError.Msg,
+		})
+		return
+	}
+
+	// Ensure user is admin before adding service
+	if !user.IsAdmin {
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -165,9 +208,9 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	// Attempt to add service
 	casErr = api.casServer.Db.AddNewService(&service)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
@@ -182,20 +225,20 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 // Returns the removed service's name
 func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) {
 	// Get session and user
-	_, user, casErr := getSessionAndUser(api, req)
+	user, casErr := authenticateAPIUser(api, req)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 		return
 	}
 
 	// Ensure user is admin
 	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -206,9 +249,9 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 
 	casErr = api.casServer.Db.RemoveServiceByName(serviceName)
 	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": casErr.Msg,
 		})
 	}
 
@@ -221,19 +264,51 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 // Update an existing service
 // Returns the modified service
 func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) {
+	// Get session and user
+	user, casErr := authenticateAPIUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.Msg,
+		})
+		return
+	}
 
+	// Ensure user is admin
+	if !user.IsAdmin {
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InsufficientPermissionsError.Msg,
+		})
+		return
+	}
+
+	// Get passed in service name
+	routeVars := mux.Vars(req)
+	serviceName := routeVars["serviceName"]
+
+	// Build updated service
 	service := CASService{
-		Name:       strings.TrimSpace(req.FormValue("name")),
+		Name:       serviceName,
 		Url:        strings.TrimSpace(strings.ToLower(req.FormValue("url"))),
 		AdminEmail: strings.TrimSpace(strings.ToLower(req.FormValue("adminEmail"))),
 	}
 
-	// Attempt to update the service
-	casErr := api.casServer.Db.UpdateService(&service)
-	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.httpCode, map[string]string{
+	// Ensure service is valid
+	if !service.IsValid() {
+		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": casErr.msg,
+			"message": InvalidServiceError.Msg,
+		})
+		return
+	}
+
+	// Attempt to update the service
+	casErr = api.casServer.Db.UpdateService(&service)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.Msg,
 		})
 		return
 	}

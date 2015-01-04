@@ -1,14 +1,12 @@
-package cas_test
+package api_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/sclevine/agouti/dsl"
 
 	"github.com/t3hmrman/casgo/cas"
-	"log"
-	"net/http/httptest"
 	"testing"
+	"net/http/httptest"
 )
 
 // Testing globals for HTTP tests
@@ -16,15 +14,12 @@ var testHTTPServer *httptest.Server
 var testCASConfig map[string]string
 var testCASServer *cas.CAS
 
-func TestCas(t *testing.T) {
+func TestCasgoAPI(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Cas Suite")
+	RunSpecs(t, "CasGo API Suite")
 }
 
 var _ = BeforeSuite(func() {
-	// Start PhantomJS for integration tests
-	StartPhantomJS()
-
 	// Setup CAS server & DB
 	testCASConfig, _ = cas.NewCASServerConfig(map[string]string{
 		"companyName":        "Casgo Testing Company",
@@ -36,19 +31,22 @@ var _ = BeforeSuite(func() {
 
 	// Setup http test server
 	testHTTPServer = httptest.NewServer(testCASServer.ServeMux)
-	log.Printf("Started testing HTTP server @ %s", testHTTPServer.URL)
 
 	// Load database fixtures
-	log.Printf("Loading database fixtures...")
 	testCASServer.Db.LoadJSONFixture(
 		testCASServer.Db.GetDbName(),
 		testCASServer.Db.GetServicesTableName(),
-		"fixtures/services.json",
+		"../../fixtures/services.json",
 	)
 	testCASServer.Db.LoadJSONFixture(
 		testCASServer.Db.GetDbName(),
 		testCASServer.Db.GetUsersTableName(),
-		"fixtures/users.json",
+		"../../fixtures/users.json",
+	)
+	testCASServer.Db.LoadJSONFixture(
+		testCASServer.Db.GetDbName(),
+		testCASServer.Db.GetApiKeysTableName(),
+		"../../fixtures/api_keys.json",
 	)
 
 })
@@ -56,5 +54,4 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	testHTTPServer.Close()
 	testCASServer.TeardownDb()
-	StopWebdriver()
 })

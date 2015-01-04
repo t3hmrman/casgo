@@ -1,0 +1,28 @@
+[
+  {
+    "key": "userapikey",
+    "secret": "badsecret",
+    "user": {
+      "email": "test@test.com",
+      "attributes": {},
+      "isAdmin": false,
+      "services": [
+        {
+          "name": "test_service",
+          "url": "localhost:3000/validateCASLogin",
+          "adminEmail": "admin@test.com"
+        }
+      ]
+    }
+  },
+  {
+    "key": "adminapikey",
+    "secret": "badsecret",
+    "user": {
+      "email": "admin@test.com",
+      "attributes": {},
+      "isAdmin": true,
+      "services": []
+    }
+  }
+]

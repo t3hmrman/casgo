@@ -1,7 +1,19 @@
 ## CasGo Database Schema
 
-A breakdown of Casgo's RethinkDB (No-SQL) schema. This schema only applies to servers using the default RethinkDB based database adapter.
+A breakdown of CasGo's RethinkDB (No-SQL) schema. This schema only applies to servers using the default RethinkDB based database adapter.
 If creating your own database adapter, please ensure to provide a similar document so others can build on your work.
+
+### API Keys
+
+API keys that can be used to access CasGo's API
+
+**Primary Key** - key (generated)
+
+|field      |type    |description                                      |
+|-----------|--------|-------------------------------------------------|
+|key        |string  |API key                                          |
+|user       |object  |Associated user information                      |
+
 
 ### Ticket
 
@@ -19,6 +31,7 @@ Tickets that will be used by CAS to validate logins
        "serviceId": "this-is-not-a-real-id",
        "userEmail": "test@test.com"
     }
+
 
 ### Service
 
@@ -38,6 +51,7 @@ Registered services (applications) that may authenticate through the CasGO insta
        "url": "localhost:9090/validateCASLogin",
        "adminEmail": "admin@test.com"
     }
+
 
 ### User
 

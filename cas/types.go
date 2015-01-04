@@ -28,10 +28,16 @@ func compareUsers(a, b User) bool {
 	return false
 }
 
+// CasGo registered service
 type CASService struct {
 	Url        string `gorethink:"url" json:"url"`
 	Name       string `gorethink:"name" json:"name"`
 	AdminEmail string `gorethink:"adminEmail" json:"adminEmail"`
+}
+
+// Enforce schema for CASService
+func (s *CASService) IsValid() bool {
+	return len(s.Url) > 0 && len(s.Name) > 0 &&	len(s.AdminEmail) > 0
 }
 
 // CasGo ticket
@@ -40,6 +46,13 @@ type CASTicket struct {
 	UserEmail      string            `gorethink:"userEmail" json:"userEmail"`
 	UserAttributes map[string]string `gorethink:"userAttributes" json:"userAttributes"`
 	WasSSO         bool              `gorethink:"wasSSO" json:"wasSSO"`
+}
+
+// CasGo API keypair
+type CasgoAPIKeyPair struct {
+	Key    string `gorethink:"key" json:"key"`
+	Secret string `gorethink:"secret" json:"secret"`
+	User   *User  `gorethink:"user" json:"user"`
 }
 
 // Compairson function for CASTickets
@@ -51,10 +64,10 @@ func CompareTickets(a, b CASTicket) bool {
 }
 
 type CASServerError struct {
-	msg        string // Message string
-	httpCode   int    // HTTP error code, if applicable
-	casErrCode int    // CASGO specific error code
-	err        *error // Actual error that was thrown (if any)
+	Msg          string // Message string
+	HttpCode     int    // HTTP error code, if applicable
+	CasgoErrCode int    // CASGO specific error code
+	err          *error // Actual error that was thrown (if any)
 }
 
 // CAS server interface
@@ -91,6 +104,7 @@ type CASDBAdapter interface {
 	// App functions
 	FindServiceByUrl(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
+	FindUserByApiKeyAndSecret(string, string) (*User, *CASServerError)
 	AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError)
 	RemoveTicketsForUserWithService(string, *CASService) *CASServerError
 	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
@@ -107,6 +121,7 @@ type CASDBAdapter interface {
 	GetTicketsTableName() string
 	GetServicesTableName() string
 	GetUsersTableName() string
+	GetApiKeysTableName() string
 }
 
 type CasgoFrontendAPI interface {
@@ -143,6 +158,8 @@ type RethinkDBAdapter struct {
 	servicesTableOptions *r.TableCreateOpts
 	usersTableName       string
 	usersTableOptions    *r.TableCreateOpts
+	apiKeysTableName     string
+	apiKeysTableOptions  *r.TableCreateOpts
 	LogLevel             string
 }
 

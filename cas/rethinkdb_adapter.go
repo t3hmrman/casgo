@@ -12,6 +12,7 @@ func (db *RethinkDBAdapter) GetDbName() string            { return db.dbName }
 func (db *RethinkDBAdapter) GetTicketsTableName() string  { return db.ticketsTableName }
 func (db *RethinkDBAdapter) GetServicesTableName() string { return db.servicesTableName }
 func (db *RethinkDBAdapter) GetUsersTableName() string    { return db.usersTableName }
+func (db *RethinkDBAdapter) GetApiKeysTableName() string  { return db.apiKeysTableName }
 
 func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 	// Database setup
@@ -25,12 +26,17 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 
 	// Create the adapter
 	adapter := &RethinkDBAdapter{
-		session:           dbSession,
-		dbName:            c.Config["dbName"],
-		ticketsTableName:  "tickets",
-		servicesTableName: "services",
-		usersTableName:    "users",
-		LogLevel:          c.Config["logLevel"],
+		session:              dbSession,
+		dbName:               c.Config["dbName"],
+		ticketsTableName:     "tickets",
+		ticketsTableOptions:  nil,
+		servicesTableName:    "services",
+		servicesTableOptions: &r.TableCreateOpts{PrimaryKey: "name"},
+		usersTableName:       "users",
+		usersTableOptions:    &r.TableCreateOpts{PrimaryKey: "email"},
+		apiKeysTableName:     "api_keys",
+		apiKeysTableOptions:  &r.TableCreateOpts{PrimaryKey: "key"},
+		LogLevel:             c.Config["logLevel"],
 	}
 
 	return adapter, nil
@@ -76,6 +82,7 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 	db.SetupServicesTable()
 	db.SetupTicketsTable()
 	db.SetupUsersTable()
+	db.SetupApiKeysTable()
 
 	return nil
 }
@@ -91,15 +98,10 @@ func (db *RethinkDBAdapter) teardownTable(tableName string) *CASServerError {
 }
 
 func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) *CASServerError {
-	// Catch nil options
-	if dbOptions == nil {
-		return db.createTableWithOptions(tableName, nil)
-	}
-
-	// Ensure dbOptions is of correct type, if non-nil
+	// Ensure rdbOptions is of correct type, if non-nil
 	switch t := dbOptions.(type) {
-	case r.TableCreateOpts:
-		return db.createTableWithOptions(tableName, dbOptions)
+	case *r.TableCreateOpts:
+		return db.createTableWithOptions(tableName, dbOptions.(*r.TableCreateOpts))
 	default:
 		casError := &FailedToSetupTableError
 		err := fmt.Errorf("Unexpected type of dbOptions: %T", t)
@@ -109,32 +111,43 @@ func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) 
 	return nil
 }
 
-func (db *RethinkDBAdapter) createTableWithOptions(tableName string, dbOptions interface{}) *CASServerError {
-	logMessagef(db.LogLevel, "INFO", "Creating table [%s], options: %v", tableName, dbOptions)
+func (db *RethinkDBAdapter) createTableWithOptions(tableName string, rdbOptions *r.TableCreateOpts) *CASServerError {
+	logMessagef(db.LogLevel, "INFO", "Creating table [%s], options: %v", tableName, rdbOptions)
 
-	// Check again that dbOptions is not nil, optionally leave out argument
+	// Check again that rdbOptions is not nil, optionally leave out argument
 	var err error
-	if dbOptions == nil {
-		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
-	} else {
-		// Cast the options to the type we expect them to be
-		castedOptions := dbOptions.(r.TableCreateOpts)
+	if rdbOptions == nil {
 
-		// Perform query & save the options for later use
-		_, err = r.Db(db.dbName).TableCreate(tableName, castedOptions).Run(db.session)
-		db.setTableSetupOptions(tableName, &castedOptions)
+		// Create table with no options
+		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
+
+	} else {
+
+		// Set and get the table options (so that they can be retrieved later
+		db.setTableSetupOptions(tableName, rdbOptions)
+		options, err := db.getTableSetupOptions(tableName)
+		if err != nil {
+			casError := &FailedToCreateTableError
+			casError.err = &err
+			return casError
+		}
+
+		// Create table
+		_, err = r.Db(db.dbName).TableCreate(tableName, *options).Run(db.session)
 	}
+
 	if err != nil {
 		casError := &FailedToCreateTableError
 		casError.err = &err
 		return casError
 	}
+
 	return nil
 }
 
 // Set up the table that holds services
 func (db *RethinkDBAdapter) SetupServicesTable() *CASServerError {
-	return db.setupTable(db.servicesTableName, r.TableCreateOpts{PrimaryKey: "name"})
+	return db.setupTable(db.servicesTableName, db.servicesTableOptions)
 }
 
 // Tear down the table that holds services
@@ -144,7 +157,7 @@ func (db *RethinkDBAdapter) TeardownServicesTable() *CASServerError {
 
 // Set up the table that holds tickets
 func (db *RethinkDBAdapter) SetupTicketsTable() *CASServerError {
-	return db.setupTable(db.ticketsTableName, nil)
+	return db.setupTable(db.ticketsTableName, db.ticketsTableOptions)
 }
 
 // Tear down the table that holds tickets
@@ -154,12 +167,22 @@ func (db *RethinkDBAdapter) TeardownTicketsTable() *CASServerError {
 
 // Set up the table that holds users
 func (db *RethinkDBAdapter) SetupUsersTable() *CASServerError {
-	return db.setupTable(db.usersTableName, r.TableCreateOpts{PrimaryKey: "email"})
+	return db.setupTable(db.usersTableName, db.usersTableOptions)
 }
 
 // Tear down the table that holds users
 func (db *RethinkDBAdapter) TeardownUsersTable() *CASServerError {
 	return db.teardownTable(db.usersTableName)
+}
+
+// Set up the table that holds apikeys
+func (db *RethinkDBAdapter) SetupApiKeysTable() *CASServerError {
+	return db.setupTable(db.apiKeysTableName, db.apiKeysTableOptions)
+}
+
+// Tear down the table that holds apikeys
+func (db *RethinkDBAdapter) TeardownApiKeysTable() *CASServerError {
+	return db.teardownTable(db.apiKeysTableName)
 }
 
 // Dynamically setup tables - dispatch because each table might have special implementations
@@ -171,6 +194,8 @@ func (db *RethinkDBAdapter) SetupTable(tableName string) *CASServerError {
 		return db.SetupServicesTable()
 	case db.usersTableName:
 		return db.SetupUsersTable()
+	case db.apiKeysTableName:
+		return db.SetupApiKeysTable()
 	default:
 		casError := &FailedToSetupDatabaseError
 		return casError
@@ -201,6 +226,8 @@ func (db *RethinkDBAdapter) getTableSetupOptions(tableName string) (*r.TableCrea
 		return db.servicesTableOptions, nil
 	case db.usersTableName:
 		return db.usersTableOptions, nil
+	case db.apiKeysTableName:
+		return db.apiKeysTableOptions, nil
 	default:
 		return nil, errors.New(fmt.Sprintf("Invalid tableName, can't find setup options for table [%s]", tableName))
 	}
@@ -215,6 +242,8 @@ func (db *RethinkDBAdapter) setTableSetupOptions(tableName string, opts *r.Table
 		db.servicesTableOptions = opts
 	case db.usersTableName:
 		db.usersTableOptions = opts
+	case db.apiKeysTableName:
+		db.apiKeysTableOptions = opts
 	default:
 		return errors.New(fmt.Sprintf("Failed to set table setup options for table [%s]", tableName))
 	}
@@ -241,7 +270,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 	// Add special options based on table information from setup
 	options, err := db.getTableSetupOptions(tableName)
 	if err != nil {
-		return &CASServerError{msg: "Failed to find table setup options for table!", err: &err}
+		return &CASServerError{Msg: "Failed to find table setup options for table!", err: &err}
 	}
 
 	// Check for and apply special options
@@ -254,7 +283,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 	output, err := importCmd.CombinedOutput()
 	if err != nil {
 		casError := &FailedToLoadJSONFixtureError
-		casError.msg = string(output)
+		casError.Msg = string(output)
 		casError.err = &err
 		return casError
 	}
@@ -325,6 +354,38 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 	}
 
 	return returnedUser, nil
+}
+
+// Find a user by API secret and key
+func (db *RethinkDBAdapter) FindUserByApiKeyAndSecret(key, secret string) (*User, *CASServerError) {
+	// Find the user
+	cursor, err := r.
+		Db(db.dbName).
+		Table(db.apiKeysTableName).
+		Get(key).
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToFindUserByApiKeyAndSecretError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Get the user from the returned cursor
+	var apiKeyPair *CasgoAPIKeyPair
+	err = cursor.One(&apiKeyPair)
+	if err != nil {
+		casErr := &FailedToFindUserByApiKeyAndSecretError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	// Return error of the secret is invalid
+	if apiKeyPair.Secret != secret {
+		casErr := &FailedToFindUserByApiKeyAndSecretError
+		return nil, casErr
+	}
+
+	return apiKeyPair.User, nil
 }
 
 // Add a new user to the database

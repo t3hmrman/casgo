@@ -4,174 +4,193 @@ import (
 	"net/http"
 )
 
-func (err *CASServerError) Error() string { return err.msg }
+func (err *CASServerError) Error() string { return err.Msg }
 
 // Error declarations
 var (
 	// Input errors (error codes 100-199)
 	InvalidEmailAddressError = CASServerError{
-		msg:        "An error occurred finding a user with that email address.. Please wait a while and try again",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 100,
+		Msg:          "An error occurred finding a user with that email address.. Please wait a while and try again",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 100,
 	}
-
 	InvalidCredentialsError = CASServerError{
-		msg:        "Invalid email/password combination",
-		httpCode:   http.StatusUnauthorized,
-		casErrCode: 101,
+		Msg:          "Invalid email/password combination",
+		HttpCode:     http.StatusUnauthorized,
+		CasgoErrCode: 101,
 	}
 	FailedToFindServiceError = CASServerError{
-		msg:        "Failed to find matching service",
-		httpCode:   http.StatusNotImplemented,
-		casErrCode: 102,
+		Msg:          "Failed to find matching service",
+		HttpCode:     http.StatusNotImplemented,
+		CasgoErrCode: 102,
 	}
 	FailedToFindTicketError = CASServerError{
-		msg:        "Failed to find matching ticket",
-		httpCode:   http.StatusBadRequest,
-		casErrCode: 103,
+		Msg:          "Failed to find matching ticket",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 103,
 	}
 	SSOAuthenticatedUserRenewError = CASServerError{
-		msg:        "Failed to validate ticket, renew option specified and user was SSO authenticated",
-		httpCode:   http.StatusNotImplemented,
-		casErrCode: 103,
+		Msg:          "Failed to validate ticket, renew option specified and user was SSO authenticated",
+		HttpCode:     http.StatusNotImplemented,
+		CasgoErrCode: 103,
 	}
 	EmailAlreadyTakenError = CASServerError{
-		msg:        "Looks like that email address is already taken. If you've forgotten your password, please contact the administrator",
-		httpCode:   http.StatusBadRequest,
-		casErrCode: 104,
+		Msg:          "Looks like that email address is already taken. If you've forgotten your password, please contact the administrator",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 104,
 	}
 	FailedToFindUserError = CASServerError{
-		msg:        "Failed to find matching email/password combination",
-		httpCode:   http.StatusBadRequest,
-		casErrCode: 105,
+		Msg:          "Failed to find matching email/password combination",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 105,
 	}
 	FailedToRetrieveServicesError = CASServerError{
-		msg:        "Failed to retrieve services for logged in user. Please ensure you are logged in.",
-		httpCode:   http.StatusBadRequest,
-		casErrCode: 106,
+		Msg:          "Failed to retrieve services for logged in user. Please ensure you are logged in.",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 106,
 	}
 	ServiceNameAlreadyTakenError = CASServerError{
-		msg:        "Looks like that service name is already taken. Please use a different service name.",
-		httpCode:   http.StatusBadRequest,
-		casErrCode: 107,
+		Msg:          "Looks like that service name is already taken. Please use a different service name.",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 107,
 	}
 	InvalidServiceNameError = CASServerError{
-		msg:        "Invalid service name provided.",
-		httpCode:   http.StatusBadRequest,
-		casErrCode: 107,
+		Msg:          "Invalid service name provided.",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 108,
+	}
+	FailedToAuthenticateUserError = CASServerError{
+		Msg:          "Failed to authenticate API user. Please ensure that you have provided sufficient credentials (whether through relevant headers or session information)..",
+		HttpCode:     http.StatusUnauthorized,
+		CasgoErrCode: 109,
+	}
+	FailedToFindUserByApiKeyAndSecretError = CASServerError{
+		Msg:          "Failed to find user with given API credentials. Please ensure credentials are valid and try again.",
+		HttpCode:     http.StatusUnauthorized,
+		CasgoErrCode: 110,
+	}
+	InsufficientPermissionsError = CASServerError{
+		Msg:          "Authenticated user has insufficient permissions to perform this action.",
+		HttpCode:     http.StatusForbidden,
+		CasgoErrCode: 111,
+	}
+	InvalidServiceError = CASServerError{
+		Msg:          "Incomplete/Invalid service object provided. Please ensure all appropriate service fields are filled and re-submit.",
+		HttpCode:     http.StatusForbidden,
+		CasgoErrCode: 112,
 	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
-		msg:        "Failed to save session",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 200,
+		Msg:          "Failed to save session",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 200,
 	}
 	FailedToDeleteSessionError = CASServerError{
-		msg:        "Failed to delete session",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 201,
+		Msg:          "Failed to delete session",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 201,
 	}
 	FailedToCreateNewAuthTicketError = CASServerError{
-		msg:        "Failed to create new authentication ticket",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 202,
+		Msg:          "Failed to create new authentication ticket",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 202,
 	}
 	AuthMethodNotSupportedError = CASServerError{
-		msg:        "Failed to create new authentication ticket",
-		httpCode:   http.StatusMethodNotAllowed,
-		casErrCode: 203,
+		Msg:          "Failed to create new authentication ticket",
+		HttpCode:     http.StatusMethodNotAllowed,
+		CasgoErrCode: 203,
 	}
 	FailedToCreateUserError = CASServerError{
-		msg:        "An error occurred while creating your account.. Please verify fields and try again",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 204,
+		Msg:          "An error occurred while creating your account.. Please verify fields and try again",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 204,
 	}
 	FailedToTeardownDatabaseError = CASServerError{
-		msg:        "Failed to tear down database",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 205,
+		Msg:          "Failed to tear down database",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 205,
 	}
 	FailedToSetupDatabaseError = CASServerError{
-		msg:        "Failed to setup database",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 206,
+		Msg:          "Failed to setup database",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 206,
 	}
 	FailedToLoadJSONFixtureError = CASServerError{
-		msg:        "Failed to import database information from file",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 207,
+		Msg:          "Failed to import database information from file",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 207,
 	}
 	FailedToLookupServiceByUrlError = CASServerError{
-		msg:        "An error occurred while searching for service with given URL",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 208,
+		Msg:          "An error occurred while searching for service with given URL",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 208,
 	}
 	FailedToCreateTicketError = CASServerError{
-		msg:        "Failed to create ticket",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 209,
+		Msg:          "Failed to create ticket",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 209,
 	}
 	FailedToDeleteTicketsForUserError = CASServerError{
-		msg:        "Failed to delete tickets for user",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 210,
+		Msg:          "Failed to delete tickets for user",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 210,
 	}
 	FailedToSetupTableError = CASServerError{
-		msg:        "Failed to setup table",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 211,
+		Msg:          "Failed to setup table",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 211,
 	}
 	FailedToCreateTableError = CASServerError{
-		msg:        "Failed to setup database",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 212,
+		Msg:          "Failed to setup database",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 212,
 	}
 	DbExistsCheckFailedError = CASServerError{
-		msg:        "Failed to check whether database existed",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 213,
+		Msg:          "Failed to check whether database existed",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 213,
 	}
 	FailedToFindServiceByUrlError = CASServerError{
-		msg:        "Failed to find service with given URL",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 214,
+		Msg:          "Failed to find service with given URL",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 214,
 	}
 	FailedToFindUserByEmailError = CASServerError{
-		msg:        "Failed to find user with given email address",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 215,
+		Msg:          "Failed to find user with given email address",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 215,
 	}
 	FailedToRetrieveInformationFromSessionError = CASServerError{
-		msg:        "Failed to retrieve information from session",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 216,
+		Msg:          "Failed to retrieve information from session",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 216,
 	}
 	FailedToCreateServiceError = CASServerError{
-		msg:        "An error occurred while creating the service... Please verify fields and try again",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 217,
+		Msg:          "An error occurred while creating the service... Please verify fields and try again",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 217,
 	}
 	FailedToDeleteServiceError = CASServerError{
-		msg:        "Failed to delete service.",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 218,
+		Msg:          "Failed to delete service.",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 218,
 	}
 	FailedToListServicesError = CASServerError{
-		msg:        "Failed to list services.",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 219,
+		Msg:          "Failed to list services.",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 219,
 	}
 	FailedToUpdateServiceError = CASServerError{
-		msg:        "Failed to update service.",
-		httpCode:   http.StatusInternalServerError,
-		casErrCode: 220,
+		Msg:          "Failed to update service.",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 220,
 	}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{
-		msg:        "Feature not supported by CASGO",
-		httpCode:   http.StatusNotImplemented,
-		casErrCode: 300,
+		Msg:          "Feature not supported by CASGO",
+		HttpCode:     http.StatusNotImplemented,
+		CasgoErrCode: 300,
 	}
 )

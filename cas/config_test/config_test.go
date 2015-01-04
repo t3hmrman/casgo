@@ -1,4 +1,4 @@
-package cas_test
+package config_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-var _ = Describe("CAS Config", func() {
+var _ = Describe("CasGo Config", func() {
 	Describe("Config creation", func() {
 		It("Should work (pick sensible defaults) with nil passed in", func() {
 			config, err := NewCASServerConfig(nil)
@@ -52,11 +52,11 @@ var _ = Describe("CAS Config", func() {
 			err := os.Setenv("CASGO_HOST", host)
 			Expect(err).To(BeNil())
 
-			config, err := NewCASServerConfig(map[string]string{"host":"SHOULD NOT BE THIS"})
+			config, err := NewCASServerConfig(map[string]string{"host": "SHOULD NOT BE THIS"})
 			Expect(err).To(BeNil())
 			Expect(config).ToNot(BeNil())
 			Expect(config["host"]).To(Equal(host))
-			
+
 			// Reset ENV
 			os.Setenv("CASGO_HOST", previousEnvValue)
 		})
