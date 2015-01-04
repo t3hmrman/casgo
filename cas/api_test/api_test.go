@@ -108,7 +108,7 @@ var _ = Describe("CasGo API", func() {
 
 		It("Should fail to authenticate a regular user to an admin-only endpoint", func() {
 			// Craft request with regular user's API key
-			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"], nil)
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"], nil)
 			Expect(err).To(BeNil())
 			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
 			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
