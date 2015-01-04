@@ -283,10 +283,24 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	// Get passed in service name
+	routeVars := mux.Vars(req)
+	serviceName := routeVars["serviceName"]
+
+	// Build updated service
 	service := CASService{
-		Name:       strings.TrimSpace(req.FormValue("name")),
+		Name:       serviceName,
 		Url:        strings.TrimSpace(strings.ToLower(req.FormValue("url"))),
 		AdminEmail: strings.TrimSpace(strings.ToLower(req.FormValue("adminEmail"))),
+	}
+
+	// Ensure service is valid
+	if !service.IsValid() {
+		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InvalidServiceError.Msg,
+		})
+		return
 	}
 
 	// Attempt to update the service
