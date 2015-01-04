@@ -73,16 +73,11 @@ var _ = Describe("CasGo API", func() {
 
 	Describe("#authenticateAPIUser", func() {
 		It("Should fail for unauthenticated users", func() {
-			resp, err := http.Get(testHTTPServer.URL + API_TEST_DATA["exampleRegularUserURI"])
-			Expect(err).To(BeNil())
-
-			// Read response body
-			rawBody, err := ioutil.ReadAll(resp.Body)
-			Expect(err).To(BeNil())
-
-			// Parse response body into a map
-			var respJSON map[string]interface{}
-			json.Unmarshal(rawBody, &respJSON)
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
+				"GET",
+				testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"],
+				map[string]string{},
+			)
 			Expect(respJSON["status"]).To(Equal("error"))
 			Expect(respJSON["message"]).To(Equal(FailedToAuthenticateUserError.Msg))
 		})
@@ -144,18 +139,33 @@ var _ = Describe("CasGo API", func() {
 		})
 	})
 
-	// Describe("Current user's services listing endpoint", func() {
-	//	It("Should return an error if there is no user logged in", func() {})
-	// })
+	Describe("#GetServices (GET /services)", func() {
+		It("Should list all services for an admin user", func() {
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
+				"GET",
+				testHTTPServer.URL+"/api/services",
+				map[string]string{
+					"X-Api-Key":    API_TEST_DATA["adminApiKey"],
+					"X-Api-Secret": API_TEST_DATA["adminApiSecret"],
+				},
+			)
+			Expect(respJSON["status"]).To(Equal("success"))
 
-	// Describe("#getSessionAndUser", func() {
-	//	It("SHould fail and return an error if there is no session", func() {})
-	// })
+			// Get the list of services that was returned (dependent on fixture)
+			var rawServicesList []interface{}
+			Expect(respJSON["data"]).To(BeAssignableToTypeOf(rawServicesList))
+			rawServicesList = respJSON["data"].([]interface{})
+			Expect(len(rawServicesList)).To(Equal(1))
 
-	// Describe("#GetServices (GET /services)", func() {
-	//	It("Should list all services for an admin user", func() {})
-	//	It("Should display an error for non-admin users", func() {})
-	// })
+			// Check the map that represents the service
+			var serviceMap map[string]interface{}
+			Expect(rawServicesList[0]).To(BeAssignableToTypeOf(serviceMap))
+			serviceMap = rawServicesList[0].(map[string]interface{})
+			Expect(serviceMap["name"]).To(Equal("test_service"))
+			Expect(serviceMap["url"]).To(Equal("localhost:3000/validateCASLogin"))
+			Expect(serviceMap["adminEmail"]).To(Equal("admin@test.com"))
+		})
+	})
 
 	// Describe("#CreateService (POST /services)", func() {
 	//	It("Should create a service for an admin user", func() {})
