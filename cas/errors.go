@@ -74,6 +74,11 @@ var (
 		HttpCode:     http.StatusForbidden,
 		CasgoErrCode: 111,
 	}
+	InvalidServiceError = CASServerError{
+		Msg:          "Incomplete/Invalid service object provided. Please ensure all appropriate service fields are filled and re-submit.",
+		HttpCode:     http.StatusForbidden,
+		CasgoErrCode: 112,
+	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{

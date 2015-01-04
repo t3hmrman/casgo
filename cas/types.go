@@ -28,10 +28,16 @@ func compareUsers(a, b User) bool {
 	return false
 }
 
+// CasGo registered service
 type CASService struct {
 	Url        string `gorethink:"url" json:"url"`
 	Name       string `gorethink:"name" json:"name"`
 	AdminEmail string `gorethink:"adminEmail" json:"adminEmail"`
+}
+
+// Enforce schema for CASService
+func (s *CASService) IsValid() bool {
+	return len(s.Url) > 0 && len(s.Name) > 0 &&	len(s.AdminEmail) > 0
 }
 
 // CasGo ticket

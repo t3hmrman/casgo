@@ -183,11 +183,20 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 	// Build service from passed in data
 	service := CASService{
 		Name:       strings.TrimSpace(req.FormValue("name")),
-		Url:        strings.TrimSpace(strings.ToLower(req.FormValue("url"))),
-		AdminEmail: strings.TrimSpace(strings.ToLower(req.FormValue("adminEmail"))),
+		Url:        strings.TrimSpace(req.FormValue("url")),
+		AdminEmail: strings.TrimSpace(req.FormValue("adminEmail")),
 	}
 
-	// Ensure user is admin
+	// Ensure service is valid
+	if !service.IsValid() {
+		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InvalidServiceError.Msg,
+		})
+		return
+	}
+
+	// Ensure user is admin before adding service
 	if !user.IsAdmin {
 		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
