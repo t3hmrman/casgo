@@ -43,6 +43,11 @@ var _ = BeforeSuite(func() {
 		testCASServer.Db.GetUsersTableName(),
 		"../../fixtures/users.json",
 	)
+	testCASServer.Db.LoadJSONFixture(
+		testCASServer.Db.GetDbName(),
+		testCASServer.Db.GetApiKeysTableName(),
+		"../../fixtures/api_keys.json",
+	)
 
 })
 
