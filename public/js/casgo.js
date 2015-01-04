@@ -265,7 +265,44 @@ function CasgoViewModel() {
   };
 
 
-  vm.ManageCtrl = {};
+  vm.ManageCtrl = {
+    /**
+     * The showSidebar observable controls toggling, getSidebarCSSLeft helps by returning the CSS style value to trigger animation
+     */
+    showSidebar: ko.observable(false),
+    hideSidebar: function() { vm.ManageCtrl.showSidebar(false); },
+    getSidebarCSSRight: ko.pureComputed(function() {
+      var ctrl = vm.ManageCtrl;
+      if (ctrl.showSidebar()) {
+        return "0%";
+      } else {
+        return "-100%";
+      }
+    }),
+
+    /**
+     * Show service information for modification/saving in sidebar
+     *
+     * @param {object} svc - The service to show
+     */
+    showServiceInSidebar: function(svc) {
+      var ctrl = vm.ManageCtrl;
+
+      // Change the contents of the sidebar to the appropriate template and controller for services form
+      ctrl.sidebarTemplateName('ServicesFormTemplate');
+      ctrl.sidebarController(vm.ManageServicesCtrl);
+
+      // Show sidebar
+      if (!ctrl.showSidebar()) { ctrl.showSidebar(true); }
+    },
+
+    /**
+     * Observables for controlling the sidebar (that could be used by any sub views in manage controller (ex. services/users)
+     */
+    sidebarTemplateName: ko.observable(null),
+    sidebarController: ko.observable(null)
+  };
+
   vm.ManageUsersCtrl = {users: []};
   vm.StatisticsCtrl = {};
 
