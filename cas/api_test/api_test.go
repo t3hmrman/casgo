@@ -9,6 +9,8 @@ import (
 	. "github.com/t3hmrman/casgo/cas"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 var API_TEST_DATA map[string]string = map[string]string{
@@ -18,6 +20,9 @@ var API_TEST_DATA map[string]string = map[string]string{
 	"userApiSecret":         "badsecret",
 	"adminApiKey":           "adminapikey",
 	"adminApiSecret":        "badsecret",
+	"fakeServiceName":       "test_service_2",
+	"fakeServiceUrl":        "localhost:3001/validateCASLogin",
+	"fakeServiceAdminEmail": "admin@test.com",
 }
 
 // List of tuples that describe all endpoints hierarchically
@@ -42,15 +47,9 @@ func failRedirect(req *http.Request, via []*http.Request) error {
 }
 
 // Utility function for performing JSON API requests
-func jsonAPIRequestWithCustomHeaders(method, uri string, headers map[string]string) (*http.Client, *http.Request, map[string]interface{}) {
+func jsonAPIRequestWithCustomHeaders(req *http.Request) (*http.Client, *http.Request, map[string]interface{}) {
 	client := &http.Client{
 		CheckRedirect: failRedirect,
-	}
-
-	// Craft a request with api key and secret, popu
-	req, err := http.NewRequest(method, uri, nil)
-	for k, v := range headers {
-		req.Header.Add(k, v)
 	}
 
 	// Perform request
@@ -73,46 +72,49 @@ var _ = Describe("CasGo API", func() {
 
 	Describe("#authenticateAPIUser", func() {
 		It("Should fail for unauthenticated users", func() {
-			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
-				"GET",
-				testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"],
-				map[string]string{},
-			)
+			// Craft a request request
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"], nil)
+			Expect(err).To(BeNil())
+
+			// Perform request
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
 			Expect(respJSON["status"]).To(Equal("error"))
 			Expect(respJSON["message"]).To(Equal(FailedToAuthenticateUserError.Msg))
 		})
 
 		It("Should properly authenticate a valid regular user's API key and secret to a non-admin-only endpoint", func() {
-			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
-				"GET",
-				testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"],
-				map[string]string{
-					"X-Api-Key":    API_TEST_DATA["userApiKey"],
-					"X-Api-Secret": API_TEST_DATA["userApiSecret"],
-				})
+			// Craft request with regular user's API key
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"], nil)
+			Expect(err).To(BeNil())
+			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
+
+			// Perform request
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
 			Expect(respJSON["status"]).To(Equal("success"))
 		})
 
 		It("Should properly authenticate a valid admin user's API key and secret to an admin-only endpoint", func() {
+			// Craft request with admin user's API key
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"], nil)
+			Expect(err).To(BeNil())
+			req.Header.Add("X-Api-Key", API_TEST_DATA["adminApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["adminApiSecret"])
+
 			// Perform JSON API request
-			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
-				"GET",
-				testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"],
-				map[string]string{
-					"X-Api-Key":    API_TEST_DATA["adminApiKey"],
-					"X-Api-Secret": API_TEST_DATA["adminApiSecret"],
-				})
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
 			Expect(respJSON["status"]).To(Equal("success"))
 		})
 
 		It("Should fail to authenticate a regular user to an admin-only endpoint", func() {
-			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
-				"GET",
-				testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"],
-				map[string]string{
-					"X-Api-Key":    API_TEST_DATA["userApiKey"],
-					"X-Api-Secret": API_TEST_DATA["userApiSecret"],
-				})
+			// Craft request with regular user's API key
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"], nil)
+			Expect(err).To(BeNil())
+			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
+
+			// Perform JSON API request
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
 			Expect(respJSON["status"]).To(Equal("error"))
 			Expect(respJSON["message"]).To(Equal(InsufficientPermissionsError.Msg))
 		})
@@ -141,14 +143,13 @@ var _ = Describe("CasGo API", func() {
 
 	Describe("#GetServices (GET /services)", func() {
 		It("Should list all services for an admin user", func() {
-			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
-				"GET",
-				testHTTPServer.URL+"/api/services",
-				map[string]string{
-					"X-Api-Key":    API_TEST_DATA["adminApiKey"],
-					"X-Api-Secret": API_TEST_DATA["adminApiSecret"],
-				},
-			)
+			// Craft request with admin user's API key
+			req, err := http.NewRequest("GET", testHTTPServer.URL+"/api/services", nil)
+			Expect(err).To(BeNil())
+			req.Header.Add("X-Api-Key", API_TEST_DATA["adminApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["adminApiSecret"])
+
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
 			Expect(respJSON["status"]).To(Equal("success"))
 
 			// Get the list of services that was returned (dependent on fixture)
@@ -167,10 +168,62 @@ var _ = Describe("CasGo API", func() {
 		})
 	})
 
-	// Describe("#CreateService (POST /services)", func() {
-	//	It("Should create a service for an admin user", func() {})
-	//	It("Should display an error for non-admin users", func() {})
-	// })
+	Describe("#CreateService (POST /services)", func() {
+		It("Should fail to create a service given invalid input from an admin user", func() {
+			// Craft request with admin user's API key
+			req, err := http.NewRequest(
+				"POST",
+				testHTTPServer.URL+"/api/services",
+				strings.NewReader(url.Values{"nope": {"nope"}}.Encode()),
+			)
+			Expect(err).To(BeNil())
+
+			// Set header
+			req.Header.Add("X-Api-Key", API_TEST_DATA["adminApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["adminApiSecret"])
+
+			// Perform request
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
+			Expect(respJSON).NotTo(BeNil())
+			Expect(respJSON["status"]).To(Equal("error"))
+			Expect(respJSON["message"]).To(Equal(InvalidServiceError.Msg))
+		})
+
+		It("Should successfully create a service given valid input from an admin user", func() {
+			// Craft request with admin user's API key
+			req, err := http.NewRequest(
+				"POST",
+				testHTTPServer.URL+"/api/services",
+				strings.NewReader(
+					url.Values{
+						"name":       {API_TEST_DATA["fakeServiceName"]},
+						"url":        {API_TEST_DATA["fakeServiceUrl"]},
+						"adminEmail": {API_TEST_DATA["fakeServiceAdminEmail"]},
+					}.Encode()),
+			)
+			Expect(err).To(BeNil())
+
+			// Set header for request
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("X-Api-Key", API_TEST_DATA["adminApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["adminApiSecret"])
+
+			// Perform request
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(req)
+			Expect(respJSON).NotTo(BeNil())
+			Expect(respJSON["status"]).To(Equal("success"))
+
+			// Get the list of services that was returned (dependent on fixture)
+			var newService map[string]interface{}
+			Expect(respJSON["data"]).To(BeAssignableToTypeOf(newService))
+			newService = respJSON["data"].(map[string]interface{})
+			Expect(newService["name"]).To(Equal(API_TEST_DATA["fakeServiceName"]))
+			Expect(newService["url"]).To(Equal(API_TEST_DATA["fakeServiceUrl"]))
+			Expect(newService["adminEmail"]).To(Equal(API_TEST_DATA["fakeServiceAdminEmail"]))
+		})
+
+		//It("Should display an error for non-admin users", func() {})
+	})
 
 	// Describe("#RemoveService (DELETE /services)", func() {
 	//	It("Should create a service for an admin user", func() {})
