@@ -3,6 +3,7 @@ package api_test
 import (
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/t3hmrman/casgo/cas"
@@ -17,6 +18,22 @@ var API_TEST_DATA map[string]string = map[string]string{
 	"userApiSecret":         "badsecret",
 	"adminApiKey":           "adminapikey",
 	"adminApiSecret":        "badsecret",
+}
+
+// List of tuples that describe all endpoints hierarchically
+var EXPECTED_API_ENDPOINTS map[string][]StringTuple = map[string][]StringTuple{
+	"/api/services": []StringTuple{
+		StringTuple{"GET", "/api/services"},
+		StringTuple{"POST", "/api/services"},
+		StringTuple{"GET", "/api/services"},
+		StringTuple{"POST", "/api/services"},
+		StringTuple{"PUT", "/api/services/{servicename}"},
+		StringTuple{"DELETE", "/api/services/{servicename}"},
+	},
+	"/api/sessions": []StringTuple{
+		StringTuple{"GET", "/api/sessions/{userEmail}/services"},
+		StringTuple{"GET", "/api/sessions"},
+	},
 }
 
 func failRedirect(req *http.Request, via []*http.Request) error {
@@ -107,14 +124,25 @@ var _ = Describe("CasGo API", func() {
 
 	})
 
-	// Describe("#HookupAPIEndpoints", func() {
-	//	It("Should hookup an endpoint for listing services (GET /api/services)", func() {})
-	//	It("Should hookup an endpoint for creating services (POST /api/services)", func() {})
-	//	It("Should hookup an endpoint for updating services (PUT /api/services/{servicename})", func() {})
-	//	It("Should hookup an endpoint for deleting services (DELETE /api/services/{servicename})", func() {})
-	//	It("Should hookup an endpoint for retrieving services for a user (GET /api/sessions/{userEmail}/services)", func() {})
-	//	It("Should hookup an endpoint for retrieving logged in users's session (GET /api/sessions)", func() {})
-	// })
+	Describe("#HookupAPIEndpoints", func() {
+		It("Should hookup all /api/services endpoints", func() {
+			testMux := mux.NewRouter()
+			api, err := NewCasgoFrontendAPI(nil)
+			api.HookupAPIEndpoints(testMux)
+			Expect(err).To(BeNil())
+
+			// Check all expected endpoints below "/api/services"
+			var routeMatch mux.RouteMatch
+			for _, tuple := range EXPECTED_API_ENDPOINTS["/api/services"] {
+				// Craft request for listing services (GET /api/services)
+				req, err := http.NewRequest(tuple.First(), tuple.Second(), nil)
+				Expect(err).To(BeNil())
+
+				// Get pattern that was matched
+				Expect(testMux.Match(req, &routeMatch)).To(BeTrue())
+			}
+		})
+	})
 
 	// Describe("Current user's services listing endpoint", func() {
 	//	It("Should return an error if there is no user logged in", func() {})
