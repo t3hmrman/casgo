@@ -43,10 +43,8 @@ var _ = BeforeSuite(func() {
 
 	// Setup http test server
 	testHTTPServer = httptest.NewServer(testCASServer.ServeMux)
-	log.Printf("Started testing HTTP server @ %s", testHTTPServer.URL)
 
 	// Load database fixtures
-	log.Printf("Loading database fixtures...")
 	testCASServer.Db.LoadJSONFixture(
 		testCASServer.Db.GetDbName(),
 		testCASServer.Db.GetServicesTableName(),
