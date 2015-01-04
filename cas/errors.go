@@ -67,7 +67,12 @@ var (
 	FailedToFindUserByApiKeyAndSecretError = CASServerError{
 		Msg:          "Failed to find user with given API credentials. Please ensure credentials are valid and try again.",
 		HttpCode:     http.StatusUnauthorized,
-		CasgoErrCode: 109,
+		CasgoErrCode: 110,
+	}
+	InsufficientPermissionsError = CASServerError{
+		Msg:          "Authenticated user has insufficient permissions to perform this action.",
+		HttpCode:     http.StatusForbidden,
+		CasgoErrCode: 111,
 	}
 
 	// Internal Server errors (error codes 200 - 299)

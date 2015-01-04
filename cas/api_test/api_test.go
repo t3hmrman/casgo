@@ -24,6 +24,34 @@ func failRedirect(req *http.Request, via []*http.Request) error {
 	return errors.New("No redirects allowed")
 }
 
+// Utility function for performing JSON API requests
+func jsonAPIRequestWithCustomHeaders(method, uri string, headers map[string]string) (*http.Client, *http.Request, map[string]interface{}) {
+	client := &http.Client{
+		CheckRedirect: failRedirect,
+	}
+
+	// Craft a request with api key and secret, popu
+	req, err := http.NewRequest(method, uri, nil)
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	// Perform request
+	resp, err := client.Do(req)
+	Expect(err).To(BeNil())
+
+	// Read response body
+	rawBody, err := ioutil.ReadAll(resp.Body)
+	Expect(err).To(BeNil())
+
+	// Parse response body into a map
+	var respJSON map[string]interface{}
+	err = json.Unmarshal(rawBody, &respJSON)
+	Expect(err).To(BeNil())
+
+	return client, req, respJSON
+}
+
 var _ = Describe("CasGo API", func() {
 
 	Describe("#authenticateAPIUser", func() {
@@ -43,75 +71,38 @@ var _ = Describe("CasGo API", func() {
 		})
 
 		It("Should properly authenticate a valid regular user's API key and secret to a non-admin-only endpoint", func() {
-			client := &http.Client{
-				CheckRedirect: failRedirect,
-			}
-
-			// Craft a request with api key and secret
-			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"], nil)
-			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
-			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
-
-			// Perform request
-			resp, err := client.Do(req)
-			Expect(err).To(BeNil())
-
-			// Read response body
-			rawBody, err := ioutil.ReadAll(resp.Body)
-			Expect(err).To(BeNil())
-
-			// Parse response body into a map
-			var respJSON map[string]interface{}
-			json.Unmarshal(rawBody, &respJSON)
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
+				"GET",
+				testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"],
+				map[string]string{
+					"X-Api-Key":    API_TEST_DATA["userApiKey"],
+					"X-Api-Secret": API_TEST_DATA["userApiSecret"],
+				})
 			Expect(respJSON["status"]).To(Equal("success"))
 		})
 
 		It("Should properly authenticate a valid admin user's API key and secret to an admin-only endpoint", func() {
-			client := &http.Client{
-				CheckRedirect: failRedirect,
-			}
-
-			// Craft a request with api key and secret
-			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"], nil)
-			req.Header.Add("X-Api-Key", API_TEST_DATA["adminApiKey"])
-			req.Header.Add("X-Api-Secret", API_TEST_DATA["adminApiSecret"])
-
-			// Perform request
-			resp, err := client.Do(req)
-			Expect(err).To(BeNil())
-
-			// Read response body
-			rawBody, err := ioutil.ReadAll(resp.Body)
-			Expect(err).To(BeNil())
-
-			// Parse response body into a map
-			var respJSON map[string]interface{}
-			json.Unmarshal(rawBody, &respJSON)
+			// Perform JSON API request
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
+				"GET",
+				testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"],
+				map[string]string{
+					"X-Api-Key":    API_TEST_DATA["adminApiKey"],
+					"X-Api-Secret": API_TEST_DATA["adminApiSecret"],
+				})
 			Expect(respJSON["status"]).To(Equal("success"))
 		})
 
 		It("Should fail to authenticate a regular user to an admin-only endpoint", func() {
-			client := &http.Client{
-				CheckRedirect: failRedirect,
-			}
-
-			// Craft a request with api key and secret
-			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"], nil)
-			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
-			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
-
-			// Perform request
-			resp, err := client.Do(req)
-			Expect(err).To(BeNil())
-
-			// Read response body
-			rawBody, err := ioutil.ReadAll(resp.Body)
-			Expect(err).To(BeNil())
-
-			// Parse response body into a map
-			var respJSON map[string]interface{}
-			json.Unmarshal(rawBody, &respJSON)
+			_, _, respJSON := jsonAPIRequestWithCustomHeaders(
+				"GET",
+				testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"],
+				map[string]string{
+					"X-Api-Key":    API_TEST_DATA["userApiKey"],
+					"X-Api-Secret": API_TEST_DATA["userApiSecret"],
+				})
 			Expect(respJSON["status"]).To(Equal("error"))
+			Expect(respJSON["message"]).To(Equal(InsufficientPermissionsError.Msg))
 		})
 
 	})
@@ -123,10 +114,6 @@ var _ = Describe("CasGo API", func() {
 	//	It("Should hookup an endpoint for deleting services (DELETE /api/services/{servicename})", func() {})
 	//	It("Should hookup an endpoint for retrieving services for a user (GET /api/sessions/{userEmail}/services)", func() {})
 	//	It("Should hookup an endpoint for retrieving logged in users's session (GET /api/sessions)", func() {})
-	// })
-
-	// Describe("Session handler", func() {
-	//	It("Should return an error if there is no session", func() {})
 	// })
 
 	// Describe("Current user's services listing endpoint", func() {

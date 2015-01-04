@@ -117,9 +117,9 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 
 	// Ensure non-admin user is not trying to lookup another users session information
 	if !user.IsAdmin && user.Email != routeUserEmail {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -145,9 +145,9 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 
 	// Ensure user is admin
 	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -189,9 +189,9 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 
 	// Ensure user is admin
 	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -227,9 +227,9 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 
 	// Ensure user is admin
 	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
@@ -267,9 +267,9 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 
 	// Ensure user is admin
 	if !user.IsAdmin {
-		api.casServer.render.JSON(w, http.StatusUnauthorized, map[string]string{
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": "Insufficient permissions.",
+			"message": InsufficientPermissionsError.Msg,
 		})
 		return
 	}
