@@ -19,13 +19,13 @@ func authenticateAPIUser(api *FrontendAPI, req *http.Request) (*User, *CASServer
 
 	// Attempt to authenticate with HTTP session
 	user, casErr := authenticateWithSession(api, req)
-	if casErr == nil {
+	if user != nil && casErr == nil {
 		return user, nil
 	}
 
 	// Attempt to authenticate with API key and secret if present
 	user, casErr = api.authenticateWithAPIKey(req)
-	if casErr == nil {
+	if user != nil && casErr == nil {
 		return user, nil
 	}
 
@@ -62,8 +62,12 @@ func (api *FrontendAPI) authenticateWithAPIKey(req *http.Request) (*User, *CASSe
 		return nil, &FailedToAuthenticateUserError
 	}
 
-	// Query the database?
-	return nil, nil
+	user, casErr := api.casServer.Db.FindUserByApiKeyAndSecret(apiKey, apiSecret)
+	if casErr != nil {
+		return nil, casErr
+	}
+
+	return user, nil
 }
 
 // Hook up API endpoints to given mux

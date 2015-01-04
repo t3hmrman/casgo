@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"encoding/json"
+	"errors"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/t3hmrman/casgo/cas"
@@ -9,24 +10,110 @@ import (
 	"net/http"
 )
 
+var API_TEST_DATA map[string]string = map[string]string{
+	"exampleAdminOnlyURI":   "/api/services",
+	"exampleRegularUserURI": "/api/sessions",
+	"userApiKey":            "userapikey",
+	"userApiSecret":         "badsecret",
+	"adminApiKey":           "adminapikey",
+	"adminApiSecret":        "badsecret",
+}
+
+func failRedirect(req *http.Request, via []*http.Request) error {
+	Expect(req).To(BeNil())
+	return errors.New("No redirects allowed")
+}
+
 var _ = Describe("CasGo API", func() {
 
 	Describe("#authenticateAPIUser", func() {
 		It("Should fail for unauthenticated users", func() {
-			resp, err := http.Get(testHTTPServer.URL + "/api/services")
+			resp, err := http.Get(testHTTPServer.URL + API_TEST_DATA["exampleRegularUserURI"])
 			Expect(err).To(BeNil())
 
+			// Read response body
 			rawBody, err := ioutil.ReadAll(resp.Body)
 			Expect(err).To(BeNil())
 
+			// Parse response body into a map
 			var respJSON map[string]interface{}
 			json.Unmarshal(rawBody, &respJSON)
 			Expect(respJSON["status"]).To(Equal("error"))
 			Expect(respJSON["message"]).To(Equal(FailedToAuthenticateUserError.Msg))
 		})
-		// It("Should authenticate a user without a session who has passed an API key", func() {
-		//	http.Get(testHTTPServer.URL + "/api/services")
-		// })
+
+		It("Should properly authenticate a valid regular user's API key and secret to a non-admin-only endpoint", func() {
+			client := &http.Client{
+				CheckRedirect: failRedirect,
+			}
+
+			// Craft a request with api key and secret
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleRegularUserURI"], nil)
+			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
+
+			// Perform request
+			resp, err := client.Do(req)
+			Expect(err).To(BeNil())
+
+			// Read response body
+			rawBody, err := ioutil.ReadAll(resp.Body)
+			Expect(err).To(BeNil())
+
+			// Parse response body into a map
+			var respJSON map[string]interface{}
+			json.Unmarshal(rawBody, &respJSON)
+			Expect(respJSON["status"]).To(Equal("success"))
+		})
+
+		It("Should properly authenticate a valid admin user's API key and secret to an admin-only endpoint", func() {
+			client := &http.Client{
+				CheckRedirect: failRedirect,
+			}
+
+			// Craft a request with api key and secret
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"], nil)
+			req.Header.Add("X-Api-Key", API_TEST_DATA["adminApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["adminApiSecret"])
+
+			// Perform request
+			resp, err := client.Do(req)
+			Expect(err).To(BeNil())
+
+			// Read response body
+			rawBody, err := ioutil.ReadAll(resp.Body)
+			Expect(err).To(BeNil())
+
+			// Parse response body into a map
+			var respJSON map[string]interface{}
+			json.Unmarshal(rawBody, &respJSON)
+			Expect(respJSON["status"]).To(Equal("success"))
+		})
+
+		It("Should fail to authenticate a regular user to an admin-only endpoint", func() {
+			client := &http.Client{
+				CheckRedirect: failRedirect,
+			}
+
+			// Craft a request with api key and secret
+			req, err := http.NewRequest("GET", testHTTPServer.URL+API_TEST_DATA["exampleAdminOnlyURI"], nil)
+			req.Header.Add("X-Api-Key", API_TEST_DATA["userApiKey"])
+			req.Header.Add("X-Api-Secret", API_TEST_DATA["userApiSecret"])
+
+			// Perform request
+			resp, err := client.Do(req)
+			Expect(err).To(BeNil())
+
+			// Read response body
+			rawBody, err := ioutil.ReadAll(resp.Body)
+			Expect(err).To(BeNil())
+
+			// Parse response body into a map
+			var respJSON map[string]interface{}
+			json.Unmarshal(rawBody, &respJSON)
+			Expect(respJSON["status"]).To(Equal("error"))
+		})
+
 	})
 
 	// Describe("#HookupAPIEndpoints", func() {
