@@ -285,7 +285,7 @@ function CasgoViewModel() {
      */
     showAddServiceInSidebar: function() {
       vm.EditServiceCtrl.create(true);
-      vm.EditServiceCtrl.currentSvc({});
+      vm.EditServiceCtrl.loadSvc({});
       vm.ManageCtrl.showSidebarEditServiceForm();
     },
 
@@ -295,9 +295,10 @@ function CasgoViewModel() {
      * @param {object} svc - The service to edit
      */
     showEditServiceInSidebar: function(svc) {
+      var ctrl = vm.EditServiceCtrl;
       // Update (and set) the controller that will be attached to the template with the service it should be editing
-      vm.EditServiceCtrl.create(false);
-      vm.EditServiceCtrl.currentSvc(svc);
+      ctrl.create(false);
+      ctrl.loadSvc(svc);
       vm.ManageCtrl.showSidebarEditServiceForm();
     },
 
@@ -330,7 +331,19 @@ function CasgoViewModel() {
     create: ko.observable(true),
 
     // Current service being modified (empty if new)
-    currentSvc: ko.observable({}),
+    svcName: ko.observable(""),
+    svcUrl: ko.observable(""),
+    svcAdminEmail: ko.observable(""),
+
+    /**
+     * Load the controller with an existing service's data
+     */
+    loadSvc: function(svc) {
+      var ctrl = vm.EditServiceCtrl;
+      ctrl.svcName(svc.name || "");
+      ctrl.svcUrl(svc.url || "");
+      ctrl.svcAdminEmail(svc.adminEmail || "");
+    },
 
     /**
      * Get action text for the title/other elements, depends on {@link create}'s value.

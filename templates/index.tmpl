@@ -145,22 +145,22 @@
                 <div class="slim-pad">
                     <h2>
                         <span data-bind="text: actionText"></span>
-                        <span data-bind="if: !_.isEmpty(currentSvc())">
-                            (<span data-bind="text: currentSvc().name"></span>)
+                        <span data-bind="if: !_.isEmpty(svcName())">
+                            (<span data-bind="text: svcName()"></span>)
                         </span>
                     </h2>
                     <form id="frmEditService" class="pure-form pure-form-stacked">
                         <fieldset>
                             <label for="name">Name of the service</label>
-                            <input id="name" class="pure-input-2-3" type="text" data-bind="value: currentSvc().name" name="name" placeholder="Service Name" disabled>
+                            <input id="name" class="pure-input-2-3" type="text" data-bind="value: svcName, valueUpdate: 'keyup', disable: !create()" name="name" placeholder="Service Name">
 
                             <br/>
                             <label for="url">URL (callback URL)</label>
-                            <input id="url" class="pure-input-2-3" type="text" data-bind="value: currentSvc().url" name="url" type="url"  placeholder="Service URL">
+                            <input id="url" class="pure-input-2-3" type="text" data-bind="value: svcUrl" name="url" type="url"  placeholder="Service URL">
 
                             <br/>
                             <label for="adminEmail">Administrator's email address</label>
-                            <input id="adminEmail" class="pure-input-2-3" type="email" data-bind="value: currentSvc().adminEmail" name="adminEmail" placeholder="Admin's email">
+                            <input id="adminEmail" class="pure-input-2-3" type="email" data-bind="value: svcAdminEmail" name="adminEmail" placeholder="Admin's email">
                         </fieldset>
                     </form>
                 </div> <!-- /div.slim-pad -->
