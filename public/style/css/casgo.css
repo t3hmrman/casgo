@@ -135,6 +135,7 @@ body {
 
 .services-list-item-menu:hover {
   background-color: #2ECC71;
+  cursor: pointer;
 }
 
 .right-sidebar {
