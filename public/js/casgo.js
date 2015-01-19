@@ -35,7 +35,7 @@ function CasgoViewModel() {
    * Check whether the current route URL starts with a given URL
    * This usually indicates that it is a sub-route
    *
-   * @param {string} prefix - The prefix to search for 
+   * @param {string} prefix - The prefix to search for
    * @returns whether the current route URL contains the prefix
    */
   vm.currentRouteUrlHasPrefix = function(prefix) { return vm.currentRouteUrl().match('^' + prefix); };
@@ -52,7 +52,7 @@ function CasgoViewModel() {
 
   /**
    * Navigate to a route
-   * 
+   *
    * @param {object} route - The route to navigate to
    */
   vm.gotoRoute =  function(route) {
@@ -288,9 +288,12 @@ function CasgoViewModel() {
     showServiceInSidebar: function(svc) {
       var ctrl = vm.ManageCtrl;
 
+      // Update (and set) the controller that will be attached to the template with the service it should be editing
+      vm.EditServiceCtrl.currentSvc(svc);
+      ctrl.sidebarController(vm.EditServiceCtrl);
+
       // Change the contents of the sidebar to the appropriate template and controller for services form
-      ctrl.sidebarTemplateName('ServicesFormTemplate');
-      ctrl.sidebarController(vm.ManageServicesCtrl);
+      ctrl.sidebarTemplateName('EditServiceFormTemplate');
 
       // Show sidebar
       if (!ctrl.showSidebar()) { ctrl.showSidebar(true); }
@@ -303,9 +306,49 @@ function CasgoViewModel() {
     sidebarController: ko.observable(null)
   };
 
+  /**
+   * Controller for the EditServiceFormTemplate. It is used to both create and update (edit), and contains page state.
+   * Before showing this controller, calling context must initialize the controller with the service being modified (if there is one)
+   */
+  vm.EditServiceCtrl = {
+    // Value for monitoring whether the template is create or edit mode
+    create: ko.observable(false),
+
+    // Current service being modified (empty if new)
+    currentSvc: ko.observable({}),
+
+    /**
+     * Get action text for the title/other elements, depends on {@link create}'s value.
+     */
+    actionText: ko.pureComputed(function() {
+      return vm.EditServiceCtrl.create() ? "Add service" : "Update service";
+    }),
+
+    /**
+     * Remove a service, mostly a proxy call to the ServicesService, and some alerting behavior.
+     */
+    removeService: function() {
+    },
+
+    /**
+     * Create or update a service, dispatches to {@link vm.EditServiceCtrl.createService} or {@link vm.EditServiceCtrl.updateService}
+     */
+    createOrUpdateService: function() {
+      if (vm.EditServiceCtrl.create)
+        vm.EditServiceCtrl.createService();
+      else
+        vm.EditServiceCtrl.updateService();
+    },
+
+    /**
+     * Methods for creating and updating services, mostly proxies to ServicesService, and some alerting behavior.
+     */
+    createService: function() { },
+    updateService: function() { }
+  };
+
   vm.ManageUsersCtrl = {users: []};
   vm.StatisticsCtrl = {};
-
 
   /**
    * App initialization function, to be run once, when the app starts
