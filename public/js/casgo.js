@@ -119,9 +119,9 @@ function CasgoViewModel() {
             } else {
               reject(new Error("API call failed", json.message));
             }
-        }).catch(function(err) {
-          reject(err);
-        });
+          }).catch(function(err) {
+            reject(err);
+          });
 
       });
     }
@@ -163,17 +163,17 @@ function CasgoViewModel() {
       var svc = vm.ServicesService;
       return new Promise(function(resolve, reject) {
         fetch('/api/services')
-        .then(function(resp) { return resp.json(); })
-        .then(function(json) {
-          if (json.status === "success") {
-            svc.allServices(json.data);
-            resolve(svc.allServices());
-          } else {
-            reject(json.message);
-          }
-        }).catch(function(err) {
-          reject(err);
-        });
+          .then(function(resp) { return resp.json(); })
+          .then(function(json) {
+            if (json.status === "success") {
+              svc.allServices(json.data);
+              resolve(svc.allServices());
+            } else {
+              reject(json.message);
+            }
+          }).catch(function(err) {
+            reject(err);
+          });
       });
     },
 
@@ -190,15 +190,15 @@ function CasgoViewModel() {
         fetch('/api/sessions/' + user.email + "/services")
           .then(function(resp) { return resp.json();})
           .then(function(json) {
-          if (json.status === "success") {
-            svc.currentUserServices(json.data);
-            resolve(svc.currentUserServices());
-          } else {
-            reject(new Error("API call failed", json.message));
-          }
-        }).catch(function(err) {
-          reject(err);
-        });
+            if (json.status === "success") {
+              svc.currentUserServices(json.data);
+              resolve(svc.currentUserServices());
+            } else {
+              reject(new Error("API call failed", json.message));
+            }
+          }).catch(function(err) {
+            reject(err);
+          });
       });
     }
 
@@ -281,21 +281,36 @@ function CasgoViewModel() {
     }),
 
     /**
-     * Show service information for modification/saving in sidebar
-     *
-     * @param {object} svc - The service to show
+     * Show new service form in sidebar
      */
-    showServiceInSidebar: function(svc) {
-      var ctrl = vm.ManageCtrl;
+    showAddServiceInSidebar: function() {
+      vm.EditServiceCtrl.create(true);
+      vm.EditServiceCtrl.currentSvc({});
+      vm.ManageCtrl.showSidebarEditServiceForm();
+    },
 
+    /**
+     * Show edit service form in sidebar
+     *
+     * @param {object} svc - The service to edit
+     */
+    showEditServiceInSidebar: function(svc) {
       // Update (and set) the controller that will be attached to the template with the service it should be editing
+      vm.EditServiceCtrl.create(false);
       vm.EditServiceCtrl.currentSvc(svc);
-      ctrl.sidebarController(vm.EditServiceCtrl);
+      vm.ManageCtrl.showSidebarEditServiceForm();
+    },
 
-      // Change the contents of the sidebar to the appropriate template and controller for services form
+    /**
+     * Show sidebar edit form
+     */
+    showSidebarEditServiceForm: function() {
+      var ctrl = vm.ManageCtrl;
+      // Change to the appropriate template and controller for edit service form
+      ctrl.sidebarController(vm.EditServiceCtrl);
       ctrl.sidebarTemplateName('EditServiceFormTemplate');
 
-      // Show sidebar
+      // Show sidebar (if not already visible)
       if (!ctrl.showSidebar()) { ctrl.showSidebar(true); }
     },
 
@@ -312,7 +327,7 @@ function CasgoViewModel() {
    */
   vm.EditServiceCtrl = {
     // Value for monitoring whether the template is create or edit mode
-    create: ko.observable(false),
+    create: ko.observable(true),
 
     // Current service being modified (empty if new)
     currentSvc: ko.observable({}),
