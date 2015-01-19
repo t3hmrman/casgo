@@ -133,8 +133,8 @@ body {
   right: 0px;
 }
 
-.services-list-item-menu :hover {
-  color: #2ECC71;
+.services-list-item-menu:hover {
+  background-color: #2ECC71;
 }
 
 .right-sidebar {
