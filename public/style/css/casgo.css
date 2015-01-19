@@ -2,7 +2,7 @@
  * Styles for CASGO
  *
  * UI colors (based off of http://flatuicolors.com/)
- * Emerald (green): #2ecc71
+ * Emerald (green): #2ECC71
  */
 
 body, html {
@@ -124,12 +124,17 @@ body {
 }
 
 .services-list-item-menu {
-  width: 100%;
   position: absolute;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   font-size: x-large;
+  padding: .5em;
+  right: 0px;
+}
+
+.services-list-item-menu :hover {
+  color: #2ECC71;
 }
 
 .right-sidebar {
@@ -171,6 +176,7 @@ body {
 .centered-text { text-align: center; }
 .left-aligned-text { text-align: left; }
 .right-aligned-text { text-align: right; }
+.slim-margin { margin: .5em; }
 
 .medium-font { font-size: medium; }
 
