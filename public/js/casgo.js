@@ -184,21 +184,63 @@ function CasgoViewModel() {
      * @returns A Promise which evaluates to the users' services
      */
     fetchServicesForUser: function(user) {
-      var svc = vm.ServicesService;
+      var self = vm.ServicesService;
       // Get user's services
       return new Promise(function(resolve, reject) {
         fetch('/api/sessions/' + user.email + "/services")
           .then(function(resp) { return resp.json();})
           .then(function(json) {
             if (json.status === "success") {
-              svc.currentUserServices(json.data);
-              resolve(svc.currentUserServices());
+              self.currentUserServices(json.data);
+              resolve(self.currentUserServices());
             } else {
               reject(new Error("API call failed", json.message));
             }
           }).catch(function(err) {
             reject(err);
           });
+      });
+    },
+
+    /**
+     * Create/Update a service
+     *
+     * @param {object} svc - Service to be created/updated (contains 'id' field if update)
+     * @returns A Promise for the ajax request
+     */
+    createOrUpdateService: function(svc) {
+      var self = vm.ServicesService;
+      if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
+
+      var url = '/api/services' + ('id' in svc ? svc.id : "");
+      var method = 'id' in svc && svc.id ? 'put' : 'post';
+      return fetch(url, {
+        method: method,
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
+        body: JSON.stringify(svc)
+      });
+    },
+
+    /**
+     * Check if a given service is valid
+     */
+    isValidService: function(svc) {
+      return _(['url', 'adminEmail', 'name'])
+        .map(function(k) { return k in svc; })
+        .every();
+    },
+
+    /**
+     * Delete a service
+     *
+     * @param {object} newService - Service to be deleted
+     * @returns A Promise for the ajax request
+     */
+    deleteService: function(serviceId) {
+      if (_.isUndefined(serviceId)) throw new Error("Invalid serviceId");
+      return fetch('/api/services/' + serviceId, {
+        method: 'delete',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'}
       });
     }
 
@@ -281,24 +323,30 @@ function CasgoViewModel() {
     }),
 
     /**
-     * Show new service form in sidebar
+     * Show new service form in sidebar by clearing the {@link vm.EditServiceCtrl}, then
+     * showing the sidebar using {@link vm.ManageCtrl.showSidebarEditServiceForm}
      */
     showAddServiceInSidebar: function() {
+      var self = vm.ManageCtrl;
+      var ctrl = vm.EditServiceCtrl;
       vm.EditServiceCtrl.create(true);
       vm.EditServiceCtrl.loadSvc({});
       vm.ManageCtrl.showSidebarEditServiceForm();
+      self.sidebarController(ctrl);
     },
 
     /**
-     * Show edit service form in sidebar
+     * Show edit service form in sidebar by loading the appropriate service into 
+     * {@link vm.EditServiceCtrl} and showing the sidebar using {@link vm.ManageCtrl.showSidebarEditServiceForm}
      *
      * @param {object} svc - The service to edit
      */
     showEditServiceInSidebar: function(svc) {
+      var self = vm.ManageCtrl;
       var ctrl = vm.EditServiceCtrl;
-      // Update (and set) the controller that will be attached to the template with the service it should be editing
       ctrl.create(false);
       ctrl.loadSvc(svc);
+      self.sidebarController(ctrl);
       vm.ManageCtrl.showSidebarEditServiceForm();
     },
 
@@ -306,13 +354,12 @@ function CasgoViewModel() {
      * Show sidebar edit form
      */
     showSidebarEditServiceForm: function() {
-      var ctrl = vm.ManageCtrl;
+      var self = vm.ManageCtrl;
       // Change to the appropriate template and controller for edit service form
-      ctrl.sidebarController(vm.EditServiceCtrl);
-      ctrl.sidebarTemplateName('EditServiceFormTemplate');
+      self.sidebarTemplateName('EditServiceFormTemplate');
 
       // Show sidebar (if not already visible)
-      if (!ctrl.showSidebar()) { ctrl.showSidebar(true); }
+      if (!self.showSidebar()) { self.showSidebar(true); }
     },
 
     /**
@@ -327,10 +374,31 @@ function CasgoViewModel() {
    * Before showing this controller, calling context must initialize the controller with the service being modified (if there is one)
    */
   vm.EditServiceCtrl = {
+    // Alerts
+    alerts: ko.observableArray([
+      {
+        type: "success",
+        msg: "Yup, a success!"
+      },
+      {
+        type: "warning",
+        msg: "Yup, an informational warning!"
+      },
+      {
+        type: "error",
+        msg: "Yup, an error!"
+      },
+      {
+        type: "info",
+        msg: "Yup, an informational one!"
+      },
+    ]),
+
     // Value for monitoring whether the template is create or edit mode
     create: ko.observable(true),
 
     // Current service being modified (empty if new)
+    svcId: ko.observable(undefined),
     svcName: ko.observable(""),
     svcUrl: ko.observable(""),
     svcAdminEmail: ko.observable(""),
@@ -346,6 +414,26 @@ function CasgoViewModel() {
     },
 
     /**
+     * Create a service out of the information currently being held by the controller
+     */
+    makeService: ko.pureComputed(function() {
+      var ctrl = vm.EditServiceCtrl;
+
+      // Create service object from current state
+      var svc =  {
+        name: ctrl.svcName(),
+        url: ctrl.svcUrl(),
+        adminEmail: ctrl.svcAdminEmail()
+      };
+
+      // Add ID if present
+      var svcId = ctrl.svcId();
+      if (!_.isUndefined(svcId)) { svc.id = svcId; }
+
+      return svc;
+    }),
+
+    /**
      * Get action text for the title/other elements, depends on {@link create}'s value.
      */
     actionText: ko.pureComputed(function() {
@@ -353,26 +441,32 @@ function CasgoViewModel() {
     }),
 
     /**
-     * Remove a service, mostly a proxy call to the ServicesService, and some alerting behavior.
+     * Remove a service, mostly a proxy call to the {@link vm.ServicesService}, and some alerting behavior.
      */
     removeService: function() {
+      var servicesService = vm.ServicesService;
+      var ctrl = vm.EditServiceCtrl;
+      servicesService.deleteService(ctrl.svcId())
+      .then(function(res) {
+        if (res.status === "success") { 
+          
+        }
+      });
     },
 
     /**
-     * Create or update a service, dispatches to {@link vm.EditServiceCtrl.createService} or {@link vm.EditServiceCtrl.updateService}
+     * Create or update a service, mostly a proxy call to the {@link vm.ServicesService}, and some alerting behavior"
      */
     createOrUpdateService: function() {
-      if (vm.EditServiceCtrl.create)
-        vm.EditServiceCtrl.createService();
-      else
-        vm.EditServiceCtrl.updateService();
-    },
-
-    /**
-     * Methods for creating and updating services, mostly proxies to ServicesService, and some alerting behavior.
-     */
-    createService: function() { },
-    updateService: function() { }
+      var serviceService = vm.ServicesService;
+      var ctrl = vm.EditServiceCtrl;
+      serviceService.createOrUpdateService(ctrl.makeService())
+      .then(function(res) {
+        if (res.status === "success") {
+          
+        }
+      });
+    }
   };
 
   vm.ManageUsersCtrl = {users: []};
