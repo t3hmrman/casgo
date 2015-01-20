@@ -246,14 +246,15 @@ function CasgoViewModel() {
     },
 
     /**
-     * Delete a service
+     * Delete a service (by name)
      *
-     * @param {object} newService - Service to be deleted
+     * @param {object} svc - Service to be deleted
      * @returns A Promise for the ajax request
      */
-    deleteService: function(serviceId) {
-      if (_.isUndefined(serviceId)) throw new Error("Invalid serviceId");
-      return fetch('/api/services/' + serviceId, {
+    deleteService: function(svc) {
+      var self = vm.ServicesService;
+      if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
+      return fetch('/api/services/' + svc.name, {
         method: 'delete',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'}
       });
@@ -450,7 +451,7 @@ function CasgoViewModel() {
     removeService: function() {
       var servicesService = vm.ServicesService;
       var ctrl = vm.EditServiceCtrl;
-      servicesService.deleteService(ctrl.svcId())
+      servicesService.deleteService(ctrl.makeService())
       .then(function(resp) {
         return resp.json();
       }).then(function(json) {
