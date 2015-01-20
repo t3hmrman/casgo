@@ -172,12 +172,12 @@
 </script>
 
 <script type="text/html" id="AlertsTemplate">
-    <div class="alerts" data-bind="foreach: alerts">
-        <div class="alert" data-bind="class: { success: status === 'success', warning: status === 'warning', info: status === 'info', error: status === 'error'}">
+    <div class="alerts-container" data-bind="foreach: alerts">
+        <div class="alert" data-bind="css: { success: type === 'success', warning: type === 'warning', info: type === 'info', error: type === 'error'}">
+            <span class="dismiss-alert" data-bind="click: $parent.dismissAlert">&times;</span>
             <span data-bind="text: msg"></span>
         </div>
     </div>
-
 </script>
 
 <script type="text/html" id="ManageUsersTemplate">

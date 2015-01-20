@@ -203,19 +203,34 @@ function CasgoViewModel() {
     },
 
     /**
-     * Create/Update a service
+     * Create a service
      *
-     * @param {object} svc - Service to be created/updated (contains 'id' field if update)
+     * @param {object} svc - Service to be created
      * @returns A Promise for the ajax request
      */
-    createOrUpdateService: function(svc) {
+    createService: function(svc) {
       var self = vm.ServicesService;
       if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
 
-      var url = '/api/services' + ('id' in svc ? svc.id : "");
-      var method = 'id' in svc && svc.id ? 'put' : 'post';
-      return fetch(url, {
-        method: method,
+      return fetch('/api/services', {
+        method: 'post',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
+        body: JSON.stringify(svc)
+      });
+    },
+
+    /**
+     * Update a service
+     *
+     * @param {object} svc - Service to be updated
+     * @returns A Promise for the ajax request
+     */
+    updateService: function(svc) {
+      var self = vm.ServicesService;
+      if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
+
+      return fetch('/api/services/' + svc.name, {
+        method: 'put',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: JSON.stringify(svc)
       });
@@ -336,7 +351,7 @@ function CasgoViewModel() {
     },
 
     /**
-     * Show edit service form in sidebar by loading the appropriate service into 
+     * Show edit service form in sidebar by loading the appropriate service into
      * {@link vm.EditServiceCtrl} and showing the sidebar using {@link vm.ManageCtrl.showSidebarEditServiceForm}
      *
      * @param {object} svc - The service to edit
@@ -375,24 +390,13 @@ function CasgoViewModel() {
    */
   vm.EditServiceCtrl = {
     // Alerts
-    alerts: ko.observableArray([
-      {
-        type: "success",
-        msg: "Yup, a success!"
-      },
-      {
-        type: "warning",
-        msg: "Yup, an informational warning!"
-      },
-      {
-        type: "error",
-        msg: "Yup, an error!"
-      },
-      {
-        type: "info",
-        msg: "Yup, an informational one!"
-      },
-    ]),
+    alerts: ko.observableArray([]),
+ 
+    // Utility function for deleting alerts
+    dismissAlert: function(alert) {
+      var ctrl = vm.EditServiceCtrl;
+      ctrl.alerts(_.reject(ctrl.alerts(), function(a) { return _.isEqual(alert, a); }));
+    },
 
     // Value for monitoring whether the template is create or edit mode
     create: ko.observable(true),
@@ -447,10 +451,11 @@ function CasgoViewModel() {
       var servicesService = vm.ServicesService;
       var ctrl = vm.EditServiceCtrl;
       servicesService.deleteService(ctrl.svcId())
-      .then(function(res) {
-        if (res.status === "success") { 
-          
-        }
+      .then(function(resp) {
+        return resp.json();
+      }).then(function(json) {
+        var msg = json.status === "success" ? "Successfully removed service" : "Failed to remove service";
+        ctrl.alerts.push({type: json.status, msg: msg});
       });
     },
 
@@ -460,11 +465,14 @@ function CasgoViewModel() {
     createOrUpdateService: function() {
       var serviceService = vm.ServicesService;
       var ctrl = vm.EditServiceCtrl;
-      serviceService.createOrUpdateService(ctrl.makeService())
-      .then(function(res) {
-        if (res.status === "success") {
-          
-        }
+      var service = ctrl.makeService();
+      var createOrUpdateFn = ctrl.create() ? serviceService.createService : serviceService.updateService;
+      createOrUpdateFn(service)
+      .then(function(resp) {
+        return resp.json();
+      }).then(function(json) {
+        var msg = json.status === "success" ? "Successfully updated service" : "Failed to update service";
+        ctrl.alerts.push({type: json.status, msg: msg});
       });
     }
   };

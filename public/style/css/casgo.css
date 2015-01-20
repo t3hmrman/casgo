@@ -173,6 +173,11 @@ body {
   background-color: #77DD77;
 }
 
+.dismiss-alert {
+  float: right;
+  cursor: pointer;
+}
+
 /* Utility classes */
 .centered-text { text-align: center; }
 .left-aligned-text { text-align: left; }
