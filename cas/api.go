@@ -3,7 +3,6 @@ package cas
 import (
   "github.com/gorilla/mux"
   "net/http"
-  "strings"
   "io/ioutil"
   "encoding/json"
 )
@@ -303,15 +302,29 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
   routeVars := mux.Vars(req)
   serviceName := routeVars["serviceName"]
 
-  // Build updated service
-  service := CASService{
-    Name:       serviceName,
-    Url:        strings.TrimSpace(strings.ToLower(req.FormValue("url"))),
-    AdminEmail: strings.TrimSpace(strings.ToLower(req.FormValue("adminEmail"))),
+  // Read JSON from request body
+  var service CASService;
+  reqBody, err := ioutil.ReadAll(req.Body);
+  if err != nil {
+    api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
+      "status":  "error",
+      "message": InvalidServiceError.Msg,
+    })
+    return
+  }
+
+  // Unmarshal JSON & build service from passed in data
+  err = json.Unmarshal(reqBody, &service);
+  if err != nil {
+    api.casServer.render.JSON(w, FailedToParseJSONError.HttpCode, map[string]string{
+      "status":  "error",
+      "message": FailedToParseJSONError.Msg,
+    })
+    return
   }
 
   // Ensure service is valid
-  if !service.IsValid() {
+  if !service.IsValid() || serviceName != service.Name {
     api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
       "status":  "error",
       "message": InvalidServiceError.Msg,
