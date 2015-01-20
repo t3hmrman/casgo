@@ -79,6 +79,11 @@ var (
 		HttpCode:     http.StatusForbidden,
 		CasgoErrCode: 112,
 	}
+	FailedToParseJSONError = CASServerError{
+		Msg:          "Incomplete/Invalid JSON. Please ensure request body is properly formatted and retry.",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 113,
+	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
