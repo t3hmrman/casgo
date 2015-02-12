@@ -121,7 +121,7 @@
 
         <!-- Right sidebar -->
         <div class="right-sidebar left-aligned-text pure-u-1-2" data-bind="style: {right: getSidebarCSSRight()}">
-            <div data-bind="visible: $root.currentRouteUrl() === '/manage/services', template: {name: sidebarTemplateName(), data: sidebarController()}"></div>
+            <div data-bind="visible: $root.currentRouteUrlHasPrefix('/manage/'), template: {name: sidebarTemplateName(), data: sidebarController()}"></div>
         </div>
 
     </div>
@@ -157,11 +157,59 @@
 
                             <br/>
                             <label for="url">URL (callback URL)</label>
-                            <input id="url" class="pure-input-2-3" type="text" data-bind="value: svcUrl" name="url" type="url"  placeholder="Service URL">
+                            <input id="url" class="pure-input-2-3" data-bind="value: svcUrl" name="url" type="url"  placeholder="Service URL">
 
                             <br/>
                             <label for="adminEmail">Administrator's email address</label>
                             <input id="adminEmail" class="pure-input-2-3" type="email" data-bind="value: svcAdminEmail" name="adminEmail" placeholder="Admin's email">
+                        </fieldset>
+                    </form>
+                </div> <!-- /div.slim-pad -->
+            </div> <!-- /div.pure-u-1 -->
+        </div>
+        <div class="pure-u-1-7"></div>
+    </div>
+</script>
+
+<script type="text/html" id="EditUserFormTemplate">
+    <div class="top-subnav right-aligned-text">
+        <button class="pure-button pull-left" data-bind="click: $parent.hideSidebar"><i class="fa fa-arrow-right"></i> Close</button>
+        <button class="pure-button button-success" data-bind="click: createOrUpdateUser">
+            <i class="fa fa-save"></i> <span data-bind="text: actionText"></span>
+        </button>
+        <button class="pure-button button-error" data-bind="click: removeUser">
+            <i class="fa fa-trash"></i> Remove User
+        </button>
+    </div>
+
+    <div class="pure-g">
+        <div class="pure-u-1-7"></div>
+        <div class="pure-u-5-7">
+            <div class="pure-u-1">
+                <div class="slim-pad">
+                    <div data-bind="template: {name: 'AlertsTemplate'}"></div>
+                    <h2>
+                        <span data-bind="text: actionText"></span>
+                        <span data-bind="if: !_.isEmpty(userEmail())">
+                            (<span data-bind="text: userEmail()"></span>)
+                        </span>
+                    </h2>
+                    <form id="frmEditUser" class="pure-form pure-form-stacked">
+                        <fieldset>
+                            <label for="email">Email</label>
+                            <input id="email" class="pure-input-2-3" type="text" data-bind="value: userEmail, valueUpdate: 'keyup', disable: !create()" email="email" placeholder="User Email">
+
+                            <br/>
+                            <div data-bind="if: create()">
+                            <label for="password">Password</label>
+                            <input id="password" class="pure-input-2-3" data-bind="value: userPassword" name="password" type="password"  placeholder="User password">
+                            </div>
+
+                            <br/>
+                            <label for="isAdmin">
+                                <input type="checkbox" id="isAdmin" data-bind="checked: userIsAdmin" name="isAdmin">
+                                Administrator?
+                            </label>
                         </fieldset>
                     </form>
                 </div> <!-- /div.slim-pad -->

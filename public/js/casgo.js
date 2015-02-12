@@ -270,6 +270,15 @@ function CasgoViewModel() {
     allUsers: ko.observableArray([]),
 
     /**
+     * Check if a given user is valid
+     */
+    isValidUser: function(user) {
+      return _(['email', 'password', 'isAdmin'])
+        .map(function(k) { return k in user; })
+        .every();
+    },
+
+    /**
      * Get all users (admins only)
      */
     getAllUsers: function() {
@@ -288,7 +297,25 @@ function CasgoViewModel() {
             reject(err);
           });
       });
+    },
+
+    /**
+     * Create a user
+     *
+     * @param {object} user - User to be created
+     * @returns A Promise for the ajax request
+     */
+    createUser: function(user) {
+      var self = vm.UsersService;
+      if (_.isUndefined(user) || !self.isValidUser(user)) throw new Error("Invalid user:", user);
+
+      return fetch('/api/users', {
+        method: 'post',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
+        body: JSON.stringify(user)
+      });
     }
+
 
   },
 
@@ -384,18 +411,50 @@ function CasgoViewModel() {
     },
 
     /**
+     * Show new user form in sidebar by clearing the {@link vm.EditUserCtrl}, then
+     * showing the sidebar using {@link vm.ManageCtrl.showSidebarEditUserForm}
+     */
+    showAddUserInSidebar: function() {
+      var self = vm.ManageCtrl;
+      var ctrl = vm.EditUserCtrl;
+
+      // Set up the edit user controller (also used for creating users)
+      vm.EditUserCtrl.create(true);
+      vm.EditUserCtrl.loadUser({});
+
+      // Set the user controller as the controller in the sidebar, show the sidebar
+      self.sidebarController(ctrl);
+      vm.ManageCtrl.showSidebarEditUserForm();
+    },
+
+    /**
      * Show edit service form in sidebar by loading the appropriate service into
      * {@link vm.EditServiceCtrl} and showing the sidebar using {@link vm.ManageCtrl.showSidebarEditServiceForm}
      *
      * @param {object} svc - The service to edit
      */
-    showEditServiceInSidebar: function(svc) {
+    showEditServiceInSidebar: function(user) {
       var self = vm.ManageCtrl;
       var ctrl = vm.EditServiceCtrl;
       ctrl.create(false);
-      ctrl.loadSvc(svc);
+      ctrl.loadUser(user);
       self.sidebarController(ctrl);
       vm.ManageCtrl.showSidebarEditServiceForm();
+    },
+
+    /**
+     * Show edit user form in sidebar by loading the appropriate user into
+     * {@link vm.EditUserCtrl} and showing the sidebar using {@link vm.ManageCtrl.showSidebarEditUserForm}
+     *
+     * @param {object} svc - The user to edit
+     */
+    showEditUserInSidebar: function(user) {
+      var self = vm.ManageCtrl;
+      var ctrl = vm.EditUserCtrl;
+      ctrl.create(false);
+      ctrl.loadUser(user);
+      self.sidebarController(ctrl);
+      vm.ManageCtrl.showSidebarEditUserForm();
     },
 
     /**
@@ -409,6 +468,19 @@ function CasgoViewModel() {
       // Show sidebar (if not already visible)
       if (!self.showSidebar()) { self.showSidebar(true); }
     },
+
+    /**
+     * Show sidebar edit form
+     */
+    showSidebarEditUserForm: function() {
+      var self = vm.ManageCtrl;
+      // Change to the appropriate template and controller for edit user form
+      self.sidebarTemplateName('EditUserFormTemplate');
+
+      // Show sidebar (if not already visible)
+      if (!self.showSidebar()) { self.showSidebar(true); }
+    },
+
 
     /**
      * Observables for controlling the sidebar (that could be used by any sub views in manage controller (ex. services/users)
@@ -515,6 +587,106 @@ function CasgoViewModel() {
         });
     }
   };
+
+  /**
+   * Controller for the EditUserFormTemplate. It is used to both create and update (edit), and contains page state.
+   * Before showing this controller, calling context must initialize the controller with the user being modified (if there is one)
+   */
+  vm.EditUserCtrl = {
+    // Alerts
+    alerts: ko.observableArray([]),
+
+    // Utility function for deleting alerts
+    dismissAlert: function(alert) {
+      var ctrl = vm.EditUserCtrl;
+      ctrl.alerts(_.reject(ctrl.alerts(), function(a) { return _.isEqual(alert, a); }));
+    },
+
+    // Value for monitoring whether the template is create or edit mode
+    create: ko.observable(true),
+
+    // Current user being modified (empty if new)
+    userId: ko.observable(undefined),
+    userEmail: ko.observable(""),
+    userPassword: ko.observable(""),
+    userIsAdmin: ko.observable(false),
+
+    /**
+     * Load the controller with an existing user's data
+     */
+    loadUser: function(user) {
+      var ctrl = vm.EditUserCtrl;
+      ctrl.userEmail(user.email || "");
+      ctrl.userId(user.id || "");
+      ctrl.userIsAdmin(user.isAdmin || false);
+    },
+
+    /**
+     * Create a user out of the information currently being held by the controller
+     */
+    makeUser: ko.pureComputed(function() {
+      var ctrl = vm.EditUserCtrl;
+
+      // Create user object from current state
+      var user =  {
+        email: ctrl.userEmail(),
+        password: ctrl.userPassword(),
+        isAdmin: ctrl.userIsAdmin()
+      };
+
+      // Add ID if present
+      var userId = ctrl.userId();
+      if (!_.isUndefined(userId)) { user.id = userId; }
+
+      return user;
+    }),
+
+    /**
+     * Get action text for the title/other elements, depends on {@link create}'s value.
+     */
+    actionText: ko.pureComputed(function() {
+      return vm.EditUserCtrl.create() ? "Add user" : "Update user";
+    }),
+
+    /**
+     * Remove a user, mostly a proxy call to the {@link vm.UsersService}, and some alerting behavior.
+     */
+    removeUser: function() {
+      var usersService = vm.UsersService;
+      var ctrl = vm.EditUserCtrl;
+      usersService.deleteUser(ctrl.makeUser())
+        .then(function(resp) {
+          return resp.json();
+        }).then(function(json) {
+          var msg = json.status === "success" ? "Successfully removed user" : "Failed to remove user";
+          ctrl.alerts.push({type: json.status, msg: msg});
+        });
+    },
+
+    /**
+     * Create or update a user, mostly a proxy call to the {@link vm.UsersService}, and some alerting behavior"
+     */
+    createOrUpdateUser: function() {
+      var usersService = vm.UsersService;
+      var ctrl = vm.EditUserCtrl;
+      var user = ctrl.makeUser();
+      var createdUser = ctrl.create();
+      var createOrUpdateFn = createdUser ? usersService.createUser : usersService.updateUser;
+      createOrUpdateFn(user)
+        .then(function(resp) {
+          return resp.json();
+        }).then(function(json) {
+          var verb = createdUser ? "created" : "updated";
+          var msg = json.status === "success" ? "Successfully " + verb + " user" : "User not successfully " + verb + ".";
+
+          // Append error message from server if provided
+          if (_.has(json, 'message')) { msg += " " + json.message;}
+
+          ctrl.alerts.push({type: json.status, msg: msg});
+        });
+    }
+  };
+
 
   vm.StatisticsCtrl = {};
 
