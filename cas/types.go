@@ -26,6 +26,7 @@ func (u *User) IsValid() bool {
 }
 
 // Enforce lax schema for user updates (as they may not include Password field)
+// at least the email must be present (used when getting the user, as it is the PK)
 func (u *User) IsValidUpdate() bool {
 	return len(u.Email) > 0
 }
@@ -48,6 +49,12 @@ type CASService struct {
 // Enforce schema for CASService
 func (s *CASService) IsValid() bool {
 	return len(s.Url) > 0 && len(s.Name) > 0 && len(s.AdminEmail) > 0
+}
+
+// Enforce lax schema for CASService updates (as they may not include some otherwise required fields)
+// at least the name must be present (used when getting the service, as it is the PK)
+func (s *CASService) IsValidUpdate() bool {
+	return len(s.Name) > 0
 }
 
 // CasGo ticket

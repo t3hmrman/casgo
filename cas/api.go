@@ -110,8 +110,8 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 	m.HandleFunc("/api/users/{userEmail}", api.UpdateUser).Methods("PUT")
 	m.HandleFunc("/api/users/{userEmail}", api.RemoveUser).Methods("DELETE")
 	m.HandleFunc("/api/services", api.GetServices).Methods("GET")
-	m.HandleFunc("/api/services", api.CreateService).Methods("POST")
-	m.HandleFunc("/api/services/{serviceName}", api.UpdateService).Methods("PUT")
+	m.HandleFunc("/api/services", api.WrapAdminOnlyEndpoint(api.CreateService)).Methods("POST")
+	m.HandleFunc("/api/services/{serviceName}", api.WrapAdminOnlyEndpoint(api.UpdateService)).Methods("PUT")
 	m.HandleFunc("/api/services/{serviceName}", api.RemoveService).Methods("DELETE")
 }
 
@@ -426,33 +426,23 @@ func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {
 
 // Create a new service
 func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) {
-	// Get session and user
-	user, casErr := authenticateAPIUser(api, req)
-	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
-			"status":  "error",
-			"message": casErr.Msg,
-		})
-		return
-	}
-
 	// Read JSON from request body
-	var service CASService
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
+		api.casServer.render.JSON(w, FailedToParseJSONError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": InvalidServiceError.Msg,
+			"message": FailedToParseJSONError.Msg,
 		})
 		return
 	}
 
 	// Unmarshal JSON & build service from passed in data
+	var service CASService
 	err = json.Unmarshal(reqBody, &service)
 	if err != nil {
-		api.casServer.render.JSON(w, FailedToParseJSONError.HttpCode, map[string]string{
+		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
 			"status":  "error",
-			"message": FailedToParseJSONError.Msg,
+			"message": InvalidServiceError.Msg,
 		})
 		return
 	}
@@ -466,17 +456,8 @@ func (api *FrontendAPI) CreateService(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	// Ensure user is admin before adding service
-	if !user.IsAdmin {
-		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
-			"status":  "error",
-			"message": InsufficientPermissionsError.Msg,
-		})
-		return
-	}
-
 	// Attempt to add service
-	casErr = api.casServer.Db.AddNewService(&service)
+	casErr := api.casServer.Db.AddNewService(&service)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
@@ -534,25 +515,6 @@ func (api *FrontendAPI) RemoveService(w http.ResponseWriter, req *http.Request) 
 // Update an existing service
 // Returns the modified service
 func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) {
-	// Get session and user
-	user, casErr := authenticateAPIUser(api, req)
-	if casErr != nil {
-		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
-			"status":  "error",
-			"message": casErr.Msg,
-		})
-		return
-	}
-
-	// Ensure user is admin
-	if !user.IsAdmin {
-		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
-			"status":  "error",
-			"message": InsufficientPermissionsError.Msg,
-		})
-		return
-	}
-
 	// Get passed in service name
 	routeVars := mux.Vars(req)
 	serviceName := routeVars["serviceName"]
@@ -578,8 +540,13 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	// Set the service name if it wasn't on the incoming request's object
+	if len(service.Name) == 0 {
+		service.Name = serviceName
+	}
+
 	// Ensure service is valid
-	if !service.IsValid() || serviceName != service.Name {
+	if !service.IsValidUpdate() || serviceName != service.Name {
 		api.casServer.render.JSON(w, InvalidServiceError.HttpCode, map[string]string{
 			"status":  "error",
 			"message": InvalidServiceError.Msg,
@@ -588,7 +555,7 @@ func (api *FrontendAPI) UpdateService(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Attempt to update the service
-	casErr = api.casServer.Db.UpdateService(&service)
+	casErr := api.casServer.Db.UpdateService(&service)
 	if casErr != nil {
 		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
 			"status":  "error",
