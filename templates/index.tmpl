@@ -1,22 +1,22 @@
 <div class="pure-g topnav theme-background">
 		<!-- left side -->
 		<div class="pure-u-1 pure-u-sm-2-3 pure-u-md-2-3 pure-u-lg-4-5 pure-u-xl-4-5">
-				<span class="topnav-brand">CASGO</span>
+				<span class="topnav-brand slim-lettering">CASGO</span>
 				<ul class="topnav-list">
 						<li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/services')}">
-								<a id="topnav-services-link" class="topnav-list-item-link" href="#/services">
+								<a id="topnav-services-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/services">
 										<i class="fa fa-cloud"></i> Services
 								</a>
 						</li>
 						{{if .currentUser.IsAdmin}}
 						<li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/manage')}">
-								<a id="topnav-manage-link" class="topnav-list-item-link white-on-hover" href="#/manage">
+								<a id="topnav-manage-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/manage">
 										<i class="fa fa-cogs"></i> Manage
 								</a>
 								<!-- drop down with services, users, the basic /admin endpoint -->
 						</li>
 						<li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/statistics')}">
-								<a id="topnav-statistics-link" class="topnav-list-item-link white-on-hover" href="#/statistics">
+								<a id="topnav-statistics-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/statistics">
 										<i class="fa fa-area-chart"></i> Statistics
 								</a>
 						</li>

@@ -184,6 +184,7 @@ body {
 .right-aligned-text { text-align: right; }
 .slim-margin { margin: .5em; }
 .slim-pad { padding: 1em; }
+.slim-lettering { font-weight: 200; }
 
 .medium-font { font-size: medium; }
 
