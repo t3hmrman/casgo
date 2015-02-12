@@ -329,6 +329,23 @@ function CasgoViewModel() {
         method: 'delete',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'}
       });
+    },
+
+    /**
+     * Update a user
+     *
+     * @param {object} user - User to be updated
+     * @returns A Promise for the ajax request
+     */
+    updateUser: function(user) {
+      var self = vm.UsersService;
+      if (_.isUndefined(user) || !self.isValidUser(user)) throw new Error("Invalid user:", user);
+
+      return fetch('/api/users/' + user.email, {
+        method: 'put',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
+        body: JSON.stringify(user)
+      });
     }
 
   },
@@ -620,7 +637,6 @@ function CasgoViewModel() {
     create: ko.observable(true),
 
     // Current user being modified (empty if new)
-    userId: ko.observable(undefined),
     userEmail: ko.observable(""),
     userPassword: ko.observable(""),
     userIsAdmin: ko.observable(false),
@@ -631,7 +647,6 @@ function CasgoViewModel() {
     loadUser: function(user) {
       var ctrl = vm.EditUserCtrl;
       ctrl.userEmail(user.email || "");
-      ctrl.userId(user.id || "");
       ctrl.userIsAdmin(user.isAdmin || false);
     },
 
@@ -647,10 +662,6 @@ function CasgoViewModel() {
         password: ctrl.userPassword(),
         isAdmin: ctrl.userIsAdmin()
       };
-
-      // Add ID if present
-      var userId = ctrl.userId();
-      if (!_.isUndefined(userId)) { user.id = userId; }
 
       return user;
     }),
