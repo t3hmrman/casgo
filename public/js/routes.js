@@ -20,18 +20,17 @@ RegisterRoute('ManageServicesRoute', {
   controllers: ['ManageServicesCtrl'],
   url: '/manage/services'
 });
-RegisterRoute('StatisticsRoute', {
-  controllers: [],
-  url: '/statistics'
-});
 
 /**
- * Create and initialize Director's router with the internal list of functions for each route
+ * Create, configure and initialize Director's router with the internal list of functions for each route
  */
-window.App.Router = Router(
-  _.zipObject(_.map(window.App.Routes, 'url'),
-              _.map(window.App.Routes, '_fns'))
-);
+window.App.Router = Router(_.zipObject(_.map(window.App.Routes, 'url'),
+                                       _.map(window.App.Routes, '_fns')));
+window.App.Router.configure({
+  notfound: function() {
+    window.App.VM.gotoRoute(window.App.VM.ServicesRoute);
+  }
+});
 window.App.Router.init();
 
 // Go to default route on initial page load

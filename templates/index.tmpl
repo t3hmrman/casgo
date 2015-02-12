@@ -1,7 +1,7 @@
 <div class="pure-g topnav theme-background">
     <!-- left side -->
     <div class="pure-u-1 pure-u-sm-2-3 pure-u-md-2-3 pure-u-lg-4-5 pure-u-xl-4-5">
-        <span class="topnav-brand slim-lettering">CASGO</span>
+        <a href="/" class="plain topnav-brand slim-lettering">CASGO</a>
         <ul class="topnav-list">
             <li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/services')}">
                 <a id="topnav-services-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/services">
@@ -14,11 +14,6 @@
                     <i class="fa fa-cogs"></i> Manage
                 </a>
                 <!-- drop down with services, users, the basic /admin endpoint -->
-            </li>
-            <li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/statistics')}">
-                <a id="topnav-statistics-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/statistics">
-                    <i class="fa fa-area-chart"></i> Statistics
-                </a>
             </li>
             {{end}}
         </ul>
@@ -50,7 +45,6 @@
             <!-- Pages -->
             <div class="full-height" data-bind="visible: currentRouteUrlHasPrefix('/services'), template: {name: 'ServicesTemplate', data: ServicesCtrl}"></div>
             <div class="full-height" data-bind="visible: currentRouteUrlHasPrefix('/manage'), template: {name: 'ManageTemplate', data: ManageCtrl}"></div>
-            <div class="full-height" data-bind="visible: currentRouteUrlHasPrefix('/statistics'), template: {name: 'StatisticsTemplate', data: StatisticsCtrl}"></div>
         </div>
     </div>
 </div>
@@ -271,32 +265,6 @@
                 <a href="javascript:void(0)" class="plain slim-margin"><i class="fa fa-pencil"></i></a>
             </div>
         </div>
-    </div>
-</script>
-
-<script type="text/html" id="StatisticsTemplate">
-    <div class="pure-g full-height">
-        <div class="pure-g">
-            <h2 class="pure-u-1">Users at a glance</h2>
-            <div class="stat-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Graph!</div>
-            <div class="stats-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Number statistic!</div>
-            <div class="stats-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Text!</div>
-        </div>
-
-        <div class="pure-g">
-            <h2 class="pure-u-1">Services at a glance</h2>
-            <div class="stat-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Graph!</div>
-            <div class="stats-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Number statistic!</div>
-            <div class="stats-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Text!</div>
-        </div>
-
-        <div class="pure-g">
-            <h2 class="pure-u-1">Server at a glance</h2>
-            <div class="stat-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Graph!</div>
-            <div class="stats-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Number statistic!</div>
-            <div class="stats-widget-container pure-u-1 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-3">Text!</div>
-        </div>
-
     </div>
 </script>
 
