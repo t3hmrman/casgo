@@ -556,6 +556,27 @@ func (db *RethinkDBAdapter) UpdateService(service *CASService) *CASServerError {
 	return nil
 }
 
+// Update user with a similar name to the passed in user (key)
+func (db *RethinkDBAdapter) UpdateUser(user *User) *CASServerError {
+	if len(user.Email) == 0 {
+		return &InvalidUserEmailError
+	}
+
+	res, err := r.
+		Db(db.dbName).
+		Table(db.usersTableName).
+		Get(user.Email).
+		Update(user, r.UpdateOpts{ReturnChanges: true}).
+		RunWrite(db.session)
+	if err != nil || res.Replaced == 0 || len(res.Changes) == 0 {
+		casErr := &FailedToUpdateUserError
+		casErr.err = &err
+		return casErr
+	}
+
+	return nil
+}
+
 // Get all services
 func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
 	cursor, err := r.

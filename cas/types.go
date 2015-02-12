@@ -20,9 +20,14 @@ type User struct {
 	IsAdmin    bool              `gorethink:"isAdmin" json:"isAdmin"`
 }
 
-// Enforce schema for CASService
+// Enforce schema for Users
 func (u *User) IsValid() bool {
 	return len(u.Email) > 0 && len(u.Password) > 0
+}
+
+// Enforce lax schema for user updates (as they may not include Password field)
+func (u *User) IsValidUpdate() bool {
+	return len(u.Email) > 0
 }
 
 // Comparison function for Users
@@ -42,7 +47,7 @@ type CASService struct {
 
 // Enforce schema for CASService
 func (s *CASService) IsValid() bool {
-	return len(s.Url) > 0 && len(s.Name) > 0 &&	len(s.AdminEmail) > 0
+	return len(s.Url) > 0 && len(s.Name) > 0 && len(s.AdminEmail) > 0
 }
 
 // CasGo ticket
@@ -115,9 +120,11 @@ type CASDBAdapter interface {
 	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
 	AddNewUser(string, string) (*User, *CASServerError)
 
-	// REST API functions
+	// REST API functions (CRUD)
 	GetAllUsers() ([]User, *CASServerError)
+	UpdateUser(*User) *CASServerError
 	RemoveUserByEmail(string) *CASServerError
+
 	GetAllServices() ([]CASService, *CASServerError)
 	AddNewService(*CASService) *CASServerError
 	RemoveServiceByName(string) *CASServerError

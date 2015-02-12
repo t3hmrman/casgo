@@ -71,6 +71,33 @@ func (api *FrontendAPI) authenticateWithAPIKey(req *http.Request) (*User, *CASSe
 	return user, nil
 }
 
+// Middleware for routes that require admin access
+func (api *FrontendAPI) WrapAdminOnlyEndpoint(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// Get session and user
+		requestingUser, casErr := authenticateAPIUser(api, req)
+		if casErr != nil {
+			api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+				"status":  "error",
+				"message": casErr.Msg,
+			})
+			return
+		}
+
+		// Ensure user is admin
+		if !requestingUser.IsAdmin {
+			api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
+				"status":  "error",
+				"message": InsufficientPermissionsError.Msg,
+			})
+			return
+		}
+
+		// Run the actual handler
+		handler(w, req)
+	}
+}
+
 // Hook up API endpoints to given mux
 func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 	// Session information endpoints
@@ -80,7 +107,7 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 	// Service endpoints
 	m.HandleFunc("/api/users", api.GetUsers).Methods("GET")
 	m.HandleFunc("/api/users", api.CreateUser).Methods("POST")
-	// m.HandleFunc("/api/users/{userEmail}", api.UpdateUser).Methods("PUT")
+	m.HandleFunc("/api/users/{userEmail}", api.UpdateUser).Methods("PUT")
 	m.HandleFunc("/api/users/{userEmail}", api.RemoveUser).Methods("DELETE")
 	m.HandleFunc("/api/services", api.GetServices).Methods("GET")
 	m.HandleFunc("/api/services", api.CreateService).Methods("POST")
@@ -284,6 +311,77 @@ func (api *FrontendAPI) RemoveUser(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// Update an existing user
+// Returns the modified user
+func (api *FrontendAPI) UpdateUser(w http.ResponseWriter, req *http.Request) {
+	// Get session and user
+	requestingUser, casErr := authenticateAPIUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.Msg,
+		})
+		return
+	}
+
+	// Ensure user is admin
+	if !requestingUser.IsAdmin {
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InsufficientPermissionsError.Msg,
+		})
+		return
+	}
+
+	// Get passed in user name
+	routeVars := mux.Vars(req)
+	userEmail := routeVars["userEmail"]
+
+	// Read JSON from request body
+	var user User
+	reqBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		api.casServer.render.JSON(w, InvalidUserError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InvalidUserError.Msg,
+		})
+		return
+	}
+
+	// Unmarshal JSON & build user from passed in data
+	err = json.Unmarshal(reqBody, &user)
+	if err != nil {
+		api.casServer.render.JSON(w, FailedToParseJSONError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": FailedToParseJSONError.Msg,
+		})
+		return
+	}
+
+	// Ensure user is valid
+	if !user.IsValidUpdate() || userEmail != user.Email {
+		api.casServer.render.JSON(w, InvalidUserError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InvalidUserError.Msg,
+		})
+		return
+	}
+
+	// Attempt to update the user
+	casErr = api.casServer.Db.UpdateUser(&user)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.Msg,
+		})
+		return
+	}
+
+	api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
+		"status": "success",
+		"data":   user,
+	})
+}
 
 //////////////
 // Services //

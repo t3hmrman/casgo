@@ -211,6 +211,11 @@ var (
 		HttpCode:     http.StatusInternalServerError,
 		CasgoErrCode: 222,
 	}
+	FailedToUpdateUserError = CASServerError{
+		Msg:          "Failed to update user.",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 220,
+	}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{
