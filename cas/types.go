@@ -20,6 +20,11 @@ type User struct {
 	IsAdmin    bool              `gorethink:"isAdmin" json:"isAdmin"`
 }
 
+// Enforce schema for CASService
+func (u *User) IsValid() bool {
+	return len(u.Email) > 0 && len(u.Password) > 0
+}
+
 // Comparison function for Users
 func compareUsers(a, b User) bool {
 	if &a == &b || (a.Email == b.Email && a.Password == b.Password) {

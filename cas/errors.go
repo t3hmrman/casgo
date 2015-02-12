@@ -84,6 +84,11 @@ var (
 		HttpCode:     http.StatusBadRequest,
 		CasgoErrCode: 113,
 	}
+	InvalidUserError = CASServerError{
+		Msg:          "Incomplete/Invalid user object provided. Please ensure all appropriate user fields are filled and re-submit.",
+		HttpCode:     http.StatusForbidden,
+		CasgoErrCode: 114,
+	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
