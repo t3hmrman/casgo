@@ -78,6 +78,7 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
   m.HandleFunc("/api/sessions", api.SessionsHandler).Methods("GET")
 
   // Service endpoints
+  m.HandleFunc("/api/users", api.GetUsers).Methods("GET")
   m.HandleFunc("/api/services", api.GetServices).Methods("GET")
   m.HandleFunc("/api/services", api.CreateService).Methods("POST")
   m.HandleFunc("/api/services/{serviceName}", api.UpdateService).Methods("PUT")
@@ -131,6 +132,45 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
     "data":   user.Services,
   })
 }
+
+// Get list of users (admin only)
+func (api *FrontendAPI) GetUsers(w http.ResponseWriter, req *http.Request) {
+  // Get the current session and user
+  user, casErr := authenticateAPIUser(api, req)
+  if casErr != nil {
+    api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+      "status":  "error",
+      "message": casErr.Msg,
+    })
+    return
+  }
+
+  // Ensure user is admin
+  if !user.IsAdmin {
+    api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
+      "status":  "error",
+      "message": InsufficientPermissionsError.Msg,
+    })
+    return
+  }
+
+  // Grab list of all users
+  users, casErr := api.casServer.Db.GetAllUsers()
+  if casErr != nil {
+    api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+      "status":  "error",
+      "message": casErr.Msg,
+    })
+    return
+  }
+
+  api.casServer.render.JSON(w, http.StatusOK, map[string]interface{}{
+    "status": "success",
+    "data":   users,
+  })
+}
+
+
 
 // Get list of services (admin only)
 func (api *FrontendAPI) GetServices(w http.ResponseWriter, req *http.Request) {

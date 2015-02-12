@@ -191,6 +191,11 @@ var (
 		HttpCode:     http.StatusInternalServerError,
 		CasgoErrCode: 220,
 	}
+	FailedToListUsersError = CASServerError{
+		Msg:          "Failed to list users.",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 221,
+	}
 
 	// Other (error codes 300 - 399)
 	UnsupportedFeatureError = CASServerError{

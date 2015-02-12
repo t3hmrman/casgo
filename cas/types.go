@@ -115,6 +115,7 @@ type CASDBAdapter interface {
 	RemoveServiceByName(string) *CASServerError
 	UpdateService(*CASService) *CASServerError
 	GetAllServices() ([]CASService, *CASServerError)
+	GetAllUsers() ([]User, *CASServerError)
 
 	// Property getter utility functions
 	GetDbName() string

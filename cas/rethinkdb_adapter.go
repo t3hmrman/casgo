@@ -557,3 +557,27 @@ func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
 
 	return services, nil
 }
+
+// Get all users
+func (db *RethinkDBAdapter) GetAllUsers() ([]User, *CASServerError) {
+	cursor, err := r.
+		Db(db.dbName).
+		Table(db.usersTableName).
+		Without("password").
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToListUsersError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	var users []User
+	err = cursor.All(&users)
+	if err != nil {
+		casErr := &FailedToListUsersError
+		casErr.err = &err
+		return nil, casErr
+	}
+
+	return users, nil
+}
