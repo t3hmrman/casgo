@@ -94,13 +94,13 @@
         <div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-1-5 pure-u-lg-1-6 pure-u-xl-1-8 leftnav full-height">
             <ul class="leftnav-list">
 
-                <li class="leftnav-list-item" data-bind="css: {active: $root.currentRouteUrlIs('/manage/users')}">
+                <li class="leftnav-list-item slim-lettering" data-bind="css: {active: $root.currentRouteUrlIs('/manage/users')}">
                     <a class="plain" href="#/manage/users">
                         <i class="fa fa-group"></i> Users
                     </a>
                 </li>
 
-                <li class="leftnav-list-item" data-bind="css: {active: $root.currentRouteUrlIs('/manage/services')}">
+                <li class="leftnav-list-item slim-lettering" data-bind="css: {active: $root.currentRouteUrlIs('/manage/services')}">
                     <a class="plain" href="#/manage/services">
                         <i class="fa fa-cloud"></i> Services
                     </a>
@@ -112,8 +112,8 @@
         <!-- Center content -->
         <div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-4-5 pure-u-lg-5-6 pure-u-xl-7-8 content full-height">
             <div data-bind="visible: $root.currentRouteUrl() === '/manage'">
-                <h2>Manage Casgo</h2>
-                <h3>Manage your Casgo instance and server</h3>
+                <h2 class="slim-lettering">Manage CASGO</h2>
+                <h2 class="slim-lettering twoem-font-size"><i class="fa fa-arrow-left"></i> Click one of the management areas <br/> on the left to get started!</h2>
             </div>
             <div data-bind="visible: $root.currentRouteUrl() === '/manage/users', template: {name: 'ManageUsersTemplate', data: $root.ManageUsersCtrl}"></div>
             <div data-bind="visible: $root.currentRouteUrl() === '/manage/services', template: {name: 'ManageServicesTemplate', data: $root.ManageServicesCtrl}"></div>
