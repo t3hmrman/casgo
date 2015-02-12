@@ -345,10 +345,14 @@ function CasgoViewModel() {
     showAddServiceInSidebar: function() {
       var self = vm.ManageCtrl;
       var ctrl = vm.EditServiceCtrl;
+
+      // Set up the edit service controller (also used for creating services)
       vm.EditServiceCtrl.create(true);
       vm.EditServiceCtrl.loadSvc({});
-      vm.ManageCtrl.showSidebarEditServiceForm();
+
+      // Set the service controller as the controller in the sidebar, show the sidebar
       self.sidebarController(ctrl);
+      vm.ManageCtrl.showSidebarEditServiceForm();
     },
 
     /**
@@ -392,7 +396,7 @@ function CasgoViewModel() {
   vm.EditServiceCtrl = {
     // Alerts
     alerts: ko.observableArray([]),
- 
+
     // Utility function for deleting alerts
     dismissAlert: function(alert) {
       var ctrl = vm.EditServiceCtrl;
@@ -467,12 +471,18 @@ function CasgoViewModel() {
       var serviceService = vm.ServicesService;
       var ctrl = vm.EditServiceCtrl;
       var service = ctrl.makeService();
-      var createOrUpdateFn = ctrl.create() ? serviceService.createService : serviceService.updateService;
+      var createdService = ctrl.create();
+      var createOrUpdateFn = createdService ? serviceService.createService : serviceService.updateService;
       createOrUpdateFn(service)
       .then(function(resp) {
         return resp.json();
       }).then(function(json) {
-        var msg = json.status === "success" ? "Successfully updated service" : "Failed to update service";
+        var verb = createdService ? "created" : "updated";
+        var msg = json.status === "success" ? "Successfully " + verb + " service" : "Service not successfully " + verb + ".";
+
+        // Append error message from server if provided
+        if (_.has(json, 'message')) { msg += " " + json.message;}
+
         ctrl.alerts.push({type: json.status, msg: msg});
       });
     }
