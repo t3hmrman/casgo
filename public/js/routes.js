@@ -13,7 +13,7 @@ RegisterRoute('ManageRoute', {
   url: '/manage'
 });
 RegisterRoute('ManageUsersRoute', {
-  controllers: [],
+  controllers: ['ManageUsersCtrl'],
   url: '/manage/users'
 });
 RegisterRoute('ManageServicesRoute', {
