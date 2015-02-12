@@ -79,7 +79,6 @@ var _ = Feature("CasGo", func() {
 			page.Navigate(testHTTPServer.URL + "/")
 			Expect(page.Find("#topnav-services-link")).To(BeFound())
 			Expect(page.Find("#topnav-manage-link")).To(BeFound())
-			Expect(page.Find("#topnav-statistics-link")).To(BeFound())
 		})
 		StepLogoutUser(page)
 	})
