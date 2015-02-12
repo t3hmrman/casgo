@@ -464,11 +464,11 @@ function CasgoViewModel() {
      *
      * @param {object} svc - The service to edit
      */
-    showEditServiceInSidebar: function(user) {
+    showEditServiceInSidebar: function(svc) {
       var self = vm.ManageCtrl;
       var ctrl = vm.EditServiceCtrl;
       ctrl.create(false);
-      ctrl.loadUser(user);
+      ctrl.loadSvc(svc);
       self.sidebarController(ctrl);
       vm.ManageCtrl.showSidebarEditServiceForm();
     },
