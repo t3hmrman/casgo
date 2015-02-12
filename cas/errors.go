@@ -89,6 +89,11 @@ var (
 		HttpCode:     http.StatusForbidden,
 		CasgoErrCode: 114,
 	}
+	InvalidUserEmailError = CASServerError{
+		Msg:          "Invalid user email provided.",
+		HttpCode:     http.StatusBadRequest,
+		CasgoErrCode: 115,
+	}
 
 	// Internal Server errors (error codes 200 - 299)
 	FailedToSaveSessionError = CASServerError{
@@ -200,6 +205,11 @@ var (
 		Msg:          "Failed to list users.",
 		HttpCode:     http.StatusInternalServerError,
 		CasgoErrCode: 221,
+	}
+	FailedToDeleteUserError = CASServerError{
+		Msg:          "Failed to delete user.",
+		HttpCode:     http.StatusInternalServerError,
+		CasgoErrCode: 222,
 	}
 
 	// Other (error codes 300 - 399)

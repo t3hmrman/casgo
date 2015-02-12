@@ -493,20 +493,41 @@ func (db *RethinkDBAdapter) RemoveTicketsForUserWithService(email string, servic
 	return nil
 }
 
-// Remove a service by name (key)
-func (db *RethinkDBAdapter) RemoveServiceByName(serviceName string) *CASServerError {
-	if len(serviceName) == 0 {
+// Remove a service by name (pkey)
+func (db *RethinkDBAdapter) RemoveServiceByName(name string) *CASServerError {
+	if len(name) == 0 {
 		return &InvalidServiceNameError
 	}
 
 	_, err := r.
 		Db(db.dbName).
 		Table(db.servicesTableName).
-		Get(serviceName).
+		Get(name).
 		Delete().
 		Run(db.session)
 	if err != nil {
 		casErr := &FailedToDeleteServiceError
+		casErr.err = &err
+		return casErr
+	}
+
+	return nil
+}
+
+// Remove a user by email (pkey)
+func (db *RethinkDBAdapter) RemoveUserByEmail(email string) *CASServerError {
+	if len(email) == 0 {
+		return &InvalidUserEmailError
+	}
+
+	_, err := r.
+		Db(db.dbName).
+		Table(db.usersTableName).
+		Get(email).
+		Delete().
+		Run(db.session)
+	if err != nil {
+		casErr := &FailedToDeleteUserError
 		casErr.err = &err
 		return casErr
 	}

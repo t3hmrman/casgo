@@ -116,11 +116,12 @@ type CASDBAdapter interface {
 	AddNewUser(string, string) (*User, *CASServerError)
 
 	// REST API functions
+	GetAllUsers() ([]User, *CASServerError)
+	RemoveUserByEmail(string) *CASServerError
+	GetAllServices() ([]CASService, *CASServerError)
 	AddNewService(*CASService) *CASServerError
 	RemoveServiceByName(string) *CASServerError
 	UpdateService(*CASService) *CASServerError
-	GetAllServices() ([]CASService, *CASServerError)
-	GetAllUsers() ([]User, *CASServerError)
 
 	// Property getter utility functions
 	GetDbName() string

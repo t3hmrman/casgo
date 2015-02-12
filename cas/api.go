@@ -81,7 +81,7 @@ func (api *FrontendAPI) HookupAPIEndpoints(m *mux.Router) {
 	m.HandleFunc("/api/users", api.GetUsers).Methods("GET")
 	m.HandleFunc("/api/users", api.CreateUser).Methods("POST")
 	// m.HandleFunc("/api/users/{userEmail}", api.UpdateUser).Methods("PUT")
-	// m.HandleFunc("/api/users/{userEmail}", api.RemoveUser).Methods("DELETE")
+	m.HandleFunc("/api/users/{userEmail}", api.RemoveUser).Methods("DELETE")
 	m.HandleFunc("/api/services", api.GetServices).Methods("GET")
 	m.HandleFunc("/api/services", api.CreateService).Methods("POST")
 	m.HandleFunc("/api/services/{serviceName}", api.UpdateService).Methods("PUT")
@@ -135,6 +135,10 @@ func (api *FrontendAPI) listSessionUserServices(w http.ResponseWriter, req *http
 		"data":   user.Services,
 	})
 }
+
+///////////
+// Users //
+///////////
 
 // Get list of users (admin only)
 func (api *FrontendAPI) GetUsers(w http.ResponseWriter, req *http.Request) {
@@ -239,6 +243,47 @@ func (api *FrontendAPI) CreateUser(w http.ResponseWriter, req *http.Request) {
 		"data":   newUser,
 	})
 }
+
+// Remove a user
+// Returns the removed user's email
+func (api *FrontendAPI) RemoveUser(w http.ResponseWriter, req *http.Request) {
+	// Get session and user
+	requestingUser, casErr := authenticateAPIUser(api, req)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.Msg,
+		})
+		return
+	}
+
+	// Ensure user is admin
+	if !requestingUser.IsAdmin {
+		api.casServer.render.JSON(w, InsufficientPermissionsError.HttpCode, map[string]string{
+			"status":  "error",
+			"message": InsufficientPermissionsError.Msg,
+		})
+		return
+	}
+
+	// Get passed in user name
+	routeVars := mux.Vars(req)
+	userEmail := routeVars["userEmail"]
+
+	casErr = api.casServer.Db.RemoveUserByEmail(userEmail)
+	if casErr != nil {
+		api.casServer.render.JSON(w, casErr.HttpCode, map[string]string{
+			"status":  "error",
+			"message": casErr.Msg,
+		})
+	}
+
+	api.casServer.render.JSON(w, http.StatusOK, map[string]string{
+		"status": "success",
+		"data":   userEmail,
+	})
+}
+
 
 //////////////
 // Services //
