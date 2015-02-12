@@ -314,8 +314,22 @@ function CasgoViewModel() {
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: JSON.stringify(user)
       });
-    }
+    },
 
+    /**
+     * Delete a user (by name)
+     *
+     * @param {object} user - User to be deleted
+     * @returns A Promise for the ajax request
+     */
+    deleteUser: function(user) {
+      var self = vm.UsersService;
+      if (_.isUndefined(user) || !self.isValidUser(user)) throw new Error("Invalid user:", user);
+      return fetch('/api/users/' + user.email, {
+        method: 'delete',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'}
+      });
+    }
 
   },
 
