@@ -128,7 +128,10 @@ function CasgoViewModel() {
 
   },
 
-  // Services
+  //////////////
+  // Services //
+  //////////////
+
   vm.ServicesService = {
     currentUserServices: ko.observableArray([]),
     allServices: ko.observableArray([]),
@@ -262,66 +265,91 @@ function CasgoViewModel() {
 
   },
 
-  // Controllers
-  vm.ServicesCtrl = {
-    pageSize: ko.observable(10),
-    currentPage: ko.observable(0),
-    numPages: ko.pureComputed(function() {
-      var ctrl = vm.ServicesCtrl;
-      return Math.Ceil(vm.ServicesService.currentUserServices() / ctrl.pageSize()) + 1;
-    }),
-    pagedServices: ko.pureComputed(function() {
-      var ctrl = vm.ServicesCtrl;
-      var startingIndex = ctrl.currentPage() * ctrl.pageSize();
-      var services = vm.ServicesService.currentUserServices();
-
-      // Return early if not enough data
-      if (services.length == 0 || startingIndex > services.length) { return []; }
-
-      return vm.ServicesService
-        .currentUserServices()
-        .slice(ctrl.currentPage() * ctrl.pageSize(), ctrl.pageSize());
-    }),
+  vm.UsersService = {
+    currentUser: ko.observable(null),
+    allUsers: ko.observableArray([]),
 
     /**
-     * Setup function for the ServicesCtrl (only run once)
+     * Get all users (admins only)
      */
-    setup: function() {
-      vm.ServicesService.getServices();
+    getAllUsers: function() {
+      var svc = vm.UsersService;
+      return new Promise(function(resolve, reject) {
+        fetch('/api/users')
+          .then(function(resp) { return resp.json(); })
+          .then(function(json) {
+            if (json.status === "success") {
+              svc.allUsers(json.data);
+              resolve(svc.allUsers());
+            } else {
+              reject(json.message);
+            }
+          }).catch(function(err) {
+            reject(err);
+          });
+      });
     }
-  };
+
+  },
+
 
   /**
-   * Manage services controller
+   * Generate a paginated list controller
+   *
+   * @param {function} totalFn - The function to be called to retrieve all the objects (ex. from a service)
+   * @param {function} setupFn - The function to be called once to setup the controller
    */
-  vm.ManageServicesCtrl = {
-    pageSize: ko.observable(10),
-    currentPage: ko.observable(0),
-    numPages: ko.pureComputed(function() {
-      var ctrl = vm.ServicesCtrl;
-      return Math.Ceil(vm.ServicesService.allServices() / ctrl.pageSize()) + 1;
-    }),
-    pagedServices: ko.pureComputed(function() {
-      var ctrl = vm.ServicesCtrl;
+  vm.generatePaginatedListController = function(totalFn, setupFn) {
+    var ctrl = {};
+    ctrl.pageSize = ko.observable(10);
+    ctrl.currentPage = ko.observable(0);
+
+    ctrl.numPages =  ko.pureComputed(function() {
+      return Math.Ceil(totalFn() / ctrl.pageSize()) + 1;
+    });
+
+    ctrl.pagedObjects = ko.pureComputed(function() {
       var startingIndex = ctrl.currentPage() * ctrl.pageSize();
-      var services = vm.ServicesService.allServices();
+      var objects = totalFn();
 
       // Return early if not enough data
-      if (services.length == 0 || startingIndex > services.length) { return []; }
+      if (objects.length == 0 || startingIndex > objects.length) { return []; }
 
-      return vm.ServicesService
-        .allServices()
-        .slice(ctrl.currentPage() * ctrl.pageSize(), ctrl.pageSize());
-    }),
+      return totalFn().slice(ctrl.currentPage() * ctrl.pageSize(), ctrl.pageSize());
+    });
 
-    /**
-     * Setup function for the ManageServicesCtrl
-     */
-    setup: function() {
-      vm.ServicesService.getAllServices();
-    }
-  };
+    ctrl.setup = function() {
+      if (!_.isUndefined(setupFn)) setupFn();
+    };
+    return ctrl;
+  }
 
+
+  /////////////////
+  // Controllers //
+  /////////////////
+
+  /**
+   * Basic paginated list controllers for manage services/users tabs, which contain not much more than a basic list
+   */
+  vm.ServicesCtrl = vm.generatePaginatedListController(vm.ServicesService.currentUserServices, vm.ServicesService.getAllServices);
+  vm.ManageServicesCtrl = vm.generatePaginatedListController(vm.ServicesService.allServices, vm.ServicesService.getAllServices);
+  vm.ManageUsersCtrl = vm.generatePaginatedListController(vm.UsersService.allUsers, function() {
+    vm.UsersService.getAllUsers();
+    // Set focus to username filter when controller is shown
+    document.getElementById('usernameFilter').focus();
+  });
+
+  vm.ManageUsersCtrl.usernameFilter = ko.observable('');
+  vm.ManageUsersCtrl.filteredUsers = ko.computed(function() {
+    var ctrl = vm.ManageUsersCtrl;
+    var filterTerm = ctrl.usernameFilter();
+    var pagedObjects = vm.ManageUsersCtrl.pagedObjects();
+    if (_.isEmpty(filterTerm)) { return pagedObjects; };
+
+    // Check the user's email to see if it contains the filter term
+    return _.filter(pagedObjects, function(o) { return o.email.contains(filterTerm); });
+  });
 
   vm.ManageCtrl = {
     /**
@@ -456,12 +484,12 @@ function CasgoViewModel() {
       var servicesService = vm.ServicesService;
       var ctrl = vm.EditServiceCtrl;
       servicesService.deleteService(ctrl.makeService())
-      .then(function(resp) {
-        return resp.json();
-      }).then(function(json) {
-        var msg = json.status === "success" ? "Successfully removed service" : "Failed to remove service";
-        ctrl.alerts.push({type: json.status, msg: msg});
-      });
+        .then(function(resp) {
+          return resp.json();
+        }).then(function(json) {
+          var msg = json.status === "success" ? "Successfully removed service" : "Failed to remove service";
+          ctrl.alerts.push({type: json.status, msg: msg});
+        });
     },
 
     /**
@@ -474,21 +502,20 @@ function CasgoViewModel() {
       var createdService = ctrl.create();
       var createOrUpdateFn = createdService ? serviceService.createService : serviceService.updateService;
       createOrUpdateFn(service)
-      .then(function(resp) {
-        return resp.json();
-      }).then(function(json) {
-        var verb = createdService ? "created" : "updated";
-        var msg = json.status === "success" ? "Successfully " + verb + " service" : "Service not successfully " + verb + ".";
+        .then(function(resp) {
+          return resp.json();
+        }).then(function(json) {
+          var verb = createdService ? "created" : "updated";
+          var msg = json.status === "success" ? "Successfully " + verb + " service" : "Service not successfully " + verb + ".";
 
-        // Append error message from server if provided
-        if (_.has(json, 'message')) { msg += " " + json.message;}
+          // Append error message from server if provided
+          if (_.has(json, 'message')) { msg += " " + json.message;}
 
-        ctrl.alerts.push({type: json.status, msg: msg});
-      });
+          ctrl.alerts.push({type: json.status, msg: msg});
+        });
     }
   };
 
-  vm.ManageUsersCtrl = {users: []};
   vm.StatisticsCtrl = {};
 
   /**
