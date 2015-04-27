@@ -49,6 +49,16 @@
                                 <label for="password">Password</label>
                                 <input id="password" name="password" type="password"  placeholder="Password"/>
 
+                                {{if .serviceUrl}}
+                                <label for="service-url">Service URL</label>
+                                <input id="service-url"
+                                       name="serviceUrl"
+                                       type="text"
+                                       value="{{.serviceUrl}}"
+                                       placeholder="Service URL"
+                                       readonly/>
+                                {{end}}
+
                                 <br/>
                                 <button class="pure-button button-success" type="submit">Login <i class="fa fa-key"></i></button>
                             </fieldset>

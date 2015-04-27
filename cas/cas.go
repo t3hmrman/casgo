@@ -182,6 +182,14 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
 	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
 
+	// Service URL will come in as form parameter if POST
+	if req.Method == "POST" {
+		serviceUrl = strings.TrimSpace(req.FormValue("serviceUrl"))
+	}
+
+	// Add serviceUrl to context if it was specified
+	context["serviceUrl"] = serviceUrl
+
 	// Handle service being not set early
 	var casService *CASService
 	if len(serviceUrl) > 0 {
@@ -304,9 +312,9 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		c.augmentTemplateContext(context, session)
 	}
 
-	// If the user was already logged in service was provided, create a new ticket (with SSO set to true) and redirect
+	// If the user has sucessfully logged in, create a new ticket (with SSO set to true) and redirect
 	// Otherwise render login page
-	if serviceUrl != "" {
+	if casService != nil {
 
 		ssoTicket := &CASTicket{
 			UserEmail:      returnedUser.Email,
@@ -321,12 +329,15 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		// TODO: Enforce service url starts with appropriate scheme (http/https)
 		http.Redirect(w, req, serviceUrl+"?ticket="+ticket.Id, 302)
 		return
+
 	} else {
 
 		context["Success"] = "Successful log in! Redirecting to services page..."
 		c.render.HTML(w, http.StatusOK, "login", context)
+
 	}
 }
 
