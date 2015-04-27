@@ -414,7 +414,11 @@ function CasgoViewModel() {
      * The showSidebar observable controls toggling, getSidebarCSSLeft helps by returning the CSS style value to trigger animation
      */
     showSidebar: ko.observable(false),
-    hideSidebar: function() { vm.ManageCtrl.showSidebar(false); },
+    hideSidebar: function() {
+      vm.ManageCtrl.showSidebar(false);
+      vm.ManageCtrl.sidebarTemplateName(null);
+      vm.ManageCtrl.sidebarController(null);
+    },
     getSidebarCSSRight: ko.pureComputed(function() {
       var ctrl = vm.ManageCtrl;
       if (ctrl.showSidebar()) {
