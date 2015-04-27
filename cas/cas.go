@@ -173,7 +173,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Trim and lightly pre-process/validate service
-	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	serviceUrl := strings.TrimSpace(req.FormValue("service"))
 	gateway := strings.TrimSpace(strings.ToLower(req.FormValue("gateway")))
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
