@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/t3hmrman/casgo",
-	"GoVersion": "go1.4",
+	"GoVersion": "go1.3.3",
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
@@ -8,14 +8,22 @@
 			"Rev": "8fec09c61d5d66f460d227fd1df3473d7e015bc6"
 		},
 		{
-			"ImportPath": "code.google.com/p/goprotobuf/proto",
-			"Comment": "go.r60-159",
-			"Rev": "26b4b5c8a6ec0e0bc5a8d2807c9f42f7d1bb291a"
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.7.3-2-g26709e2",
+			"Rev": "26709e2714106fb8ad40b773b711ebce25b78914"
+		},
+		{
+			"ImportPath": "github.com/cenkalti/backoff",
+			"Rev": "9831e1e25c874e0a0601b6dc43641071414eec7a"
 		},
 		{
 			"ImportPath": "github.com/dancannon/gorethink",
-			"Comment": "v0.5.x-9-g16b174b",
-			"Rev": "16b174b489ff37d396a9fa202536c08171717883"
+			"Comment": "v0.7.1",
+			"Rev": "0fcd578dc17224eb4812abb34a472f6b72d9c62f"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "e228b1ac337584c4ce21b022312332ca6a5532ff"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -41,10 +49,6 @@
 			"ImportPath": "golang.org/x/crypto/blowfish",
 			"Comment": "null-233",
 			"Rev": "8fec09c61d5d66f460d227fd1df3473d7e015bc6"
-		},
-		{
-			"ImportPath": "gopkg.in/fatih/pool.v2",
-			"Rev": "dae43b8a8a190d1f2b5908e2f6dd02481e7d59e9"
 		}
 	]
 }

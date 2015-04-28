@@ -1,293 +1,292 @@
 package gorethink
 
 import (
-	"bufio"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
-	"sync"
+	"sync/atomic"
 	"time"
-
-	"gopkg.in/fatih/pool.v2"
 
 	p "github.com/dancannon/gorethink/ql2"
 )
 
+const (
+	respHeaderLen = 12
+)
+
 type Response struct {
 	Token     int64
-	Type      p.Response_ResponseType `json:"t"`
-	Responses []interface{}           `json:"r"`
-	Backtrace []interface{}           `json:"b"`
-	Profile   interface{}             `json:"p"`
+	Type      p.Response_ResponseType   `json:"t"`
+	Notes     []p.Response_ResponseNote `json:"n"`
+	Responses []json.RawMessage         `json:"r"`
+	Backtrace []interface{}             `json:"b"`
+	Profile   interface{}               `json:"p"`
 }
 
-type Conn interface {
-	SendQuery(s *Session, q *p.Query, t Term, opts map[string]interface{}, async bool) (*Cursor, error)
-	ReadResponse(s *Session, token int64) (*Response, error)
-	Close() error
-}
-
-// connection is a connection to a rethinkdb database
+// Connection is a connection to a rethinkdb database. Connection is not thread
+// safe and should only be accessed be a single goroutine
 type Connection struct {
-	// embed the net.Conn type, so that we can effectively define new methods on
-	// it (interfaces do not allow that)
-	net.Conn
-	s *Session
+	address string
+	opts    *ConnectOpts
+	conn    net.Conn
+	_       [4]byte
+	token   int64
+	cursors map[int64]*Cursor
+	bad     bool
 
-	sync.Mutex
+	headerBuf [respHeaderLen]byte
+	buf       buffer
 }
 
-// Dial closes the previous connection and attempts to connect again.
-func Dial(s *Session) pool.Factory {
-	return func() (net.Conn, error) {
-		conn, err := net.Dial("tcp", s.address)
-		if err != nil {
-			return nil, RqlConnectionError{err.Error()}
-		}
-
-		// Send the protocol version to the server as a 4-byte little-endian-encoded integer
-		if err := binary.Write(conn, binary.LittleEndian, p.VersionDummy_V0_3); err != nil {
-			return nil, RqlConnectionError{err.Error()}
-		}
-
-		// Send the length of the auth key to the server as a 4-byte little-endian-encoded integer
-		if err := binary.Write(conn, binary.LittleEndian, uint32(len(s.authkey))); err != nil {
-			return nil, RqlConnectionError{err.Error()}
-		}
-
-		// Send the auth key as an ASCII string
-		// If there is no auth key, skip this step
-		if s.authkey != "" {
-			if _, err := io.WriteString(conn, s.authkey); err != nil {
-				return nil, RqlConnectionError{err.Error()}
-			}
-		}
-
-		// Send the protocol type as a 4-byte little-endian-encoded integer
-		if err := binary.Write(conn, binary.LittleEndian, p.VersionDummy_JSON); err != nil {
-			return nil, RqlConnectionError{err.Error()}
-		}
-
-		// read server response to authorization key (terminated by NUL)
-		reader := bufio.NewReader(conn)
-		line, err := reader.ReadBytes('\x00')
-		if err != nil {
-			if err == io.EOF {
-				return nil, fmt.Errorf("Unexpected EOF: %s", string(line))
-			}
-			return nil, RqlDriverError{err.Error()}
-		}
-		// convert to string and remove trailing NUL byte
-		response := string(line[:len(line)-1])
-		if response != "SUCCESS" {
-			// we failed authorization or something else terrible happened
-			return nil, RqlDriverError{fmt.Sprintf("Server dropped connection with message: \"%s\"", response)}
-		}
-
-		return conn, nil
+// NewConnection creates a new connection to the database server
+func NewConnection(address string, opts *ConnectOpts) (*Connection, error) {
+	var err error
+	c := &Connection{
+		address: address,
+		opts:    opts,
+		cursors: make(map[int64]*Cursor),
 	}
+	// Connect to Server
+	nd := net.Dialer{Timeout: c.opts.Timeout}
+	c.conn, err = nd.Dial("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+	// Enable TCP Keepalives on TCP connections
+	if tc, ok := c.conn.(*net.TCPConn); ok {
+		if err := tc.SetKeepAlive(true); err != nil {
+			// Don't send COM_QUIT before handshake.
+			c.conn.Close()
+			c.conn = nil
+			return nil, err
+		}
+	}
+	c.buf = newBuffer(c.conn)
+	// Send handshake request
+	if err = c.writeHandshakeReq(); err != nil {
+		c.Close()
+		return nil, err
+	}
+	// Read handshake response
+	err = c.readHandshakeSuccess()
+	if err != nil {
+		c.Close()
+		return nil, err
+	}
+
+	return c, nil
 }
 
-func TestOnBorrow(c *Connection, t time.Time) error {
-	c.SetReadDeadline(t)
-
-	data := make([]byte, 1)
-	if _, err := c.Read(data); err != nil {
-		e, ok := err.(net.Error)
-		if err != nil && !(ok && e.Timeout()) {
-			return err
-		}
+// Close closes the underlying net.Conn
+func (c *Connection) Close() error {
+	if c.conn != nil {
+		c.conn.Close()
+		c.conn = nil
 	}
 
-	c.SetReadDeadline(time.Time{})
+	c.cursors = nil
+
 	return nil
 }
 
-func (c *Connection) ReadResponse(s *Session, token int64) (*Response, error) {
+func (c *Connection) Query(q Query) (*Response, *Cursor, error) {
+	if c == nil {
+		return nil, nil, nil
+	}
+	if c.conn == nil {
+		c.bad = true
+		return nil, nil, nil
+	}
+
+	// Add token if query is a START/NOREPLY_WAIT
+	if q.Type == p.Query_START || q.Type == p.Query_NOREPLY_WAIT {
+		q.Token = c.nextToken()
+		if c.opts.Database != "" {
+			q.Opts["db"] = Db(c.opts.Database).build()
+		}
+	}
+
+	err := c.sendQuery(q)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if noreply, ok := q.Opts["noreply"]; ok && noreply.(bool) {
+		return nil, nil, nil
+	}
+
 	for {
-		// Read the 8-byte token of the query the response corresponds to.
-		var responseToken int64
-		if err := binary.Read(c, binary.LittleEndian, &responseToken); err != nil {
-			return nil, RqlConnectionError{err.Error()}
-		}
-
-		// Read the length of the JSON-encoded response as a 4-byte
-		// little-endian-encoded integer.
-		var messageLength uint32
-		if err := binary.Read(c, binary.LittleEndian, &messageLength); err != nil {
-			return nil, RqlConnectionError{err.Error()}
-		}
-
-		// Read the JSON encoding of the Response itself.
-		b := make([]byte, messageLength)
-		if _, err := io.ReadFull(c, b); err != nil {
-			return nil, RqlDriverError{err.Error()}
-		}
-
-		// Decode the response
-		var response = new(Response)
-		response.Token = responseToken
-		err := json.Unmarshal(b, response)
+		response, err := c.readResponse()
 		if err != nil {
-			return nil, RqlDriverError{err.Error()}
+			return nil, nil, err
 		}
 
-		if responseToken == token {
-			return response, nil
-		} else if cursor, ok := s.checkCache(token); ok {
-			// Handle batch response
-			s.handleBatchResponse(cursor, response)
+		if response.Token == q.Token {
+			// If this was the requested response process and return
+			return c.processResponse(q, response)
+		} else if _, ok := c.cursors[response.Token]; ok {
+			// If the token is in the cursor cache then process the response
+			c.processResponse(q, response)
 		} else {
-			return nil, RqlDriverError{"Unexpected response received"}
+			putResponse(response)
 		}
 	}
 }
 
-func (c *Connection) SendQuery(s *Session, q Query, opts map[string]interface{}, async bool) (*Cursor, error) {
-	var err error
-
+func (c *Connection) sendQuery(q Query) error {
 	// Build query
 	b, err := json.Marshal(q.build())
 	if err != nil {
-		return nil, RqlDriverError{"Error building query"}
+		return RqlDriverError{"Error building query"}
 	}
 
 	// Set timeout
-	if s.timeout == 0 {
-		c.SetDeadline(time.Time{})
+	if c.opts.Timeout == 0 {
+		c.conn.SetWriteDeadline(time.Time{})
 	} else {
-		c.SetDeadline(time.Now().Add(s.timeout))
-	}
-
-	// Send a unique 8-byte token
-	if err = binary.Write(c, binary.LittleEndian, q.Token); err != nil {
-		return nil, RqlConnectionError{err.Error()}
-	}
-
-	// Send the length of the JSON-encoded query as a 4-byte
-	// little-endian-encoded integer.
-	if err = binary.Write(c, binary.LittleEndian, uint32(len(b))); err != nil {
-		return nil, RqlConnectionError{err.Error()}
+		c.conn.SetWriteDeadline(time.Now().Add(c.opts.Timeout))
 	}
 
 	// Send the JSON encoding of the query itself.
-	if err = binary.Write(c, binary.BigEndian, b); err != nil {
+	if err = c.writeQuery(q.Token, b); err != nil {
+		c.bad = true
+		return RqlConnectionError{err.Error()}
+	}
+
+	return nil
+}
+
+// getToken generates the next query token, used to number requests and match
+// responses with requests.
+func (c *Connection) nextToken() int64 {
+	// requires c.token to be 64-bit aligned on ARM
+	return atomic.AddInt64(&c.token, 1)
+}
+
+func (c *Connection) readResponse() (*Response, error) {
+	// Set timeout
+	if c.opts.Timeout == 0 {
+		c.conn.SetReadDeadline(time.Time{})
+	} else {
+		c.conn.SetReadDeadline(time.Now().Add(c.opts.Timeout))
+	}
+
+	// Read response header (token+length)
+	_, err := io.ReadFull(c.conn, c.headerBuf[:respHeaderLen])
+	if err != nil {
+		return nil, err
+	}
+
+	responseToken := int64(binary.LittleEndian.Uint64(c.headerBuf[:8]))
+	messageLength := binary.LittleEndian.Uint32(c.headerBuf[8:])
+
+	// Read the JSON encoding of the Response itself.
+	b := c.buf.takeBuffer(int(messageLength))
+	if _, err := io.ReadFull(c.conn, b[:]); err != nil {
+		c.bad = true
 		return nil, RqlConnectionError{err.Error()}
 	}
 
-	// Return immediately if the noreply option was set
-	if noreply, ok := opts["noreply"]; (ok && noreply.(bool)) || async {
-		return nil, nil
+	// Decode the response
+	var response = newCachedResponse()
+	if err := json.Unmarshal(b, response); err != nil {
+		c.bad = true
+		return nil, RqlDriverError{err.Error()}
 	}
+	response.Token = responseToken
 
-	// Get response
-	response, err := c.ReadResponse(s, q.Token)
-	if err != nil {
-		return nil, err
-	}
-
-	err = checkErrorResponse(response, q.Term)
-	if err != nil {
-		return nil, err
-	}
-
-	// De-construct datum and return a cursor
-	switch response.Type {
-	case p.Response_SUCCESS_PARTIAL, p.Response_SUCCESS_SEQUENCE, p.Response_SUCCESS_FEED:
-		cursor := &Cursor{
-			session: s,
-			conn:    c,
-			query:   q,
-			term:    *q.Term,
-			opts:    opts,
-			profile: response.Profile,
-		}
-
-		s.setCache(q.Token, cursor)
-
-		cursor.extend(response)
-
-		return cursor, nil
-	case p.Response_SUCCESS_ATOM:
-		var value []interface{}
-		var err error
-
-		if len(response.Responses) < 1 {
-			value = []interface{}{}
-		} else {
-			var v interface{}
-
-			v, err = recursivelyConvertPseudotype(response.Responses[0], opts)
-			if err != nil {
-				return nil, err
-			}
-			if err != nil {
-				return nil, RqlDriverError{err.Error()}
-			}
-
-			if sv, ok := v.([]interface{}); ok {
-				value = sv
-			} else if v == nil {
-				value = []interface{}{nil}
-			} else {
-				value = []interface{}{v}
-			}
-		}
-
-		cursor := &Cursor{
-			session:  s,
-			conn:     c,
-			query:    q,
-			term:     *q.Term,
-			opts:     opts,
-			profile:  response.Profile,
-			buffer:   value,
-			finished: true,
-		}
-
-		return cursor, nil
-	case p.Response_WAIT_COMPLETE:
-		return nil, nil
-	default:
-		return nil, RqlDriverError{fmt.Sprintf("Unexpected response type received: %s", response.Type)}
-	}
+	return response, nil
 }
 
-func (c *Connection) Close() error {
-	err := c.NoreplyWait()
-	if err != nil {
-		return err
-	}
-
-	return c.Conn.Close()
-}
-
-// noreplyWaitQuery sends the NOREPLY_WAIT query to the server.
-func (c *Connection) NoreplyWait() error {
-	q := Query{
-		Type:  p.Query_NOREPLY_WAIT,
-		Token: c.s.nextToken(),
-	}
-
-	_, err := c.SendQuery(c.s, q, map[string]interface{}{}, false)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func checkErrorResponse(response *Response, t *Term) error {
+func (c *Connection) processResponse(q Query, response *Response) (*Response, *Cursor, error) {
 	switch response.Type {
 	case p.Response_CLIENT_ERROR:
-		return RqlClientError{rqlResponseError{response, t}}
+		return c.processErrorResponse(q, response, RqlClientError{rqlResponseError{response, q.Term}})
 	case p.Response_COMPILE_ERROR:
-		return RqlCompileError{rqlResponseError{response, t}}
+		return c.processErrorResponse(q, response, RqlCompileError{rqlResponseError{response, q.Term}})
 	case p.Response_RUNTIME_ERROR:
-		return RqlRuntimeError{rqlResponseError{response, t}}
+		return c.processErrorResponse(q, response, RqlRuntimeError{rqlResponseError{response, q.Term}})
+	case p.Response_SUCCESS_ATOM:
+		return c.processAtomResponse(q, response)
+	case p.Response_SUCCESS_PARTIAL:
+		return c.processPartialResponse(q, response)
+	case p.Response_SUCCESS_SEQUENCE:
+		return c.processSequenceResponse(q, response)
+	case p.Response_WAIT_COMPLETE:
+		return c.processWaitResponse(q, response)
+	default:
+		putResponse(response)
+		return nil, nil, RqlDriverError{"Unexpected response type"}
+	}
+}
+
+func (c *Connection) processErrorResponse(q Query, response *Response, err error) (*Response, *Cursor, error) {
+	cursor := c.cursors[response.Token]
+
+	delete(c.cursors, response.Token)
+
+	return response, cursor, err
+}
+
+func (c *Connection) processAtomResponse(q Query, response *Response) (*Response, *Cursor, error) {
+	// Create cursor
+	cursor := newCursor(c, "Cursor", response.Token, q.Term, q.Opts)
+	cursor.profile = response.Profile
+
+	cursor.extend(response)
+
+	return response, cursor, nil
+}
+
+func (c *Connection) processPartialResponse(q Query, response *Response) (*Response, *Cursor, error) {
+	cursorType := "Cursor"
+	if len(response.Notes) > 0 {
+		switch response.Notes[0] {
+		case p.Response_SEQUENCE_FEED:
+			cursorType = "Feed"
+		case p.Response_ATOM_FEED:
+			cursorType = "AtomFeed"
+		case p.Response_ORDER_BY_LIMIT_FEED:
+			cursorType = "OrderByLimitFeed"
+		case p.Response_UNIONED_FEED:
+			cursorType = "UnionedFeed"
+		case p.Response_INCLUDES_STATES:
+			cursorType = "IncludesFeed"
+		}
 	}
 
-	return nil
+	cursor, ok := c.cursors[response.Token]
+	if !ok {
+		// Create a new cursor if needed
+		cursor = newCursor(c, cursorType, response.Token, q.Term, q.Opts)
+		cursor.profile = response.Profile
+
+		c.cursors[response.Token] = cursor
+	}
+
+	cursor.extend(response)
+
+	return response, cursor, nil
+}
+
+func (c *Connection) processSequenceResponse(q Query, response *Response) (*Response, *Cursor, error) {
+	cursor, ok := c.cursors[response.Token]
+	if !ok {
+		// Create a new cursor if needed
+		cursor = newCursor(c, "Cursor", response.Token, q.Term, q.Opts)
+		cursor.profile = response.Profile
+	}
+
+	delete(c.cursors, response.Token)
+
+	cursor.extend(response)
+
+	return response, cursor, nil
+}
+
+func (c *Connection) processWaitResponse(q Query, response *Response) (*Response, *Cursor, error) {
+	delete(c.cursors, response.Token)
+
+	return response, nil, nil
 }

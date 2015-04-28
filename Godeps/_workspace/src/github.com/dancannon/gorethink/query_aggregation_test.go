@@ -56,7 +56,7 @@ func (s *RethinkSuite) TestAggregationGroupMapReduce(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"reduction": 135, "group": false},
 		map[string]interface{}{"reduction": 70, "group": true},
 	})
@@ -77,7 +77,7 @@ func (s *RethinkSuite) TestAggregationGroupMapReduceUngroup(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"reduction": 70, "group": true},
 		map[string]interface{}{"reduction": 135, "group": false},
 	})
@@ -106,7 +106,7 @@ func (s *RethinkSuite) TestAggregationGroupMapReduceTable(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"reduction": 135, "group": false},
 		map[string]interface{}{"reduction": 70, "group": true},
 	})
@@ -121,7 +121,7 @@ func (s *RethinkSuite) TestAggregationGroupCount(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": 1, "reduction": []interface{}{
 			map[string]interface{}{"id": 1, "num": 0, "g1": 1, "g2": 1},
 			map[string]interface{}{"num": 15, "g1": 1, "g2": 1, "id": 6},
@@ -151,7 +151,7 @@ func (s *RethinkSuite) TestAggregationGroupSum(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": 1, "reduction": 15},
 		map[string]interface{}{"reduction": 130, "group": 2},
 		map[string]interface{}{"reduction": 10, "group": 3},
@@ -168,7 +168,7 @@ func (s *RethinkSuite) TestAggregationGroupAvg(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": 1, "reduction": 5},
 		map[string]interface{}{"group": 2, "reduction": 32.5},
 		map[string]interface{}{"group": 3, "reduction": 10},
@@ -185,7 +185,7 @@ func (s *RethinkSuite) TestAggregationGroupMin(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": 1, "reduction": map[string]interface{}{"id": 1, "num": 0, "g1": 1, "g2": 1}},
 		map[string]interface{}{"reduction": map[string]interface{}{"num": 0, "g1": 2, "g2": 3, "id": 4}, "group": 2},
 		map[string]interface{}{"group": 3, "reduction": map[string]interface{}{"num": 10, "g1": 3, "g2": 2, "id": 3}},
@@ -202,12 +202,54 @@ func (s *RethinkSuite) TestAggregationGroupMax(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"reduction": map[string]interface{}{"num": 15, "g1": 1, "g2": 1, "id": 6}, "group": 1},
 		map[string]interface{}{"group": 2, "reduction": map[string]interface{}{"num": 100, "g1": 2, "g2": 3, "id": 5}},
 		map[string]interface{}{"group": 3, "reduction": map[string]interface{}{"num": 10, "g1": 3, "g2": 2, "id": 3}},
 		map[string]interface{}{"group": 4, "reduction": map[string]interface{}{"g2": 2, "id": 8, "num": 50, "g1": 4}},
 	})
+}
+
+func (s *RethinkSuite) TestAggregationMin(c *test.C) {
+	// Ensure table + database exist
+	DbCreate("test").Exec(sess)
+	Db("test").TableCreate("Table2").Exec(sess)
+	Db("test").Table("Table2").IndexCreate("num").Exec(sess)
+
+	// Insert rows
+	Db("test").Table("Table2").Insert(objList).Exec(sess)
+
+	// Test query
+	var response interface{}
+	query := Db("test").Table("Table2").MinIndex("num")
+	res, err := query.Run(sess)
+	c.Assert(err, test.IsNil)
+
+	err = res.One(&response)
+
+	c.Assert(err, test.IsNil)
+	c.Assert(response, jsonEquals, map[string]interface{}{"id": 1, "g1": 1, "g2": 1, "num": 0})
+}
+
+func (s *RethinkSuite) TestAggregationMaxIndex(c *test.C) {
+	// Ensure table + database exist
+	DbCreate("test").Exec(sess)
+	Db("test").TableCreate("Table2").Exec(sess)
+	Db("test").Table("Table2").IndexCreate("num").Exec(sess)
+
+	// Insert rows
+	Db("test").Table("Table2").Insert(objList).Exec(sess)
+
+	// Test query
+	var response interface{}
+	query := Db("test").Table("Table2").MaxIndex("num")
+	res, err := query.Run(sess)
+	c.Assert(err, test.IsNil)
+
+	err = res.One(&response)
+
+	c.Assert(err, test.IsNil)
+	c.Assert(response, jsonEquals, map[string]interface{}{"id": 5, "g1": 2, "g2": 3, "num": 100})
 }
 
 func (s *RethinkSuite) TestAggregationMultipleGroupSum(c *test.C) {
@@ -219,7 +261,7 @@ func (s *RethinkSuite) TestAggregationMultipleGroupSum(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": []interface{}{1, 1}, "reduction": 15},
 		map[string]interface{}{"reduction": 0, "group": []interface{}{1, 2}},
 		map[string]interface{}{"group": []interface{}{2, 2}, "reduction": 5},
@@ -238,7 +280,7 @@ func (s *RethinkSuite) TestAggregationGroupChained(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": 1, "reduction": 1},
 		map[string]interface{}{"group": 2, "reduction": 3},
 		map[string]interface{}{"group": 3, "reduction": 2},
@@ -255,7 +297,7 @@ func (s *RethinkSuite) TestAggregationGroupUngroup(c *test.C) {
 	err = res.All(&response)
 
 	c.Assert(err, test.IsNil)
-	c.Assert(response, JsonEquals, []interface{}{
+	c.Assert(response, jsonEquals, []interface{}{
 		map[string]interface{}{"group": []interface{}{1, 1}, "reduction": map[string]interface{}{"g1": 1, "g2": 1, "id": 6, "num": 15}},
 		map[string]interface{}{"group": []interface{}{1, 2}, "reduction": map[string]interface{}{"g1": 1, "g2": 2, "id": 7, "num": 0}},
 		map[string]interface{}{"group": []interface{}{2, 2}, "reduction": map[string]interface{}{"g1": 2, "g2": 2, "id": 2, "num": 5}},

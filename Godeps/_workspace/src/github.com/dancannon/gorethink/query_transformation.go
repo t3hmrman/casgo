@@ -2,7 +2,31 @@ package gorethink
 
 import p "github.com/dancannon/gorethink/ql2"
 
-// Transform each element of the sequence by applying the given mapping function.
+// Map transform each element of the sequence by applying the given mapping
+// function. It takes two arguments, a sequence and a function of type
+// `func (r.Term) interface{}`.
+//
+// For example this query doubles each element in an array:
+//
+//     r.Map([]int{1,3,6}, func (row r.Term) interface{} {
+//         return row.Mul(2)
+//     })
+func Map(args ...interface{}) Term {
+	if len(args) > 0 {
+		args = append(args[:len(args)-1], funcWrapArgs(args[len(args)-1:])...)
+	}
+
+	return constructRootTerm("Map", p.Term_MAP, funcWrapArgs(args), map[string]interface{}{})
+}
+
+// Map transforms each element of the sequence by applying the given mapping
+// function. It takes one argument of type `func (r.Term) interface{}`.
+//
+// For example this query doubles each element in an array:
+//
+//     r.Expr([]int{1,3,6}).Map(func (row r.Term) interface{} {
+//         return row.Mul(2)
+//     })
 func (t Term) Map(args ...interface{}) Term {
 	return constructMethodTerm(t, "Map", p.Term_MAP, funcWrapArgs(args), map[string]interface{}{})
 }
@@ -18,7 +42,7 @@ func (t Term) WithFields(args ...interface{}) Term {
 // Flattens a sequence of arrays returned by the mapping function into a single
 // sequence.
 func (t Term) ConcatMap(args ...interface{}) Term {
-	return constructMethodTerm(t, "ConcatMap", p.Term_CONCATMAP, funcWrapArgs(args), map[string]interface{}{})
+	return constructMethodTerm(t, "ConcatMap", p.Term_CONCAT_MAP, funcWrapArgs(args), map[string]interface{}{})
 }
 
 type OrderByOpts struct {
@@ -57,7 +81,7 @@ func (t Term) OrderBy(args ...interface{}) Term {
 		}
 	}
 
-	return constructMethodTerm(t, "OrderBy", p.Term_ORDERBY, args, opts)
+	return constructMethodTerm(t, "OrderBy", p.Term_ORDER_BY, args, opts)
 }
 
 func Desc(args ...interface{}) Term {
@@ -114,8 +138,8 @@ func (t Term) Nth(args ...interface{}) Term {
 
 // Get the indexes of an element in a sequence. If the argument is a predicate,
 // get the indexes of all elements matching it.
-func (t Term) IndexesOf(args ...interface{}) Term {
-	return constructMethodTerm(t, "IndexesOf", p.Term_INDEXES_OF, funcWrapArgs(args), map[string]interface{}{})
+func (t Term) OffsetsOf(args ...interface{}) Term {
+	return constructMethodTerm(t, "OffsetsOf", p.Term_OFFSETS_OF, funcWrapArgs(args), map[string]interface{}{})
 }
 
 // Test if a sequence is empty.
