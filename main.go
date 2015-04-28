@@ -7,6 +7,8 @@ import (
 
 func main() {
 
+	// TODO: Use flag to check for -c/--config and optionally load config from file.
+
 	// Create new CAS Server config with default values
 	config, err := cas.NewCASServerConfig(nil)
 	if err != nil {
