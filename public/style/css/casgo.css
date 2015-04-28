@@ -1,0 +1,233 @@
+/*
+ * Styles for CASGO
+ *
+ * UI colors (based off of http://flatuicolors.com/)
+ * Emerald (green): #2ECC71
+ */
+
+body, html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow-x: hidden;  /* For things like right sidebar to slide in */
+}
+
+.topnav {
+  float: left;
+  background: #333;
+  color: white;
+  font-size: 20px;
+  width:100%;
+}
+
+.topnav-list {
+  list-style: hidden;
+  display: inline-block;
+  line-height: 4em;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.topnav-brand {  margin-left: 1em; }
+
+.topnav-list-item {
+  line-height: 5em;
+  padding-left: 1em;
+  padding-right: 1em;
+  display: inline-block;
+  color: #BBB;
+}
+
+.topnav-list-item.active {
+  color: white;
+  background-color: #2ecc71;
+}
+
+.topnav-list-item-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.top-subnav {
+  padding: .5em;
+  background-color: #EEE;
+}
+
+.white-on-hover:hover {
+  text-decoration: none;
+  color: white;
+}
+
+.jumbotron { padding: 4em 1em 4em 1em; }
+
+.theme-background {
+  background: url("../../images/footer_lodyas/footer_lodyas.png") #333 repeat fixed;
+  color: white;
+}
+
+.landing {
+  padding-top: 5em;
+  text-align: center;
+}
+
+.landing > .jumbotron {
+  background-color: rgba(51, 51, 51, .3);
+  text-shadow: black 1px 1px;
+}
+
+#btnLandingLogin {
+  color: black;
+  text-shadow: none;
+}
+
+.content-wrap {
+  height: 100%;
+  padding-top: 6em;
+  padding-bottom: -5em;
+}
+
+.leftnav {
+  background-color: #333;
+  color: white;
+}
+
+.leftnav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.leftnav-list-item {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.leftnav-list-item.active {
+  background-color: #777;
+  color: white;
+}
+
+.no-services-warning {
+  padding-top: 2em;
+  padding-bottom: 2em;
+}
+
+.box-list-item {
+  position: relative;
+  box-shadow: 1px 3px 3px #333;
+  min-height: 200px;
+  font-size: xx-large;
+  border: solid 3px #555;
+}
+
+.box-list-item-menu {
+  position: absolute;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: x-large;
+  padding: .5em;
+  right: 0px;
+}
+
+.box-list-item-menu:hover {
+  background-color: #2ECC71;
+  cursor: pointer;
+}
+
+.right-sidebar {
+  position: absolute;
+  float: left;
+  background-color: #333;
+  color: white;
+  right: -100%;
+  height: 99%;
+  transition: right .5s;
+  z-index: 1;
+}
+
+.contains-sidebar {
+  overflow: hidden;
+}
+
+.footer {
+  height: 5em;
+}
+
+.alerts-container {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  text-shadow: none;
+}
+.alert {
+  padding: 1em;
+  color: white;
+}
+.alert.error {
+  background-color: #FF6961;
+}
+.alert.success {
+  background-color: #77DD77;
+}
+
+.dismiss-alert {
+  float: right;
+  cursor: pointer;
+}
+
+/* Utility classes */
+.centered-text { text-align: center; }
+.left-aligned-text { text-align: left; }
+.right-aligned-text { text-align: right; }
+.slim-margin { margin: .5em; }
+.slim-pad { padding: 1em; }
+.slim-lettering { font-weight: 200; }
+.medium-font { font-size: medium; }
+.twoem-font-size { font-size: 2em; }
+
+.full-height { height: 100%; }
+
+.light-black {
+  padding-top: 1em;
+  background-color: #333;
+  color: white;
+}
+
+a.plain {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.plain:hover {
+  text-decoration: none
+  border-bottom: dashed 1px;
+}
+
+/* Pure overrides */
+
+.button-success,
+.button-error,
+.button-warning,
+.button-secondary {
+  color: white;
+  border-radius: 4px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.button-success {
+  background: rgb(28, 184, 65); /* this is a green */
+}
+
+.button-error {
+  background: rgb(202, 60, 60); /* this is a maroon */
+}
+
+.button-warning {
+  background: rgb(223, 117, 20); /* this is an orange */
+}
+
+.button-secondary {
+  background: rgb(66, 184, 221); /* this is a light blue */
+}

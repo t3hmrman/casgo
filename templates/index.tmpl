@@ -1,12 +1,279 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf8">
-    <title>CasGo</title>
-  </head>
-  <body>
-    <h1>CasGo Single Sign On Portal</h1>
-    <h2>Welcome to CasGO!</h2>
-    <h3>Redirecting to /login...</h3>
-  </body>
-</html>
+<div class="pure-g topnav theme-background">
+    <!-- left side -->
+    <div class="pure-u-1 pure-u-sm-2-3 pure-u-md-2-3 pure-u-lg-4-5 pure-u-xl-4-5">
+        <a href="/" class="plain topnav-brand slim-lettering">CASGO</a>
+        <ul class="topnav-list">
+            <li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/services')}">
+                <a id="topnav-services-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/services">
+                    <i class="fa fa-cloud"></i> Services
+                </a>
+            </li>
+            {{if .currentUser.IsAdmin}}
+            <li class="topnav-list-item" data-bind="css: {active: currentRouteUrlHasPrefix('/manage')}">
+                <a id="topnav-manage-link" class="topnav-list-item-link white-on-hover slim-lettering" href="#/manage">
+                    <i class="fa fa-cogs"></i> Manage
+                </a>
+                <!-- drop down with services, users, the basic /admin endpoint -->
+            </li>
+            {{end}}
+        </ul>
+    </div>
+
+    <!-- Right side -->
+    <div class="pure-u-1 pure-u-sm-1-3 pure-u-md-1-3 pure-u-lg-1-5 pure-u-xl-1-5">
+        <ul class="pull-right topnav-list">
+            <li class="topnav-list-item medium-font">
+                <div>
+                    <i class="fa fa-user"></i> <span data-bind="text: SessionService.currentUser().email"></span>
+                </div>
+                <!-- drop down with option to logout -->
+            </li>
+            <li class="topnav-list-item medium-font">
+                <div>
+                    <a class="plain white-on-hover" href="/logout"><i class="fa fa-sign-out"></i> Logout</a>
+                </div>
+                <!-- drop down with option to logout -->
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="content-wrap">
+    <div class="pure-g full-height">
+        <div class="pure-u-1 centered-text full-height">
+
+            <!-- Pages -->
+            <div class="full-height" data-bind="visible: currentRouteUrlHasPrefix('/services'), template: {name: 'ServicesTemplate', data: ServicesCtrl}"></div>
+            <div class="full-height" data-bind="visible: currentRouteUrlHasPrefix('/manage'), template: {name: 'ManageTemplate', data: ManageCtrl}"></div>
+        </div>
+    </div>
+</div>
+
+<div class="footer light-black centered-text theme-background">
+    Made with <i class="fa fa-heart"></i> in Austin, TX, by <strong><a class="plain" href="http://vadosware.io">vadosware</a> (<a class="plain" href="https://twitter.com/vadosware">@vadosware</a>)</strong>
+    <br/>
+    Built with <strong><a class="plain" href="http://golang.org">Golang</a></strong>, hosted on <strong><a class="plain" href="http://github.com/t3hmrman/casgo">Github <i class="fa fa-github"></i></a></strong>
+</div>
+
+<!-- Templates -->
+<script type="text/html" id="ServicesTemplate">
+    <div class="pure-g full-height">
+        <div class="pure-u-xs-1-12 pure-u-sm-1-12 pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+
+        <div class="pure-u-xs-10-12 pure-u-sm-10-12 pure-u-md-3-5 pure-u-lg-3-5 pure-u-xl-3-5">
+            <h2>Services</h2>
+            <h3>Services you're authorized to use</h3>
+
+
+            <div class="no-services-warning" data-bind="if: pagedObjects().length === 0">
+                <h3>Uh-oh, it looks like you're not authorized to use any services yet.</h3>
+                <h3>Please check with your CASGO administrator and get authorized!</h3>
+            </div>
+
+            <div id="services-list" class="services-list" data-bind="foreach: pagedObjects">
+                <div class="pure-u-1-2 pure-u-xs-1-2 pure-u-sm-1-2 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-5 box-list-item">
+                    <span data-bind="text: name"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pure-u-xs-1-12 pure-u-sm-1-12 pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+    </div>
+</script>
+
+<script type="text/html" id="ManageTemplate">
+    <div class="pure-g full-height">
+
+        <!-- Left navigation -->
+        <div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-1-5 pure-u-lg-1-6 pure-u-xl-1-8 leftnav full-height">
+            <ul class="leftnav-list">
+
+                <li class="leftnav-list-item slim-lettering" data-bind="css: {active: $root.currentRouteUrlIs('/manage/users')}">
+                    <a class="plain" href="#/manage/users">
+                        <i class="fa fa-group"></i> Users
+                    </a>
+                </li>
+
+                <li class="leftnav-list-item slim-lettering" data-bind="css: {active: $root.currentRouteUrlIs('/manage/services')}">
+                    <a class="plain" href="#/manage/services">
+                        <i class="fa fa-cloud"></i> Services
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+
+        <!-- Center content -->
+        <div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-4-5 pure-u-lg-5-6 pure-u-xl-7-8 content full-height">
+            <div data-bind="visible: $root.currentRouteUrl() === '/manage'">
+                <h2 class="slim-lettering">Manage CASGO</h2>
+                <h2 class="slim-lettering twoem-font-size"><i class="fa fa-arrow-left"></i> Click one of the management areas <br/> on the left to get started!</h2>
+            </div>
+            <div data-bind="visible: $root.currentRouteUrl() === '/manage/users', template: {name: 'ManageUsersTemplate', data: $root.ManageUsersCtrl}"></div>
+            <div data-bind="visible: $root.currentRouteUrl() === '/manage/services', template: {name: 'ManageServicesTemplate', data: $root.ManageServicesCtrl}"></div>
+        </div>
+
+        <!-- Right sidebar -->
+        <div class="right-sidebar left-aligned-text pure-u-1-2" data-bind="style: {right: getSidebarCSSRight()}">
+            <div data-bind="visible: $root.currentRouteUrlHasPrefix('/manage/'), template: {name: sidebarTemplateName(), data: sidebarController()}"></div>
+        </div>
+
+    </div>
+</script>
+
+<script type="text/html" id="EditServiceFormTemplate">
+    <div class="top-subnav right-aligned-text">
+        <button class="pure-button pull-left" data-bind="click: $parent.hideSidebar"><i class="fa fa-arrow-right"></i> Close</button>
+        <button class="pure-button button-success" data-bind="click: createOrUpdateService">
+            <i class="fa fa-save"></i> <span data-bind="text: actionText"></span>
+        </button>
+        <button class="pure-button button-error" data-bind="click: removeService">
+            <i class="fa fa-trash"></i> Remove Service
+        </button>
+    </div>
+
+    <div class="pure-g">
+        <div class="pure-u-1-7"></div>
+        <div class="pure-u-5-7">
+            <div class="pure-u-1">
+                <div class="slim-pad">
+                    <div data-bind="template: {name: 'AlertsTemplate'}"></div>
+                    <h2>
+                        <span data-bind="text: actionText"></span>
+                        <span data-bind="if: !_.isEmpty(svcName())">
+                            (<span data-bind="text: svcName()"></span>)
+                        </span>
+                    </h2>
+                    <form id="frmEditService" class="pure-form pure-form-stacked">
+                        <fieldset>
+                            <label for="name">Name of the service</label>
+                            <input id="name" class="pure-input-2-3" type="text" data-bind="value: svcName, valueUpdate: 'keyup', disable: !create()" name="name" placeholder="Service Name">
+
+                            <br/>
+                            <label for="url">URL (callback URL)</label>
+                            <input id="url" class="pure-input-2-3" data-bind="value: svcUrl" name="url" type="url"  placeholder="Service URL">
+
+                            <br/>
+                            <label for="adminEmail">Administrator's email address</label>
+                            <input id="adminEmail" class="pure-input-2-3" type="email" data-bind="value: svcAdminEmail" name="adminEmail" placeholder="Admin's email">
+                        </fieldset>
+                    </form>
+                </div> <!-- /div.slim-pad -->
+            </div> <!-- /div.pure-u-1 -->
+        </div>
+        <div class="pure-u-1-7"></div>
+    </div>
+</script>
+
+<script type="text/html" id="EditUserFormTemplate">
+    <div class="top-subnav right-aligned-text">
+        <button class="pure-button pull-left" data-bind="click: $parent.hideSidebar"><i class="fa fa-arrow-right"></i> Close</button>
+        <button class="pure-button button-success" data-bind="click: createOrUpdateUser">
+            <i class="fa fa-save"></i> <span data-bind="text: actionText"></span>
+        </button>
+        <button class="pure-button button-error" data-bind="click: removeUser">
+            <i class="fa fa-trash"></i> Remove User
+        </button>
+    </div>
+
+    <div class="pure-g">
+        <div class="pure-u-1-7"></div>
+        <div class="pure-u-5-7">
+            <div class="pure-u-1">
+                <div class="slim-pad">
+                    <div data-bind="template: {name: 'AlertsTemplate'}"></div>
+                    <h2>
+                        <span data-bind="text: actionText"></span>
+                        <span data-bind="if: !_.isEmpty(userEmail())">
+                            (<span data-bind="text: userEmail()"></span>)
+                        </span>
+                    </h2>
+                    <form id="frmEditUser" class="pure-form pure-form-stacked">
+                        <fieldset>
+                            <label for="email">Email</label>
+                            <input id="email" class="pure-input-2-3" type="text" data-bind="value: userEmail, valueUpdate: 'keyup', disable: !create()" email="email" placeholder="User Email">
+
+                            <br/>
+                            <div data-bind="if: create()">
+                            <label for="password">Password</label>
+                            <input id="password" class="pure-input-2-3" data-bind="value: userPassword" name="password" type="password"  placeholder="User password">
+                            </div>
+
+                            <br/>
+                            <label for="isAdmin">
+                                <input type="checkbox" id="isAdmin" data-bind="checked: userIsAdmin" name="isAdmin">
+                                Administrator?
+                            </label>
+                        </fieldset>
+                    </form>
+                </div> <!-- /div.slim-pad -->
+            </div> <!-- /div.pure-u-1 -->
+        </div>
+        <div class="pure-u-1-7"></div>
+    </div>
+</script>
+
+<script type="text/html" id="AlertsTemplate">
+    <div class="alerts-container" data-bind="foreach: alerts">
+        <div class="alert" data-bind="css: { success: type === 'success', warning: type === 'warning', info: type === 'info', error: type === 'error'}">
+            <span class="dismiss-alert" data-bind="click: $parent.dismissAlert">&times;</span>
+            <span data-bind="text: msg"></span>
+        </div>
+    </div>
+</script>
+
+<script type="text/html" id="ManageUsersTemplate">
+    <div class="top-subnav right-aligned-text">
+        <button class="pure-button button-success" data-bind="click: $parent.showAddUserInSidebar"><i class="fa fa-user"></i> Add User</button>
+    </div>
+
+    <h2 class="slim-lettering">Manage Users</h2>
+
+    <form id="frmFilterUsers" class="pure-form" data-bind="submit: function(){}">
+        <label>
+            <input id="usernameFilter" class="pure-input" type="text" placeholder="Filter by email" data-bind="value: usernameFilter, valueUpdate: 'keyup'"/>
+            <i class="fa fa-filter"></i>
+        </label>
+    </form>
+    <br/>
+
+    <div id="users-list" class="users-list" data-bind="foreach: filteredUsers">
+        <div class="pure-u-1-2 pure-u-xs-1-2 pure-u-sm-1-2 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-5 box-list-item">
+            <span data-bind="text: email"></span>
+            <div class="box-list-item-menu right-aligned-text" data-bind="click: $parents[1].showEditUserInSidebar">
+                <a href="javascript:void(0)" class="plain slim-margin"><i class="fa fa-pencil"></i></a>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/html" id="ManageServicesTemplate">
+    <div class="top-subnav right-aligned-text">
+        <button class="pure-button button-success" data-bind="click: $parent.showAddServiceInSidebar"><i class="fa fa-plus"></i> Add Service</button>
+    </div>
+
+    <h2 class="slim-lettering">Manage Services</h2>
+
+    <div class="no-services-warning" data-bind="if: pagedObjects().length === 0">
+        <h3>Uh-oh, Looks like you don't have any services yet! Go ahead and add some!</h3>
+    </div>
+
+    <div id="services-list" class="services-list" data-bind="foreach: pagedObjects">
+        <div class="pure-u-1-2 pure-u-xs-1-2 pure-u-sm-1-2 pure-u-md-1-3 pure-u-lg-1-3 pure-u-xl-1-5 box-list-item">
+            <span data-bind="text: name"></span>
+            <div class="box-list-item-menu right-aligned-text" data-bind="click: $parents[1].showEditServiceInSidebar">
+                <a href="javascript:void(0)" class="plain slim-margin"><i class="fa fa-pencil"></i></a>
+            </div>
+        </div>
+    </div>
+</script>
+
+
+<!-- Scripts -->
+<script type="text/javascript" src="../public/vendor/lodash/dist/lodash.min.js"></script>
+<script type="text/javascript" src="../public/vendor/es6-promise/promise.min.js"></script>
+<script type="text/javascript" src="../public/vendor/fetch/fetch.js"></script>
+<script type="text/javascript" src="../public/vendor/director/build/director.min.js"></script>
+<script type="text/javascript" src="../public/vendor/knockout/dist/knockout.js"></script>
+<script type="text/javascript" src="../public/js/casgo.js"></script>
+<script type="text/javascript" src="../public/js/routes.js"></script>

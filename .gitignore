@@ -5,3 +5,6 @@
 /gin-bin
 /tmpdata/
 /cas/cas.coverprofile
+
+# Ignore bower intall files
+public/vendor/*

@@ -2,9 +2,9 @@ package cas
 
 import (
 	r "github.com/dancannon/gorethink"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
-	"log"
 	"net/http"
 )
 
@@ -16,6 +16,19 @@ type User struct {
 	Email      string            `gorethink:"email" json:"email"`
 	Attributes map[string]string `gorethink:"attributes" json:"attributes"`
 	Password   string            `gorethink:"password" json:"password"`
+	Services   []CASService      `gorethink:"services" json:"services"`
+	IsAdmin    bool              `gorethink:"isAdmin" json:"isAdmin"`
+}
+
+// Enforce schema for Users
+func (u *User) IsValid() bool {
+	return len(u.Email) > 0 && len(u.Password) > 0
+}
+
+// Enforce lax schema for user updates (as they may not include Password field)
+// at least the email must be present (used when getting the user, as it is the PK)
+func (u *User) IsValidUpdate() bool {
+	return len(u.Email) > 0
 }
 
 // Comparison function for Users
@@ -26,26 +39,22 @@ func compareUsers(a, b User) bool {
 	return false
 }
 
-// Function to create a user object from a parsed generic map[string]interface{}
-func createUserFromGenericObject(generic map[string]interface{}) User {
-	return User{
-		Email:    generic["email"].(string),
-		Password: generic["password"].(string),
-	}
-}
-
+// CasGo registered service
 type CASService struct {
 	Url        string `gorethink:"url" json:"url"`
 	Name       string `gorethink:"name" json:"name"`
 	AdminEmail string `gorethink:"adminEmail" json:"adminEmail"`
 }
 
-// Function to create a CASService object from a parsed generic map[string]interface{}
-func createCASServiceFromGenericObject(generic map[string]interface{}) CASService {
-	return CASService{
-		Url:        generic["url"].(string),
-		AdminEmail: generic["adminEmail"].(string),
-	}
+// Enforce schema for CASService
+func (s *CASService) IsValid() bool {
+	return len(s.Url) > 0 && len(s.Name) > 0 && len(s.AdminEmail) > 0
+}
+
+// Enforce lax schema for CASService updates (as they may not include some otherwise required fields)
+// at least the name must be present (used when getting the service, as it is the PK)
+func (s *CASService) IsValidUpdate() bool {
+	return len(s.Name) > 0
 }
 
 // CasGo ticket
@@ -56,6 +65,13 @@ type CASTicket struct {
 	WasSSO         bool              `gorethink:"wasSSO" json:"wasSSO"`
 }
 
+// CasGo API keypair
+type CasgoAPIKeyPair struct {
+	Key    string `gorethink:"key" json:"key"`
+	Secret string `gorethink:"secret" json:"secret"`
+	User   *User  `gorethink:"user" json:"user"`
+}
+
 // Compairson function for CASTickets
 func CompareTickets(a, b CASTicket) bool {
 	if &a == &b || (a.Id == b.Id && a.UserEmail == b.UserEmail && a.WasSSO == b.WasSSO) {
@@ -64,37 +80,11 @@ func CompareTickets(a, b CASTicket) bool {
 	return false
 }
 
-// Function to create a CASTicket object from a parsed generic map[string]interface{}
-func createCASTicketFromGenericObject(generic map[string]interface{}) CASTicket {
-	return CASTicket{
-		WasSSO: generic["wasFromSSOSession"].(bool),
-	}
-}
-
-// Utility function to translate a generic map to a proper databse type
-func translateGenericObjectToDBStruct(tableName string, obj map[string]interface{}) interface{} {
-	// Determine the function that should be used to translate the object
-	switch tableName {
-	case "services":
-		return createCASServiceFromGenericObject(obj)
-		break
-	case "tickets":
-		return createCASTicketFromGenericObject(obj)
-		break
-	case "users":
-		return createUserFromGenericObject(obj)
-		break
-	default:
-		log.Fatal("Invalid table name, could not find generic-to-object conversion function")
-	}
-	return nil
-}
-
 type CASServerError struct {
-	msg        string // Message string
-	httpCode   int    // HTTP error code, if applicable
-	casErrCode int    // CASGO specific error code
-	err        *error // Actual error that was thrown (if any)
+	Msg          string // Message string
+	HttpCode     int    // HTTP error code, if applicable
+	CasgoErrCode int    // CASGO specific error code
+	err          *error // Actual error that was thrown (if any)
 }
 
 // CAS server interface
@@ -131,24 +121,49 @@ type CASDBAdapter interface {
 	// App functions
 	FindServiceByUrl(string) (*CASService, *CASServerError)
 	FindUserByEmail(string) (*User, *CASServerError)
+	FindUserByApiKeyAndSecret(string, string) (*User, *CASServerError)
 	AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError)
 	RemoveTicketsForUserWithService(string, *CASService) *CASServerError
 	FindTicketByIdForService(string, *CASService) (*CASTicket, *CASServerError)
 	AddNewUser(string, string) (*User, *CASServerError)
+
+	// REST API functions (CRUD)
+	GetAllUsers() ([]User, *CASServerError)
+	UpdateUser(*User) *CASServerError
+	RemoveUserByEmail(string) *CASServerError
+
+	GetAllServices() ([]CASService, *CASServerError)
+	AddNewService(*CASService) *CASServerError
+	RemoveServiceByName(string) *CASServerError
+	UpdateService(*CASService) *CASServerError
 
 	// Property getter utility functions
 	GetDbName() string
 	GetTicketsTableName() string
 	GetServicesTableName() string
 	GetUsersTableName() string
+	GetApiKeysTableName() string
+}
+
+type CasgoFrontendAPI interface {
+	HookupAPIEndpoints(*mux.Router)
+
+	// Services Endpoint
+	GetServices(http.ResponseWriter, *http.Request)
+	RemoveService(http.ResponseWriter, *http.Request)
+	CreateService(http.ResponseWriter, *http.Request)
+
+	listSessionUserServices(http.ResponseWriter, *http.Request)
+	SessionsHandler(http.ResponseWriter, *http.Request)
 }
 
 // CAS Server
 type CAS struct {
 	server      *http.Server
-	ServeMux    *http.ServeMux
+	ServeMux    *mux.Router
 	Config      map[string]string
 	Db          CASDBAdapter
+	Api         CasgoFrontendAPI
 	render      *render.Render
 	cookieStore *sessions.CookieStore
 	LogLevel    int
@@ -164,5 +179,12 @@ type RethinkDBAdapter struct {
 	servicesTableOptions *r.TableCreateOpts
 	usersTableName       string
 	usersTableOptions    *r.TableCreateOpts
+	apiKeysTableName     string
+	apiKeysTableOptions  *r.TableCreateOpts
 	LogLevel             string
+}
+
+// CasGo frontend RESTful API
+type FrontendAPI struct {
+	casServer *CAS
 }

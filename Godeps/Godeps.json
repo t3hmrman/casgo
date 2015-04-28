@@ -1,0 +1,50 @@
+{
+	"ImportPath": "github.com/t3hmrman/casgo",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
+			"Comment": "null-233",
+			"Rev": "8fec09c61d5d66f460d227fd1df3473d7e015bc6"
+		},
+		{
+			"ImportPath": "code.google.com/p/goprotobuf/proto",
+			"Comment": "go.r60-159",
+			"Rev": "26b4b5c8a6ec0e0bc5a8d2807c9f42f7d1bb291a"
+		},
+		{
+			"ImportPath": "github.com/dancannon/gorethink",
+			"Comment": "v0.5.x-9-g16b174b",
+			"Rev": "16b174b489ff37d396a9fa202536c08171717883"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "14f550f51af52180c2eefed15e5fd18d63c0a64a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "1b0c7f6e9ab3d7f500fd7d50c7ad835ff428139b"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "aa5e036e6c44aec69a32eb41097001978b29ad31"
+		},
+		{
+			"ImportPath": "github.com/unrolled/render",
+			"Rev": "344f85e13ccf75f3d53a27adfcd553f84f05b855"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Comment": "null-233",
+			"Rev": "8fec09c61d5d66f460d227fd1df3473d7e015bc6"
+		},
+		{
+			"ImportPath": "gopkg.in/fatih/pool.v2",
+			"Rev": "dae43b8a8a190d1f2b5908e2f6dd02481e7d59e9"
+		}
+	]
+}

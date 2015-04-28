@@ -1,11 +1,9 @@
 package cas
 
-/**
- * CAS protocol API implementation
- */
-
 import (
 	"code.google.com/p/go.crypto/bcrypt"
+	"encoding/gob"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
 	"log"
@@ -13,6 +11,10 @@ import (
 	"strconv"
 	"strings"
 )
+
+/*
+ * CAS server implementation
+ */
 
 func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 	// Create and initialize the CAS server
@@ -31,7 +33,10 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 	cas.Config = config
 
 	// Setup rendering function
-	render := render.New(render.Options{Directory: cas.Config["templatesDirectory"]})
+	render := render.New(render.Options{
+		Directory: cas.Config["templatesDirectory"],
+		Layout:    "layout",
+	})
 	cas.render = render
 
 	// Cookie store setup
@@ -42,6 +47,10 @@ func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
 		HttpOnly: true,
 	}
 	cas.cookieStore = cookieStore
+
+	// Register types for encoding/decoding
+	gob.Register([]CASService{})
+	gob.Register(User{})
 
 	cas.init()
 	cas.setLogLevel(cas.Config["logLevel"])
@@ -66,47 +75,60 @@ func (c *CAS) init() {
 	c.Config = overrideConfigWithEnv(c.Config)
 
 	// Setup database adapter
-	Db, err := NewRethinkDBAdapter(c)
+	db, err := NewRethinkDBAdapter(c)
 	if err != nil {
-		log.Fatal("Failed to setup database adapter")
+		log.Fatal("Failed to setup database adapter", err)
 	}
-	c.Db = Db
+	c.Db = db
 
 	// Setup the internal HTTP Server
 	c.server = &http.Server{
-		Addr:    c.GetAddr(),
+		Addr: c.GetAddr(),
 	}
 
+	// Setup front-end API
+	api, err := NewCasgoFrontendAPI(c)
+	c.Api = api
+
 	// Setup handlers
-	serveMux := http.NewServeMux()
+	serveMux := mux.NewRouter()
+
+	// Front end endpoints
 	serveMux.HandleFunc("/login", c.HandleLogin)
 	serveMux.HandleFunc("/logout", c.HandleLogout)
 	serveMux.HandleFunc("/register", c.HandleRegister)
+
+	// Hook up API endpoints
+	c.Api.HookupAPIEndpoints(serveMux)
+
+	// CAS-specific endpoints
 	serveMux.HandleFunc("/validate", c.HandleValidate)
 	serveMux.HandleFunc("/serviceValidate", c.HandleServiceValidate)
 	serveMux.HandleFunc("/proxyValidate", c.HandleProxyValidate)
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
+
+	// Static file serving
+	serveMux.PathPrefix("/public/").Handler(http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
 	serveMux.HandleFunc("/", c.HandleIndex)
+
 	c.ServeMux = serveMux
 	c.server.Handler = c.ServeMux
 }
 
 // Set up the underlying database
-func (c *CAS) SetupDb() {
-	c.Db.Setup()
+func (c *CAS) SetupDb() *CASServerError {
+	return c.Db.Setup()
 }
 
 // Teardown the underlying database
-func (c *CAS) TeardownDb() {
-	c.Db.Teardown()
+func (c *CAS) TeardownDb() *CASServerError {
+	return c.Db.Teardown()
 }
 
 // Start the CAS server
 func (c *CAS) Start() {
 	// Start server
 	log.Fatal(c.server.ListenAndServe())
-
-	//TODO: Start the TLS endpoint as well
 }
 
 // Get the address of the server based on server configuration
@@ -116,16 +138,42 @@ func (c *CAS) GetAddr() string {
 
 // (Optional) Handles Index route
 func (c *CAS) HandleIndex(w http.ResponseWriter, req *http.Request) {
-	c.render.HTML(w, http.StatusOK, "index", map[string]string{"CompanyName": c.Config["companyName"]})
+
+	// Attempt to retrieve user session and populate template context
+	session, _ := c.cookieStore.Get(req, "casgo-session")
+	templateContext := c.augmentTemplateContext(map[string]interface{}{}, session)
+
+	// Exit early (and show landing page) if not user not logged in (in session)
+	if _, ok := templateContext["currentUser"]; !ok {
+		c.render.HTML(w, http.StatusOK, "landing", templateContext)
+		return
+	}
+
+	c.render.HTML(w, http.StatusOK, "index", templateContext)
+}
+
+// Augment information in given context with information from given session
+// Will overwrite any fields that are already filled
+func (c *CAS) augmentTemplateContext(context map[string]interface{}, session *sessions.Session) map[string]interface{} {
+	context["CompanyName"] = c.Config["companyName"]
+
+	// Add information from session
+	if session != nil {
+		if currentUser, ok := session.Values["currentUser"]; ok {
+			context["currentUser"] = currentUser.(User)
+		}
+	}
+
+	return context
 }
 
 // Handle logins (functions as both a credential acceptor and requestor)
 func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// Generate context
-	context := map[string]string{"CompanyName": c.Config["companyName"]}
+	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Trim and lightly pre-process/validate service
-	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	serviceUrl := strings.TrimSpace(req.FormValue("service"))
 	gateway := strings.TrimSpace(strings.ToLower(req.FormValue("gateway")))
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 	method := strings.TrimSpace(strings.ToLower(req.FormValue("method")))
@@ -133,6 +181,14 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	// In the case login is being used as an acceptor
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
 	password := strings.TrimSpace(strings.ToLower(req.FormValue("password")))
+
+	// Service URL will come in as form parameter if POST
+	if req.Method == "POST" {
+		serviceUrl = strings.TrimSpace(req.FormValue("serviceUrl"))
+	}
+
+	// Add serviceUrl to context if it was specified
+	context["serviceUrl"] = serviceUrl
 
 	// Handle service being not set early
 	var casService *CASService
@@ -172,7 +228,7 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 		// Finish early if the user is already logged in (has session)
 		session, _ := c.cookieStore.Get(req, "casgo-session")
-		if _, ok := session.Values["currentUserEmail"]; ok {
+		if _, ok := session.Values["currentUser"]; ok {
 
 			// If session is not set and gateway is set, behavior is undefined, act as if nothing was given, let user know they are logged in
 			// Otherwiser make new ticket and properly redirect to service
@@ -190,12 +246,12 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Attempt non-interactive authentication
-		returnedUser, err := c.validateUserCredentials(email, password)
-		if err != nil {
+		returnedUser, casErr := c.validateUserCredentials(email, password)
+		if casErr != nil {
 			// In the case of an error, redirect to the service with no ticket
 			if casService == nil {
-				context["Error"] = err.msg
-				c.render.HTML(w, err.httpCode, "login", context)
+				context["Error"] = casErr.Msg
+				c.render.HTML(w, casErr.HttpCode, "login", context)
 			} else {
 				http.Redirect(w, req, casService.Url, 401)
 			}
@@ -203,14 +259,14 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Save session since non-interactive auth succeeded
-		_, err = c.saveUserEmailInSession(w, req, "casgo-session", returnedUser.Email)
+		_, err := c.saveCurrentUserInSession(w, req, "casgo-session", returnedUser)
 		if err != nil {
 			log.Fatal("Failed to save session!")
 		}
 
 		if casService == nil {
 			// If service is not set, render login with context
-			c.render.HTML(w, err.httpCode, "login", context)
+			c.render.HTML(w, http.StatusBadRequest, "login", context)
 		} else {
 			// Create a new ticket
 			ticket := &CASTicket{
@@ -238,22 +294,27 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Find user, and attempt to validate provided credentials
-	returnedUser, err := c.validateUserCredentials(email, password)
-	if err != nil {
-		context["Error"] = err.msg
-		c.render.HTML(w, err.httpCode, "login", context)
+	returnedUser, casErr := c.validateUserCredentials(email, password)
+	if casErr != nil {
+		context["Error"] = casErr.Msg
+		c.render.HTML(w, casErr.HttpCode, "login", context)
 		return
 	}
 
 	// Save session in cookies
-	c.saveUserEmailInSession(w, req, "casgo-session", returnedUser.Email)
+	session, err := c.saveCurrentUserInSession(w, req, "casgo-session", returnedUser)
 	if err != nil {
 		log.Fatal("Failed to save session, err:", err)
 	}
 
-	// If the user was already logged in service was provided, create a new ticket (with SSO set to true) and redirect
+	// Update context with session
+	if err == nil {
+		c.augmentTemplateContext(context, session)
+	}
+
+	// If the user has sucessfully logged in, create a new ticket (with SSO set to true) and redirect
 	// Otherwise render login page
-	if serviceUrl != "" {
+	if casService != nil {
 
 		ssoTicket := &CASTicket{
 			UserEmail:      returnedUser.Email,
@@ -268,12 +329,15 @@ func (c *CAS) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		// TODO: Enforce service url starts with appropriate scheme (http/https)
 		http.Redirect(w, req, serviceUrl+"?ticket="+ticket.Id, 302)
 		return
+
 	} else {
+
 		context["Success"] = "Successful log in! Redirecting to services page..."
-		context["currentUserEmail"] = returnedUser.Email
 		c.render.HTML(w, http.StatusOK, "login", context)
+
 	}
 }
 
@@ -295,16 +359,21 @@ func (c *CAS) makeNewTicketAndRedirect(w http.ResponseWriter, req *http.Request,
 }
 
 // Save session in cookiestore
-func (c *CAS) saveUserEmailInSession(w http.ResponseWriter, req *http.Request, sessionName string, email string) (bool, *CASServerError) {
+func (c *CAS) saveCurrentUserInSession(w http.ResponseWriter, req *http.Request, sessionName string, user *User) (*sessions.Session, *CASServerError) {
 	// Save session in cookies
 	session, _ := c.cookieStore.Get(req, sessionName)
-	session.Values["currentUserEmail"] = email
+
+	// Save user information onto session
+	session.Values["currentUser"] = *user
+
+	// Save the session
 	sessionSaveErr := session.Save(req, w)
 	if sessionSaveErr != nil {
 		log.Fatal("Failed to save logged in user to session:", sessionSaveErr)
-		return false, &FailedToSaveSessionError
+		return nil, &FailedToSaveSessionError
 	}
-	return true, nil
+
+	return session, nil
 }
 
 // Validate user credentials
@@ -314,7 +383,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 	// TODO get the user from the current database adapter
 	returnedUser, err := c.Db.FindUserByEmail(email)
 	if err != nil {
-
+		return nil, &FailedToFindUserError
 	}
 
 	// Use default authentication typeDepending on the authentication type
@@ -337,7 +406,7 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 
 // Endpoint for registering new users
 func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.Config["companyName"]}
+	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Show login page if credentials are not provided, attempt login otherwise
 	email := strings.TrimSpace(strings.ToLower(req.FormValue("email")))
@@ -360,7 +429,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	// Create new user object
 	_, casErr := c.Db.AddNewUser(email, string(encryptedPassword))
 	if casErr != nil {
-		context["Error"] = casErr.msg
+		context["Error"] = casErr.Msg
 		c.render.HTML(w, http.StatusBadRequest, "register", context)
 		return
 	}
@@ -371,7 +440,7 @@ func (c *CAS) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 // Endpoint for destroying CAS sessions (logging out)
 func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
-	context := map[string]string{"CompanyName": c.Config["companyName"]}
+	context := map[string]interface{}{"CompanyName": c.Config["companyName"]}
 
 	// Get the user's session
 	session, _ := c.cookieStore.Get(req, "casgo-session")
@@ -391,26 +460,27 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Exit early if the user is not already logged in (in session), otherwise get their email
-	if _, ok := session.Values["currentUserEmail"]; !ok {
+	currentUserRef, ok := session.Values["currentUser"]
+	if !ok {
 		// Redirect if the person was never logged in
 		http.Redirect(w, req, "/login", 401)
 		return
 	}
-	userEmail := session.Values["currentUserEmail"]
+	currentUser := currentUserRef.(User)
 
 	// If service was specified, Delete any ticket granting tickets that belong to the user
-	err := c.Db.RemoveTicketsForUserWithService(userEmail.(string), casService)
+	err := c.Db.RemoveTicketsForUserWithService(currentUser.Email, casService)
 	if err != nil {
-		log.Printf("Failed to remove ticket for user %s", userEmail.(string))
+		log.Printf("Failed to remove ticket for user %s", currentUser.Email)
 		http.Redirect(w, req, "/login", 500)
 		return
 	}
 
 	// Remove current user information from session
-	err = c.removeCurrentUserFromSession(w, req, session)
-	if err != nil {
+	casErr := c.removeCurrentUserFromSession(w, req, session)
+	if casErr != nil {
 		context["Error"] = "Failed to log out... Please contact your IT administrator"
-		c.render.HTML(w, err.httpCode, "login", context)
+		c.render.HTML(w, casErr.HttpCode, "login", context)
 		return
 	}
 
@@ -421,7 +491,7 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 // Remove all current user information from the session object
 func (c *CAS) removeCurrentUserFromSession(w http.ResponseWriter, req *http.Request, session *sessions.Session) *CASServerError {
 	// Delete current user from session
-	delete(session.Values, "currentUserEmail")
+	delete(session.Values, "currentUser")
 
 	// Save the modified session
 	err := session.Save(req, w)
@@ -436,30 +506,30 @@ func (c *CAS) removeCurrentUserFromSession(w http.ResponseWriter, req *http.Requ
 func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 
 	// Grab important request parameters
-	serviceUrl := strings.TrimSpace(strings.ToLower(req.FormValue("service")))
+	serviceUrl := strings.TrimSpace(req.FormValue("service"))
 	ticket := strings.TrimSpace(strings.ToLower(req.FormValue("ticket")))
 	renew := strings.TrimSpace(strings.ToLower(req.FormValue("renew")))
 
 	// Get the CASService for the given service URL
-	casService, err := c.Db.FindServiceByUrl(serviceUrl)
-	if err != nil {
+	casService, casErr := c.Db.FindServiceByUrl(serviceUrl)
+	if casErr != nil {
 		log.Printf("Failed to find matching service with URL [%s]", serviceUrl)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
-			"code":    strconv.Itoa(*&FailedToFindServiceError.casErrCode),
-			"message": *&FailedToFindServiceError.msg,
+			"code":    strconv.Itoa(*&FailedToFindServiceError.CasgoErrCode),
+			"message": *&FailedToFindServiceError.Msg,
 		})
 		return
 	}
 
 	// Look up ticket
-	casTicket, err := c.Db.FindTicketByIdForService(ticket, casService)
-	if err != nil {
+	casTicket, casErr := c.Db.FindTicketByIdForService(ticket, casService)
+	if casErr != nil {
 		log.Printf("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
-			"code":    strconv.Itoa(*&FailedToFindTicketError.casErrCode),
-			"message": *&FailedToFindTicketError.msg,
+			"code":    strconv.Itoa(*&FailedToFindTicketError.CasgoErrCode),
+			"message": *&FailedToFindTicketError.Msg,
 		})
 		return
 	}
@@ -468,8 +538,8 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	if renew == "true" && casTicket.WasSSO {
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
-			"code":    strconv.Itoa(*&SSOAuthenticatedUserRenewError.casErrCode),
-			"message": *&SSOAuthenticatedUserRenewError.msg,
+			"code":    strconv.Itoa(*&SSOAuthenticatedUserRenewError.CasgoErrCode),
+			"message": *&SSOAuthenticatedUserRenewError.Msg,
 		})
 		return
 	}
@@ -486,17 +556,17 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 // Endpoint for validating service tickets for possible proxies (CAS 2.0)
 func (c *CAS) HandleServiceValidate(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /serviceValidate, feature not supported yet")
-	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
+	c.render.JSON(w, UnsupportedFeatureError.HttpCode, map[string]string{"error": UnsupportedFeatureError.Msg})
 }
 
 // Endpoint for validating proxy tickets (CAS 2.0)
 func (c *CAS) HandleProxyValidate(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /proxyValidate, feature not supported yet")
-	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
+	c.render.JSON(w, UnsupportedFeatureError.HttpCode, map[string]string{"error": UnsupportedFeatureError.Msg})
 }
 
 // Endpoint for handling proxy tickets (CAS 2.0)
 func (c *CAS) HandleProxy(w http.ResponseWriter, req *http.Request) {
 	log.Print("Attempt to use /proxy, feature not supported yet")
-	c.render.JSON(w, http.StatusOK, map[string]string{"error": *&UnsupportedFeatureError.msg})
+	c.render.JSON(w, UnsupportedFeatureError.HttpCode, map[string]string{"error": UnsupportedFeatureError.Msg})
 }

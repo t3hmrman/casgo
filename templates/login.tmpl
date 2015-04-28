@@ -1,71 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf8">
-		<title>{{.CompanyName}} CasGo Login</title>
+<div class="landing-wrap full-height theme-background">
+    <div class="pure-g">
+        <div class="pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+        <div class="landing pure-u-xs-1 pure-u-sm-1 pure-u-md-3-5 pure-u-lg-3-5 pure-u-xl-3-5">
+            <div class="jumbotron">
+                <h1 id="page-title">{{.CompanyName}} - Login</h1>
+                <div class="alerts-container">
+                    {{if .Error}}
+                    <div class="alert error">
+                        {{.Error}}
+                    </div>
+                    {{end}}
 
-		<!-- Inline styles -->
-		<style>
-		 .alerts-container {
-			 margin-top: 1em;
-			 margin-bottom: 1em;
-		 }
-		 .alert {
-			 padding: 1em;
-			 color: white;
-		 }
-		 .alert.error {
-			 background-color: #FF6961;
-		 }
-		 .alert.success {
-			 background-color: #77DD77;
-		 }
+                    {{if .Success}}
+                    <div class="alert success">
+                        {{.Success}}
+                    </div>
+                    {{end}}
+                </div>
 
-		</style>
+                {{if .currentUser}}
 
-	</head>
-	<body>
-		<h1>{{.CompanyName}} - Login</h1>
+                <h2>Signed in as user with email address {{.currentUser.Email}}</h2>
+                <h2>Redirecting in <span id="count">3</span> seconds...</h2>
 
-		<div class="alerts-container">
-			{{if .Error}}
-			<div class="alert error">
-				{{.Error}}
-			</div>
-			{{end}}
+                <script type="text/javascript">
+                 // Countdown redirect
+                 setTimeout(function countdownFunc() {
+                     var countDOM = document.getElementById("count");
+                     var nextCount = parseInt(countDOM.innerHTML) - 1;
+                     countDOM.innerHTML = nextCount;
+                     if (nextCount > 0) {
+                         setTimeout(countdownFunc, 1000);
+                     } else {
+                         location.href="/";
+                     }
+                 }, 1000)
+                </script>
 
-			{{if .Success}}
-			<div class="alert success">
-				{{.Success}}
-			</div>
-			{{end}}
-		</div>
+                {{else}}
+                <div class="pure-g">
+                    <div class="pure-u-1-5"></div>
+                    <div class="pure-u-xs-1 pure-u-sm-1 pure-u-md-3-5 pure-u-lg-3-5 pure-u-xl-3-5 left-aligned-text">
+                        <form id="frmLogin" class="pure-form pure-form-stacked" action="/login" method="POST">
+                            <fieldset>
+                                <label for="email">Email</label>
+                                <input id="email" name="email" type="email"  placeholder="Email Address"/>
 
-		{{if .currentUserEmail}}
+                                <label for="password">Password</label>
+                                <input id="password" name="password" type="password"  placeholder="Password"/>
 
-		<h2>Signed in as user with email address {{.currentUserEmail}}</h2>
-		<h2>Redirecting to services page...</h2>
+                                {{if .serviceUrl}}
+                                <label for="service-url">Service URL</label>
+                                <input id="service-url"
+                                       name="serviceUrl"
+                                       type="text"
+                                       value="{{.serviceUrl}}"
+                                       placeholder="Service URL"
+                                       readonly/>
+                                {{end}}
 
-		{{else}}
+                                <br/>
+                                <button class="pure-button button-success" type="submit">Login <i class="fa fa-key"></i></button>
+                            </fieldset>
+                        </form>
+                        <p>Don't have a username/password? Maybe you'd like to <strong><a class="plain" href="/register">Register</a></strong>?</p>
+                    </div>
+                    <div class="pure-u-1-5"></div>
+                </div>
+                {{end}}
 
-		<form id="frmLogin" action="/login" method="POST">
-			<div>
-				<label for="email"></label>
-				<input id="email" name="email" type="email"  placeholder="Email Address"/>
-			</div>
-
-			<div>
-				<label for="password"></label>
-				<input id="password" name="password" type="password"  placeholder="Password"/>
-				<div>
-
-					<div>
-						<button type="submit">Login</button>
-						<p>Don't have a username/password? Maybe you should <a href="/register">register</a>?</p>
-					</div>
-		</form>
-
-		{{end}}
-
-	</body>
-</html>
+            </div> <!-- /.jumbotron -->
+        </div>
+        <div class="pure-u-md-1-5 pure-u-lg-1-5 pure-u-xl-1-5"></div>
+    </div>
+</div>
