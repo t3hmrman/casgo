@@ -14,7 +14,7 @@ Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/c
 
 ### Getting started
 
-0. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com))
+0. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com), version 2.0+)
 1. Download the casgo binary for your operating system
 2. Ensure port 9090 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary

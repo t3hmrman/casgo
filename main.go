@@ -10,7 +10,7 @@ func main() {
 	// Create new CAS Server config with default values
 	config, err := cas.NewCASServerConfig(nil)
 	if err != nil {
-		log.Fatal("Failed to create new CAS Server config...")
+		log.Fatalf("Failed to create new CAS server configuration, err: %v", err)
 	}
 
 	// Create CAS Server (registers appropriate handlers to http)
