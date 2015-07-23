@@ -19,6 +19,11 @@ Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/c
 2. Ensure port 9090 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary
 
+## Running tests
+
+To run tests, run [Ginkgo](https://github.com/onsi/ginkgo) from the main directory:
+    ginkgo -r
+
 ## Options
 
 |Option       |Description                                     |
