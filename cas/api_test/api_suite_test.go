@@ -21,11 +21,11 @@ func TestCasgoAPI(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// Setup CAS server & DB
-	testCASConfig, _ = cas.NewCASServerConfig(map[string]string{
-		"companyName":        "Casgo Testing Company",
-		"dbName":             "casgo_test",
-		"templatesDirectory": "../templates",
-	})
+	testCASConfig, _ = cas.NewCASServerConfig("")
+	testCASConfig["companyName"] = "Casgo Testing Company"
+	testCASConfig["dbName"] = "casgo_test"
+	testCASConfig["templatesDirectory"] = "../templates"
+
 	testCASServer, _ = cas.NewCASServer(testCASConfig)
 	testCASServer.SetupDb()
 

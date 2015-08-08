@@ -15,11 +15,10 @@ var _ = Describe("CasGo", func() {
 		})
 
 		It("Should be creatable with non-nil configuration", func() {
-			config, err := NewCASServerConfig(map[string]string{
-				"companyName":        "Casgo Testing Company",
-				"dbName":             "casgo_test",
-				"templatesDirectory": "../templates",
-			})
+			config, err := NewCASServerConfig("")
+			config["companyName"] = "Casgo Testing Company"
+			config["dbName"] = "casgo_test"
+			config["templatesDirectory"] = "../templates"
 			Expect(err).To(BeNil())
 
 			server, err := NewCASServer(config)
@@ -28,7 +27,7 @@ var _ = Describe("CasGo", func() {
 		})
 
 		It("Should produce a predicatable address from the GetAddr function", func() {
-			config, err := NewCASServerConfig(nil)
+			config, err := NewCASServerConfig("")
 			Expect(err).To(BeNil())
 
 			server, err := NewCASServer(config)

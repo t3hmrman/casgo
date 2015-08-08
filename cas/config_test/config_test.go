@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/t3hmrman/casgo/cas"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -71,7 +70,6 @@ var _ = Describe("CasGo Config", func() {
 			config, err := NewCASServerConfig("../../fixtures/valid-config.json")
 			Expect(err).To(BeNil())
 			Expect(config).ToNot(BeNil())
-			log.Printf("%v", config)
 			Expect(config["dbName"]).To(Equal("TEST_DB_NAME"))
 		})
 
