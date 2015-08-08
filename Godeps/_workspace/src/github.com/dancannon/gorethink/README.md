@@ -1,12 +1,17 @@
-GoRethink - RethinkDB Driver for Go [![wercker status](https://app.wercker.com/status/e315e764041af8e80f0c68280d4b4de2/s/master "wercker status")](https://app.wercker.com/project/bykey/e315e764041af8e80f0c68280d4b4de2) [![GoDoc](https://godoc.org/github.com/dancannon/gorethink?status.png)](https://godoc.org/github.com/dancannon/gorethink)
-=====================
+# GoRethink - RethinkDB Driver for Go 
 
-[Go](http://golang.org/) driver for [RethinkDB](http://www.rethinkdb.com/) made by [Daniel Cannon](http://github.com/dancannon) and based off of Christopher Hesse's [RethinkGo](https://github.com/christopherhesse/rethinkgo) driver.
+[![GitHub tag](https://img.shields.io/github/tag/dancannon/gorethink.svg?style=flat)]()
+[![GoDoc](https://godoc.org/github.com/dancannon/gorethink?status.png)](https://godoc.org/github.com/dancannon/gorethink)
+[![build status](https://img.shields.io/travis/dancannon/gorethink/master.svg "build status")](https://travis-ci.org/dancannon/gorethink) 
+
+[Go](http://golang.org/) driver for [RethinkDB](http://www.rethinkdb.com/) 
 
 
-Current version: v0.5.0 (RethinkDB v1.15.1) 
+Current version: v0.7.1 (RethinkDB v2.0) 
 
-**Version 0.3 introduced some API changes, for more information check the [change log](CHANGELOG.md)**
+Please note that this version of the driver only supports versions of RethinkDB using the v0.4 protocol (any versions of the driver older than RethinkDB 2.0 will not work).
+
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dancannon/gorethink?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ## Installation
 
@@ -28,10 +33,8 @@ import (
 var session *r.Session
 
 session, err := r.Connect(r.ConnectOpts{
-    Address:  "localhost:28015",
-    Database: "test",
+    Address: "localhost:28015",
 })
-
 if err != nil {
     log.Fatalln(err.Error())
 }
@@ -41,28 +44,46 @@ See the [documentation](http://godoc.org/github.com/dancannon/gorethink#Connect)
 
 ### Connection Pool
 
-The driver uses a connection pool at all times, however by default there is only a single connection available. In order to turn this into a proper connection pool, we need to pass the `maxIdle`, `maxActive` and/or `idleTimeout` parameters to Connect():
+The driver uses a connection pool at all times, by default it creates and frees connections automatically. It's safe for concurrent use by multiple goroutines.
+
+To configure the connection pool `MaxIdle`, `MaxOpen` and `IdleTimeout` can be specified during connection. If you wish to change the value of `MaxIdle` or `MaxOpen` during runtime then the functions `SetMaxIdleConns` and `SetMaxOpenConns` can be used.
 
 ```go
-import (
-    r "github.com/dancannon/gorethink"
-)
-
 var session *r.Session
 
 session, err := r.Connect(r.ConnectOpts{
-    Address:  "localhost:28015",
+    Address: "localhost:28015",
     Database: "test",
     MaxIdle: 10,
-    IdleTimeout: time.Second * 10,
+    MaxOpen: 10,
 })
+if err != nil {
+    log.Fatalln(err.Error())
+}
 
+session.SetMaxOpenConns(5)
+```
+
+### Connect to a cluster
+
+To connect to a RethinkDB cluster which has multiple nodes you can use the following syntax. When connecting to a cluster with multiple nodes queries will be distributed between these nodes.
+
+```go
+var session *r.Session
+
+session, err := r.Connect(r.ConnectOpts{
+    Addresses: []string{"localhost:28015", "localhost:28016"},
+    Database: "test",
+    AuthKey:  "14daak1cad13dj",
+    DiscoverHosts: true,
+}, "localhost:28015")
 if err != nil {
     log.Fatalln(err.Error())
 }
 ```
 
-A pre-configured [Pool](http://godoc.org/github.com/dancannon/gorethink#Pool) instance can also be passed to Connect().
+When `DiscoverHosts` is true any nodes are added to the cluster after the initial connection then the new node will be added to the pool of available nodes used by GoRethink.
+
 
 ## Query Functions
 
@@ -100,7 +121,6 @@ r.Db("database").Table("table").Between(1, 10, r.BetweenOpts{
 }).Run(session)
 ```
 
-
 ### Optional Arguments
 
 As shown above in the Between example optional arguments are passed to the function as a struct. Each function that has optional arguments as a related struct. This structs are named in the format FunctionNameOpts, for example BetweenOpts is the related struct for Between.
@@ -109,15 +129,14 @@ As shown above in the Between example optional arguments are passed to the funct
 
 Different result types are returned depending on what function is used to execute the query.
 
-- `Run` returns a cursor which can be used to view
-all rows returned.
-- `RunWrite` returns a WriteResponse and should be used for queries such as Insert,Update,etc...
-- `Exec` sends a query to the server with the noreply flag set and returns immediately
+- `Run` returns a cursor which can be used to view all rows returned.
+- `RunWrite` returns a WriteResponse and should be used for queries such as Insert, Update, etc...
+- `Exec` sends a query to the server and closes the connection immediately after reading the response from the database. If you do not wish to wait for the response then you can set the `NoReply` flag.
 
 Example:
 
 ```go
-res, err := Table("tablename").Get(key).Run(session)
+res, err := r.Db("database").Table("tablename").Get(key).Run(session)
 if err != nil {
     // error
 }
@@ -127,13 +146,13 @@ Cursors have a number of methods available for accessing the query results
 
 - `Next` retrieves the next document from the result set, blocking if necessary.
 - `All` retrieves all documents from the result set into the provided slice.
-- `One` retrieves the first document from the result se.
+- `One` retrieves the first document from the result set.
 
 Examples:
 
 ```go
 var row interface{}
-for res.Next(&result) {
+for res.Next(&row) {
     // Do something with row
 }
 if res.Err() != nil {
@@ -197,6 +216,38 @@ func (a A) FieldMap() map[string]string {
         "Field": "myName",
     }
 }
+```
+
+## Benchmarks
+
+Everyone wants their project's benchmarks to be speedy. And while we know that rethinkDb and the gorethink driver are quite fast, our primary goal is for our benchmarks to be correct. They are designed to give you, the user, an accurate picture of writes per second (w/s). If you come up with a accurate test that meets this aim, submit a pull request please. 
+
+Thanks to @jaredfolkins for the contribution.
+
+| Type    |  Value   |
+| --- | --- |
+| **Model Name** | MacBook Pro |
+| **Model Identifier** | MacBookPro11,3 |
+| **Processor Name** | Intel Core i7 | 
+| **Processor Speed** | 2.3 GHz | 
+| **Number of Processors** | 1 |
+| **Total Number of Cores** | 4 |
+| **L2 Cache (per Core)** | 256 KB | 
+| **L3 Cache** | 6 MB | 
+| **Memory** | 16 GB |
+
+```bash
+BenchmarkBatch200RandomWrites                20                              557227775                     ns/op
+BenchmarkBatch200RandomWritesParallel10      30                              354465417                     ns/op
+BenchmarkBatch200SoftRandomWritesParallel10  100                             761639276                     ns/op
+BenchmarkRandomWrites                        100                             10456580                      ns/op
+BenchmarkRandomWritesParallel10              1000                            1614175                       ns/op
+BenchmarkRandomSoftWrites                    3000                            589660                        ns/op
+BenchmarkRandomSoftWritesParallel10          10000                           247588                        ns/op
+BenchmarkSequentialWrites                    50                              24408285                      ns/op
+BenchmarkSequentialWritesParallel10          1000                            1755373                       ns/op
+BenchmarkSequentialSoftWrites                3000                            631211                        ns/op
+BenchmarkSequentialSoftWritesParallel10      10000                           263481                        ns/op
 ```
 
 ## Examples

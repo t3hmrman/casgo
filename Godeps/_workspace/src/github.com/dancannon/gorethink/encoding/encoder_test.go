@@ -4,6 +4,7 @@ import (
 	"image"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var encodeExpected = map[string]interface{}{
@@ -74,6 +75,9 @@ type Optionals struct {
 	Ir int `gorethink:"omitempty"` // actually named omitempty, not an option
 	Io int `gorethink:"io,omitempty"`
 
+	Tr time.Time `gorethink:"tr"`
+	To time.Time `gorethink:"to,omitempty"`
+
 	Slr []string `gorethink:"slr"`
 	Slo []string `gorethink:"slo,omitempty"`
 
@@ -84,6 +88,7 @@ type Optionals struct {
 var optionalsExpected = map[string]interface{}{
 	"sr":        "",
 	"omitempty": int64(0),
+	"tr":        map[string]interface{}{"$reql_type$": "TIME", "epoch_time": 0, "timezone": "+00:00"},
 	"slr":       []interface{}{},
 	"mr":        map[string]interface{}{},
 }
@@ -91,6 +96,7 @@ var optionalsExpected = map[string]interface{}{
 func TestOmitEmpty(t *testing.T) {
 	var o Optionals
 	o.Sw = "something"
+	o.Tr = time.Unix(0, 0)
 	o.Mr = map[string]interface{}{}
 	o.Mo = map[string]interface{}{}
 
@@ -98,8 +104,8 @@ func TestOmitEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, optionalsExpected) {
-		t.Errorf(" got: %v\nwant: %v\n", got, optionalsExpected)
+	if !jsonEqual(got, optionalsExpected) {
+		t.Errorf("\ngot:  %#v\nwant: %#v\n", got, optionalsExpected)
 	}
 }
 
@@ -115,6 +121,38 @@ func TestAnonymousNonstruct(t *testing.T) {
 	var want = map[string]interface{}{"IntType": int64(11)}
 
 	got, err := Encode(a)
+	if err != nil {
+		t.Fatalf("Encode: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestEncodePointer(t *testing.T) {
+	v := Pointer{PPoint: &Point{Z: 1}, Point: Point{Z: 2}}
+	var want = map[string]interface{}{
+		"PPoint": map[string]interface{}{"Z": int64(1)},
+		"Point":  map[string]interface{}{"Z": int64(2)},
+	}
+
+	got, err := Encode(v)
+	if err != nil {
+		t.Fatalf("Encode: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestEncodeNilPointer(t *testing.T) {
+	v := Pointer{PPoint: nil, Point: Point{Z: 2}}
+	var want = map[string]interface{}{
+		"PPoint": nil,
+		"Point":  map[string]interface{}{"Z": int64(2)},
+	}
+
+	got, err := Encode(v)
 	if err != nil {
 		t.Fatalf("Encode: %v", err)
 	}

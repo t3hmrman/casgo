@@ -16,21 +16,14 @@ import (
  * CAS server implementation
  */
 
-func NewCASServer(userConfigOverrides map[string]string) (*CAS, error) {
+func NewCASServer(config map[string]string) (*CAS, error) {
 	// Create and initialize the CAS server
 	cas := &CAS{
-		Config:      nil,
+		Config:      config,
 		render:      nil,
 		cookieStore: nil,
 		ServeMux:    nil,
 	}
-
-	// Create configuration with user overrides provided
-	config, err := NewCASServerConfig(userConfigOverrides)
-	if err != nil {
-		log.Fatalf("Failed to create new CAS server configuration, err: %v", err)
-	}
-	cas.Config = config
 
 	// Setup rendering function
 	render := render.New(render.Options{
