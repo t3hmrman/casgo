@@ -109,7 +109,7 @@ function CasgoViewModel() {
     fetchCurrentUser: function() {
       var svc = vm.SessionService;
       return new Promise(function(resolve, reject) {
-        fetch('/api/sessions')
+        fetch('/api/sessions', {credentials: 'same-origin'})
           .then(function(resp){
             return resp.json();
           }).then(function(json) {
@@ -165,7 +165,7 @@ function CasgoViewModel() {
     getAllServices: function() {
       var svc = vm.ServicesService;
       return new Promise(function(resolve, reject) {
-        fetch('/api/services')
+        fetch('/api/services', {credentials: 'same-origin'})
           .then(function(resp) { return resp.json(); })
           .then(function(json) {
             if (json.status === "success") {
@@ -190,7 +190,7 @@ function CasgoViewModel() {
       var self = vm.ServicesService;
       // Get user's services
       return new Promise(function(resolve, reject) {
-        fetch('/api/sessions/' + user.email + "/services")
+        fetch('/api/sessions/' + user.email + "/services", {credentials: 'same-origin'})
           .then(function(resp) { return resp.json();})
           .then(function(json) {
             if (json.status === "success") {
@@ -216,6 +216,7 @@ function CasgoViewModel() {
       if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
 
       return fetch('/api/services', {
+        credentials: 'same-origin',
         method: 'post',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: JSON.stringify(svc)
@@ -233,6 +234,7 @@ function CasgoViewModel() {
       if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
 
       return fetch('/api/services/' + svc.name, {
+        credentials: 'same-origin',
         method: 'put',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: JSON.stringify(svc)
@@ -258,6 +260,7 @@ function CasgoViewModel() {
       var self = vm.ServicesService;
       if (_.isUndefined(svc) || !self.isValidService(svc)) throw new Error("Invalid service:", svc);
       return fetch('/api/services/' + svc.name, {
+        credentials: 'same-origin',
         method: 'delete',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'}
       });
@@ -284,7 +287,7 @@ function CasgoViewModel() {
     getAllUsers: function() {
       var svc = vm.UsersService;
       return new Promise(function(resolve, reject) {
-        fetch('/api/users')
+        fetch('/api/users', {credentials: 'same-origin'})
           .then(function(resp) { return resp.json(); })
           .then(function(json) {
             if (json.status === "success") {
@@ -310,6 +313,7 @@ function CasgoViewModel() {
       if (_.isUndefined(user) || !self.isValidUser(user)) throw new Error("Invalid user:", user);
 
       return fetch('/api/users', {
+        credentials: 'same-origin',
         method: 'post',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: JSON.stringify(user)
@@ -326,6 +330,7 @@ function CasgoViewModel() {
       var self = vm.UsersService;
       if (_.isUndefined(user) || !self.isValidUser(user)) throw new Error("Invalid user:", user);
       return fetch('/api/users/' + user.email, {
+        credentials: 'same-origin',
         method: 'delete',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'}
       });
@@ -342,6 +347,7 @@ function CasgoViewModel() {
       if (_.isUndefined(user) || !self.isValidUser(user)) throw new Error("Invalid user:", user);
 
       return fetch('/api/users/' + user.email, {
+        credentials: 'same-origin',
         method: 'put',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: JSON.stringify(user)
