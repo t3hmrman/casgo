@@ -1,6 +1,9 @@
 package cas
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,18 +34,37 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 }
 
 // Create default casgo configuration, with user overrides if any
-func NewCASServerConfig(userOverrides map[string]string) (map[string]string, error) {
+func NewCASServerConfig(configFilePath string) (map[string]string, error) {
 	// Set default config values
 	serverConfig := make(map[string]string)
 	for k, v := range CONFIG_DEFAULTS {
 		serverConfig[k] = v
 	}
 
-	// Override defaults with passed in map
-	for k, _ := range serverConfig {
-		if configVal, ok := userOverrides[k]; ok {
-			serverConfig[k] = configVal
+	// Read config from file, if non-empty config file path is passed
+	if len(configFilePath) > 0 {
+		// Read file
+		buf, err := ioutil.ReadFile(configFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("[ERROR] Failed to read given configuration file [%s] %v", configFilePath, err)
 		}
+
+		if len(buf) == 0 {
+			log.Printf("[WARNING] Loaded configuration file was empty")
+		}
+
+		// Load JSON
+		fileConfig := make(map[string]string)
+		err = json.Unmarshal(buf, &fileConfig)
+		if err != nil {
+			return nil, fmt.Errorf("[ERROR] Failed to unmarshal JSON in configuration file [%s], %v", configFilePath, err)
+		}
+
+		// Copy values from loaded file config to actual server config
+		for k, v := range fileConfig {
+			serverConfig[k] = v
+		}
+
 	}
 
 	// Override config with what is stored in env

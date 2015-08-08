@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/t3hmrman/casgo/cas"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -11,7 +12,7 @@ import (
 var _ = Describe("CasGo Config", func() {
 	Describe("Config creation", func() {
 		It("Should work (pick sensible defaults) with nil passed in", func() {
-			config, err := NewCASServerConfig(nil)
+			config, err := NewCASServerConfig("")
 			Expect(err).To(BeNil())
 			Expect(config).ToNot(BeNil())
 		})
@@ -19,7 +20,7 @@ var _ = Describe("CasGo Config", func() {
 
 	Describe("Config defaults", func() {
 		It("should match defaults as specified in the package", func() {
-			config, err := NewCASServerConfig(nil)
+			config, err := NewCASServerConfig("")
 			Expect(err).To(BeNil())
 			Expect(config).ToNot(BeNil())
 
@@ -35,15 +36,6 @@ var _ = Describe("CasGo Config", func() {
 		})
 	})
 
-	Describe("Config user overriding", func() {
-		It("Should properly override host", func() {
-			host := "fake-host-string"
-			config, err := NewCASServerConfig(map[string]string{"host": host})
-			Expect(err).To(BeNil())
-			Expect(config["host"]).To(Equal(host))
-		})
-	})
-
 	Describe("Config ENV overriding", func() {
 		It("Should properly override host", func() {
 			// Save current ENV value
@@ -52,7 +44,7 @@ var _ = Describe("CasGo Config", func() {
 			err := os.Setenv("CASGO_HOST", host)
 			Expect(err).To(BeNil())
 
-			config, err := NewCASServerConfig(map[string]string{"host": "SHOULD NOT BE THIS"})
+			config, err := NewCASServerConfig("")
 			Expect(err).To(BeNil())
 			Expect(config).ToNot(BeNil())
 			Expect(config["host"]).To(Equal(host))
@@ -61,4 +53,28 @@ var _ = Describe("CasGo Config", func() {
 			os.Setenv("CASGO_HOST", previousEnvValue)
 		})
 	})
+
+	Describe("Config from file", func() {
+		It("Should fail if file is specified but missing", func() {
+			config, err := NewCASServerConfig("missing.json")
+			Expect(err).ToNot(BeNil())
+			Expect(config).To(BeNil())
+		})
+
+		It("Should fail if file is present but has invalid JSON", func() {
+			config, err := NewCASServerConfig("../../fixtures/invalid-json-config.json")
+			Expect(err).ToNot(BeNil())
+			Expect(config).To(BeNil())
+		})
+
+		It("Should succeed on proper config, and update values", func() {
+			config, err := NewCASServerConfig("../../fixtures/valid-config.json")
+			Expect(err).To(BeNil())
+			Expect(config).ToNot(BeNil())
+			log.Printf("%v", config)
+			Expect(config["dbName"]).To(Equal("TEST_DB_NAME"))
+		})
+
+	})
+
 })

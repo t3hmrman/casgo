@@ -26,9 +26,9 @@ To run tests, run [Ginkgo](https://github.com/onsi/ginkgo) from the main directo
 
 ## Options
 
-|Option       |Description                                     |
-|-------------|------------------------------------------------|
-|-c, --config | Specify a configuration file for CasGo to use. |
+|Option       |Description                                            |
+|-------------|-------------------------------------------------------|
+|-config      | Specify a (JSON) configuration file for CasGo to use. |
 
 ## Configuration
 
@@ -38,14 +38,16 @@ Casgo can be configured by file if you specify the `-c/--config <filename>` flag
 
 ### By ENV
 
-|Variable                 |ENV              |default           |description                                |
-|-------------------------|-----------------|------------------|-------------------------------------------|
-|**Host**                 |HOST             |"0.0.0.0"         |The host on which to run casgo             |
-|**Port**                 |PORT             |"8080"            |The port on which to run casgo             |
-|**DBHost**               |DBHOST           |"localhost:28015" |The hostname of database instance          |
-|**DBName**               |DBNAME           |"casgo"           |The database name for casgo to use         |
-|**TemplatesDirectory**   |CASGO_TEMPLATES  |"templates/"      |The folder in which casgo templates reside |
-|**CompanyName**          |CASGO_COMPNAME   |"companyABC"      |The database name for casgo to use         |
+|Variable                 |ENV                  |default           |description                                        |
+|-------------------------|---------------------|------------------|---------------------------------------------------|
+|**Host**                 |HOST                 |"0.0.0.0"         |The host on which to run casgo                     |
+|**Port**                 |PORT                 |"8080"            |The port on which to run casgo                     |
+|**DBHost**               |DBHOST               |"localhost:28015" |The hostname of database instance                  |
+|**DBName**               |DBNAME               |"casgo"           |The database name for casgo to use                 |
+|**TemplatesDirectory**   |CASGO_TEMPLATES      |"templates/"      |The folder in which casgo templates reside         |
+|**CompanyName**          |CASGO_COMPNAME       |"companyABC"      |The database name for casgo to use                 |
+|**AuthMethod**           |CASGO_DEFAULT_AUTH   |"password"        |The default (user) authentication method for casgo |
+|**LogLevel**             |CASGO_LOG_LVL        |"WARN|DEBUG|INFO" |The default log level for casgo                    |
 
 
 ### Database Schema
