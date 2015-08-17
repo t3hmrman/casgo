@@ -8,6 +8,10 @@
 			"Rev": "8fec09c61d5d66f460d227fd1df3473d7e015bc6"
 		},
 		{
+			"ImportPath": "github.com/GeertJohan/go.rice",
+			"Rev": "ada95a01c963696fb73320ee662195af68be81ae"
+		},
+		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.7.3-2-g26709e2",
 			"Rev": "26709e2714106fb8ad40b773b711ebce25b78914"
@@ -15,6 +19,10 @@
 		{
 			"ImportPath": "github.com/cenkalti/backoff",
 			"Rev": "9831e1e25c874e0a0601b6dc43641071414eec7a"
+		},
+		{
+			"ImportPath": "github.com/daaku/go.zipexe",
+			"Rev": "a5fe2436ffcb3236e175e5149162b41cd28bd27d"
 		},
 		{
 			"ImportPath": "github.com/dancannon/gorethink",
@@ -42,8 +50,12 @@
 			"Rev": "aa5e036e6c44aec69a32eb41097001978b29ad31"
 		},
 		{
+			"ImportPath": "github.com/kardianos/osext",
+			"Rev": "6e7f843663477789fac7c02def0d0909e969b4e5"
+		},
+		{
 			"ImportPath": "github.com/unrolled/render",
-			"Rev": "344f85e13ccf75f3d53a27adfcd553f84f05b855"
+			"Rev": "aa61028b1d32873eaa3e261a3ef0e892a153107b"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/blowfish",

@@ -1,4 +1,4 @@
-/*Package render is a package that provides functionality for easily rendering JSON, XML, and HTML templates.
+/*Package render is a package that provides functionality for easily rendering JSON, XML, binary data, and HTML templates.
 
   package main
 
@@ -6,7 +6,7 @@
       "encoding/xml"
       "net/http"
 
-      "gopkg.in/unrolled/render.v1"
+      "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
   )
 
   type ExampleXml struct {
@@ -16,7 +16,7 @@
   }
 
   func main() {
-      r := render.New(render.Options{})
+      r := render.New()
       mux := http.NewServeMux()
 
       mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -27,8 +27,16 @@
           r.Data(w, http.StatusOK, []byte("Some binary data here."))
       })
 
+      mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+          r.Text(w, http.StatusOK, "Plain text here")
+      })
+
       mux.HandleFunc("/json", func(w http.ResponseWriter, req *http.Request) {
           r.JSON(w, http.StatusOK, map[string]string{"hello": "json"})
+      })
+
+      mux.HandleFunc("/jsonp", func(w http.ResponseWriter, req *http.Request) {
+          r.JSONP(w, http.StatusOK, "callbackName", map[string]string{"hello": "jsonp"})
       })
 
       mux.HandleFunc("/xml", func(w http.ResponseWriter, req *http.Request) {
