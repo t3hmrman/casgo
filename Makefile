@@ -1,4 +1,10 @@
-resources:
-	rice embed-go
+all: resources install
 
-all: resources
+resources:
+	cd cas && rice embed-go
+
+install:
+	go install
+
+test:
+	ginkgo -r

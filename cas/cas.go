@@ -26,10 +26,24 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 		ServeMux:    nil,
 	}
 
+	// Setup go.rice box
+	box, err := rice.FindBox("../templates")
+	if err != nil {
+		log.Fatal("Failed to setup go.rice Box", err)
+	}
+
 	// Setup rendering function
 	render := render.New(render.Options{
 		Directory: cas.Config["templatesDirectory"],
 		Layout:    "layout",
+		Asset: func(name string) ([]byte, error) {
+			template, err := box.String(name)
+			if err != nil {
+				return nil, err
+			}
+
+			return []byte(template), nil
+		},
 	})
 	cas.render = render
 
