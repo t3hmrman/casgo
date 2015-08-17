@@ -1,4 +1,4 @@
 resources:
-	go-bindata -o _resources.go public/... templates/...
+	rice embed-go
 
 all: resources

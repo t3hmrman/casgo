@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
+	"github.com/GeertJohan/go.rice"
 	"log"
 	"net/http"
 	"strconv"
@@ -101,7 +102,9 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
 
 	// Static file serving
-	serveMux.PathPrefix("/public/").Handler(http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
+	box := rice.MustFindBox("../public")
+	publicFileServer := http.StripPrefix("/public/", http.FileServer(box.HTTPBox()))
+	serveMux.PathPrefix("/public/").Handler(publicFileServer)
 	serveMux.HandleFunc("/", c.HandleIndex)
 
 	c.ServeMux = serveMux
