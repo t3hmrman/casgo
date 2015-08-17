@@ -18,7 +18,7 @@ var testCASServer *cas.CAS
 
 func TestCasgoEndToEnd(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "CasGo integration Suite")
+	RunSpecs(t, "CasGo Integration Suite")
 }
 
 var _ = BeforeSuite(func() {

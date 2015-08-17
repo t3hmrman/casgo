@@ -21,8 +21,10 @@ Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/c
 
 ## Running tests
 
-To run tests, run [Ginkgo](https://github.com/onsi/ginkgo) from the main directory:
-    ginkgo -r
+Tests are run using [Ginkgo](https://github.com/onsi/ginkgo) from the main directory casgo code directory
+
+0. Start RethinkDB
+1. `ginkgo -r`
 
 ## Options
 
