@@ -33,16 +33,18 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 	}
 
 	// Setup rendering function
+	// Asset, AssetNames, and Extensions are specified to enable integration with go.rice
 	render := render.New(render.Options{
-		Directory: cas.Config["templatesDirectory"],
 		Layout:    "layout",
 		Asset: func(name string) ([]byte, error) {
-			template, err := box.String(name)
+			return box.MustBytes(name), nil
+		},
+		AssetNames: func() []string {
+			files, err := ListFilesInBox(box)
 			if err != nil {
-				return nil, err
+				log.Fatal("Failed to load list template asset names", err)
 			}
-
-			return []byte(template), nil
+			return files
 		},
 	})
 	cas.render = render
