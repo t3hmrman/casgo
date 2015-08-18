@@ -32,15 +32,21 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 		log.Fatal("Failed to setup go.rice Box", err)
 	}
 
+	// Since Directory option's empty value turns into "templates",
+	// a box prefix must be used (and stripped away)
+	boxPrefix := "templates"
+
 	// Setup rendering function
 	// Asset, AssetNames, and Extensions are specified to enable integration with go.rice
 	render := render.New(render.Options{
 		Layout:    "layout",
+		Directory: boxPrefix,
 		Asset: func(name string) ([]byte, error) {
+			name = strings.TrimPrefix(name, boxPrefix)
 			return box.MustBytes(name), nil
 		},
 		AssetNames: func() []string {
-			files, err := ListFilesInBox(box)
+			files, err := ListFilesInBox(box, boxPrefix + "/")
 			if err != nil {
 				log.Fatal("Failed to load list template asset names", err)
 			}

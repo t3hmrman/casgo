@@ -38,23 +38,23 @@ func (t *StringTuple) Second() string {
 	return t[1]
 }
 
-func ListFilesInBox(box *rice.Box) ([]string, error) {
+func ListFilesInBox(box *rice.Box, prefix string) ([]string, error) {
 	var files []string
 
 	// Walk files, make list of templates
-	err := box.Walk("", func(path string, info os.FileInfo, err error) error {
+	walkErr := box.Walk("", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() {
-			files = append(files, path)
+			files = append(files, prefix + path)
 		}
 
 		return nil
 	})
-	if err != nil {
-		return nil, err
+	if walkErr != nil {
+		return nil, walkErr
 	}
 
 	return files, nil
