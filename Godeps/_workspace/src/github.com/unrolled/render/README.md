@@ -1,14 +1,15 @@
-# Render [![GoDoc](http://godoc.org/github.com/unrolled/render?status.png)](http://godoc.org/github.com/unrolled/render)
+# Render [![GoDoc](http://godoc.org/github.com/unrolled/render?status.svg)](http://godoc.org/github.com/unrolled/render) [![Build Status](https://travis-ci.org/unrolled/render.svg)](https://travis-ci.org/unrolled/render)
 
-Render is a package that provides functionality for easily rendering JSON, XML, and HTML templates. This package is based on the [Martini](https://github.com/go-martini/martini) [render](https://github.com/martini-contrib/render) work.
+Render is a package that provides functionality for easily rendering JSON, XML, text, binary data, and HTML templates. This package is based on the [Martini](https://github.com/go-martini/martini) [render](https://github.com/martini-contrib/render) work.
 
 ## Usage
-Render can be used with pretty much any web framework providing you can access the `http.ResponseWriter` variable from your handler. The rendering functions simply wrap Go's existing functionality for marshaling and rendering the given data.
+Render can be used with pretty much any web framework providing you can access the `http.ResponseWriter` from your handler. The rendering functions simply wraps Go's existing functionality for marshaling and rendering data.
 
 - HTML: Uses the [html/template](http://golang.org/pkg/html/template/) package to render HTML templates.
 - JSON: Uses the [encoding/json](http://golang.org/pkg/encoding/json/) package to marshal data into a JSON-encoded response.
 - XML: Uses the [encoding/xml](http://golang.org/pkg/encoding/xml/) package to marshal data into an XML-encoded response.
-- Binary Data: Passes the incoming data straight through to the `http.ResponseWriter`.
+- Binary data: Passes the incoming data straight through to the `http.ResponseWriter`.
+- Text: Passes the incoming string straight through to the `http.ResponseWriter`.
 
 ~~~ go
 // main.go
@@ -18,7 +19,7 @@ import (
     "encoding/xml"
     "net/http"
 
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 type ExampleXml struct {
@@ -28,7 +29,7 @@ type ExampleXml struct {
 }
 
 func main() {
-    r := render.New(render.Options{})
+    r := render.New()
     mux := http.NewServeMux()
 
     mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -39,8 +40,16 @@ func main() {
         r.Data(w, http.StatusOK, []byte("Some binary data here."))
     })
 
+    mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+        r.Text(w, http.StatusOK, "Plain text here")
+    })
+
     mux.HandleFunc("/json", func(w http.ResponseWriter, req *http.Request) {
         r.JSON(w, http.StatusOK, map[string]string{"hello": "json"})
+    })
+
+    mux.HandleFunc("/jsonp", func(w http.ResponseWriter, req *http.Request) {
+        r.JSONP(w, http.StatusOK, "callbackName", map[string]string{"hello": "jsonp"})
     })
 
     mux.HandleFunc("/xml", func(w http.ResponseWriter, req *http.Request) {
@@ -53,7 +62,7 @@ func main() {
         r.HTML(w, http.StatusOK, "example", nil)
     })
 
-    http.ListenAndServe("0.0.0.0:3000", mux)
+    http.ListenAndServe("127.0.0.1:3000", mux)
 }
 ~~~
 
@@ -69,6 +78,12 @@ Render comes with a variety of configuration options _(Note: these are not the d
 // ...
 r := render.New(render.Options{
     Directory: "templates", // Specify what path to load the templates from.
+    Asset: func(name string) ([]byte, error) { // Load from an Asset function instead of file.
+      return []byte("template content"), nil
+    },
+    AssetNames: func() []string { // Return a list of asset names for the Asset function
+      return []string{"filename.tmpl"}
+    },
     Layout: "layout", // Specify a layout template. Layouts can call {{ yield }} to render the current template.
     Extensions: []string{".tmpl", ".html"}, // Specify extensions to load for templates.
     Funcs: []template.FuncMap{AppHelpers}, // Specify helper function maps for templates to access.
@@ -80,6 +95,8 @@ r := render.New(render.Options{
     PrefixXML: []byte("<?xml version='1.0' encoding='UTF-8'?>"), // Prefixes XML responses with the given bytes.
     HTMLContentType: "application/xhtml+xml", // Output XHTML content type instead of default "text/html".
     IsDevelopment: true, // Render will now recompile the templates on every HTML response.
+    UnEscapeHTML: true, // Replace ensure '&<>' are output correctly (JSON only).
+    StreamingJSON: true, // Streams the JSON response via json.Encoder.
 })
 // ...
 ~~~
@@ -88,7 +105,14 @@ r := render.New(render.Options{
 These are the preset options for Render:
 
 ~~~ go
+r := render.New()
+
+// Is the same as the default configuration options:
+
+r := render.New(render.Options{
     Directory: "templates",
+    Asset: nil,
+    AssetNames: nil,
     Layout: "",
     Extensions: []string{".tmpl"},
     Funcs: []template.FuncMap{},
@@ -100,7 +124,15 @@ These are the preset options for Render:
     PrefixXML: []byte(""),
     HTMLContentType: "text/html",
     IsDevelopment: false,
+    UnEscapeHTML: false,
+    StreamingJSON: false,
+})
 ~~~
+
+### JSON vs Streaming JSON
+By default, Render does **not** stream JSON to the `http.ResponseWriter`. It instead marshalls your object into a byte array, and if no errors occurred, writes that byte array to the `http.ResponseWriter`. This is ideal as you can catch errors before sending any data.
+
+If however you have the need to stream your JSON response (ie: dealing with massive objects), you can set the `StreamingJSON` option to true. This will use the `json.Encoder` to stream the output to the `http.ResponseWriter`. If an error occurs, you will receive the error in your code, but the response will have already been sent. Also note that streaming is only implemented in `render.JSON` and not `render.JSONP`, and the `UnEscapeHTML` and `Indent` options are ignored when streaming.
 
 ### Loading Templates
 By default Render will attempt to load templates with a '.tmpl' extension from the "templates" directory. Templates are found by traversing the templates directory and are named by path and basename. For instance, the following directory structure:
@@ -123,6 +155,9 @@ admin/index
 admin/edit
 home
 ~~~
+
+You can also load templates from memory by providing the Asset and AssetNames options,
+e.g. when generating an asset file using [go-bindata](https://github.com/jteeuwen/go-bindata).
 
 ### Layouts
 Render provides a `yield` function for layouts to access:
@@ -170,7 +205,7 @@ import (
     "encoding/xml"
     "net/http"
 
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 type ExampleXml struct {
@@ -199,6 +234,11 @@ func main() {
         r.XML(w, http.StatusOK, ExampleXml{One: "hello", Two: "xml"})
     })
 
+    // This will set the Content-Type header to "text/plain; charset=UTF-8".
+    mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+        r.Text(w, http.StatusOK, "Plain text here")
+    })
+
     // This will set the Content-Type header to "text/html; charset=UTF-8".
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
@@ -206,7 +246,7 @@ func main() {
         r.HTML(w, http.StatusOK, "example", nil)
     })
 
-    http.ListenAndServe("0.0.0.0:3000", mux)
+    http.ListenAndServe("127.0.0.1:3000", mux)
 }
 ~~~
 
@@ -219,7 +259,7 @@ import (
     "encoding/xml"
     "net/http"
 
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 type ExampleXml struct {
@@ -250,6 +290,11 @@ func main() {
         r.XML(w, http.StatusOK, ExampleXml{One: "hello", Two: "xml"})
     })
 
+    // This will set the Content-Type header to "text/plain; charset=ISO-8859-1".
+    mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+        r.Text(w, http.StatusOK, "Plain text here")
+    })
+
     // This will set the Content-Type header to "text/html; charset=ISO-8859-1".
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
@@ -257,11 +302,40 @@ func main() {
         r.HTML(w, http.StatusOK, "example", nil)
     })
 
-    http.ListenAndServe("0.0.0.0:3000", mux)
+    http.ListenAndServe("127.0.0.1:3000", mux)
 }
 ~~~
 
 ## Integration Examples
+
+### [Echo](https://github.com/labstack/echo)
+~~~ go
+// main.go
+package main
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo"
+	"github.com/unrolled/render" // or "gopkg.in/unrolled/render.v1"
+)
+
+func main() {
+	r := render.New(render.Options{
+		IndentJSON: true,
+	})
+
+	e := echo.New()
+
+	// Routes
+	e.Get("/", func(c *echo.Context) error {
+        r.JSON(c.Response().Writer(), http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
+        return nil
+    })
+
+	e.Run(":3000")
+}
+~~~
 
 ### [Gin](https://github.com/gin-gonic/gin)
 ~~~ go
@@ -272,7 +346,7 @@ import (
     "net/http"
 
     "github.com/gin-gonic/gin"
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 func main() {
@@ -280,13 +354,13 @@ func main() {
         IndentJSON: true,
     })
 
-    masterGin := gin.Default()
+    router := gin.Default()
 
-    masterGin.GET("/", func(c *gin.Context) {
+    router.GET("/", func(c *gin.Context) {
         r.JSON(c.Writer, http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
     })
 
-    masterGin.Run(":3000")
+    router.Run(":3000")
 }
 ~~~
 
@@ -300,7 +374,7 @@ import (
 
     "github.com/zenazn/goji"
     "github.com/zenazn/goji/web"
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 func main() {
@@ -324,7 +398,7 @@ import (
     "net/http"
 
     "github.com/codegangsta/negroni"
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 func main() {
@@ -352,7 +426,7 @@ import (
     "net/http"
 
     "github.com/pilu/traffic"
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 func main() {
@@ -378,7 +452,7 @@ import (
     "net/http"
 
     "github.com/hoisie/web"
-    "gopkg.in/unrolled/render.v1"
+    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
 )
 
 func main() {
@@ -390,6 +464,6 @@ func main() {
         r.JSON(ctx, http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
     })
 
-    web.Run("0.0.0.0:3000")
+    web.Run(":3000")
 }
 ~~~

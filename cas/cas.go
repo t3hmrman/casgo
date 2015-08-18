@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
+	"github.com/GeertJohan/go.rice"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,10 +26,32 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 		ServeMux:    nil,
 	}
 
+	// Setup go.rice box
+	box, err := rice.FindBox("../templates")
+	if err != nil {
+		log.Fatal("Failed to setup go.rice Box", err)
+	}
+
+	// Since Directory option's empty value turns into "templates",
+	// a box prefix must be used (and stripped away)
+	boxPrefix := "templates"
+
 	// Setup rendering function
+	// Asset, AssetNames, and Extensions are specified to enable integration with go.rice
 	render := render.New(render.Options{
-		Directory: cas.Config["templatesDirectory"],
 		Layout:    "layout",
+		Directory: boxPrefix,
+		Asset: func(name string) ([]byte, error) {
+			name = strings.TrimPrefix(name, boxPrefix)
+			return box.MustBytes(name), nil
+		},
+		AssetNames: func() []string {
+			files, err := ListFilesInBox(box, boxPrefix + "/")
+			if err != nil {
+				log.Fatal("Failed to load list template asset names", err)
+			}
+			return files
+		},
 	})
 	cas.render = render
 
@@ -101,7 +124,9 @@ func (c *CAS) init() {
 	serveMux.HandleFunc("/proxy", c.HandleProxy)
 
 	// Static file serving
-	serveMux.PathPrefix("/public/").Handler(http.StripPrefix("/public", http.FileServer(http.Dir("./public"))))
+	box := rice.MustFindBox("../public")
+	publicFileServer := http.StripPrefix("/public/", http.FileServer(box.HTTPBox()))
+	serveMux.PathPrefix("/public/").Handler(publicFileServer)
 	serveMux.HandleFunc("/", c.HandleIndex)
 
 	c.ServeMux = serveMux

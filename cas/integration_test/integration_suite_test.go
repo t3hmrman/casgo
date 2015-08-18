@@ -18,7 +18,7 @@ var testCASServer *cas.CAS
 
 func TestCasgoEndToEnd(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "CasGo integration Suite")
+	RunSpecs(t, "CasGo Integration Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -26,11 +26,10 @@ var _ = BeforeSuite(func() {
 	StartPhantomJS()
 
 	// Setup CAS server & DB
-	testCASConfig, err := cas.NewCASServerConfig(map[string]string{
-		"companyName":        "Casgo Testing Company",
-		"dbName":             "casgo_test",
-		"templatesDirectory": "../../templates",
-	})
+	testCASConfig, err := cas.NewCASServerConfig("")
+	testCASConfig["companyName"] = "Casgo Testing Company"
+	testCASConfig["dbName"] = "casgo_test"
+	testCASConfig["templatesDirectory"] = "../../templates"
 	if err != nil {
 		log.Fatalf("Failed to generate cas server config, err: %v", err)
 	}

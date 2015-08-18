@@ -21,8 +21,15 @@ Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/c
 
 ## Running tests
 
-To run tests, run [Ginkgo](https://github.com/onsi/ginkgo) from the main directory:
-    ginkgo -r
+Tests are run using [Ginkgo](https://github.com/onsi/ginkgo) from the main directory casgo code directory, please ensure Ginkgo is installed.
+
+*Note* As some tests rely on the database to be up, RethinkDB must be running.
+
+`make test`
+
+OR
+
+`ginkgo -r`
 
 ## Options
 
@@ -67,5 +74,6 @@ So what does the database that powers casgo look like?
 1. Install [Go](http://golang.org)
 2. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com))
 3. Fix issues, make changes
-4. Pull Request
-5. Receive thanks from the community
+4. Ensure Makefile functions correctly (`make all`/`make resources`/etc)
+5. Pull Request
+6. Receive thanks from the community
