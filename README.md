@@ -29,7 +29,7 @@ Tests are run using [Ginkgo](https://github.com/onsi/ginkgo) from the main direc
 
 OR
 
-`ginkgo -r`
+`cd cas && ginkgo -r`
 
 ## Options
 

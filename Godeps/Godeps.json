@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/t3hmrman/casgo",
-	"GoVersion": "go1.3.3",
+	"GoVersion": "go1.5",
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
