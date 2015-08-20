@@ -146,7 +146,8 @@ func (c *CAS) TeardownDb() *CASServerError {
 // Start the CAS server
 func (c *CAS) Start() {
 	// Start server
-	log.Fatal(c.server.ListenAndServe())
+	cert, key := c.Config["tlsCertFile"], c.Config["tlsKeyFile"]
+	log.Fatal(c.server.ListenAndServeTLS(cert, key))
 }
 
 // Get the address of the server based on server configuration

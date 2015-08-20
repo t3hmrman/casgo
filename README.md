@@ -6,7 +6,7 @@ Casgo is a simple to use, simple to deploy [Single Sign On](http://en.wikipedia.
 
 ## CAS Spec
 
-Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/cas/specification/CAS%202.0%20Protocol%20Specification%20v1.0.html) as defined with a few key changes:
+Casgo implements version 1.0 of the [CAS Specification](http://www.yale.edu/tp/cas/specification/CAS%202.0%20Protocol%20Specification%20v1.0.html) as defined with a few key changes:
 
 - JSON is preferred over XML/plaintext responses
 - The /validate endpoint behaves as specified in CAS 1.0 (success/failure and the username of the user)
@@ -14,10 +14,19 @@ Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/c
 
 ## Getting started
 
-0. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com), version 2.0+)
+0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
 1. Download the casgo binary for your operating system
-2. Ensure port 9090 is open (and your database instance is at the right port, 28015 by default)
+2. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary
+
+## Getting started (from source code)
+
+0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
+1. `go get github.com/t3hmrman/casgo`
+2. `make` (or `go install`/`go build`)
+3. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
+4. Add an exception for the included self-signed certificate
+3. `casgo`
 
 ## Running tests
 
