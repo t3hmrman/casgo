@@ -54,16 +54,18 @@ Casgo can be configured by file if you specify the `-c/--config <filename>` flag
 
 ### By ENV
 
-|Variable                 |ENV                  |default           |description                                        |
-|-------------------------|---------------------|------------------|---------------------------------------------------|
-|**Host**                 |HOST                 |"0.0.0.0"         |The host on which to run casgo                     |
-|**Port**                 |PORT                 |"8080"            |The port on which to run casgo                     |
-|**DBHost**               |DBHOST               |"localhost:28015" |The hostname of database instance                  |
-|**DBName**               |DBNAME               |"casgo"           |The database name for casgo to use                 |
-|**TemplatesDirectory**   |CASGO_TEMPLATES      |"templates/"      |The folder in which casgo templates reside         |
-|**CompanyName**          |CASGO_COMPNAME       |"companyABC"      |The database name for casgo to use                 |
-|**AuthMethod**           |CASGO_DEFAULT_AUTH   |"password"        |The default (user) authentication method for casgo |
-|**LogLevel**             |CASGO_LOG_LVL        |"WARN|DEBUG|INFO" |The default log level for casgo                    |
+|Variable (json)          |ENV                  |default                 |description                                        |
+|-------------------------|---------------------|------------------------|---------------------------------------------------|
+|**host**                 |CASGO_HOST           |"0.0.0.0"               |The host on which to run casgo                     |
+|**port**                 |CASGO_PORT           |"8080"                  |The port on which to run casgo                     |
+|**dbHost**               |CASGO_DBHOST         |"localhost:28015"       |The hostname of database instance                  |
+|**dbName**               |CASGO_DBNAME         |"casgo"                 |The database name for casgo to use                 |
+|**templatesDirectory**   |CASGO_TEMPLATES      |"templates/"            |The folder in which casgo templates reside         |
+|**companyName**          |CASGO_COMPNAME       |"companyABC"            |The database name for casgo to use                 |
+|**authMethod**           |CASGO_DEFAULT_AUTH   |"password"              |The default (user) authentication method for casgo |
+|**logLevel**             |CASGO_LOG_LVL        |"WARN|DEBUG|INFO"       |The default log level for casgo                    |
+|**tlsCertFile**          |CASGO_TLS_CERT       |"fixtures/ssl/cert.pem" |The TLS cert file that casgo will use              |
+|**tlsKeyFile**           |CASGO_TLS_KEY        |"fixtures/ssl/eckey.pem"|The TLS key file that casgo will use               |
 
 
 ### Database Schema
@@ -75,6 +77,7 @@ So what does the database that powers casgo look like?
 |casgo    |tickets  |The authentication tickets currently in use by the casgo      |
 |casgo    |services |Services authorized to use casgo                              |
 |casgo    |users    |User data stored by casgo (if not using external auth)        |
+|casgo    |api_keys |Authentication API keys (enabling non-web app authentication) |
 
 
 ### Contributing
