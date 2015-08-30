@@ -3,10 +3,9 @@ package api_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/t3hmrman/casgo/cas"
-	"testing"
 	"net/http/httptest"
+	"testing"
 )
 
 // Testing globals for HTTP tests
