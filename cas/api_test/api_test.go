@@ -9,6 +9,7 @@ import (
 	. "github.com/t3hmrman/casgo/cas"
 	"io/ioutil"
 	"net/http"
+	"crypto/tls"
 )
 
 var API_TEST_DATA map[string]string = map[string]string{
@@ -53,8 +54,13 @@ func failRedirect(req *http.Request, via []*http.Request) error {
 
 // Utility function for performing JSON API requests
 func jsonAPIRequestWithCustomHeaders(req *http.Request) (*http.Client, *http.Request, map[string]interface{}) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
 	client := &http.Client{
 		CheckRedirect: failRedirect,
+		Transport: tr,
 	}
 
 	// Perform request
