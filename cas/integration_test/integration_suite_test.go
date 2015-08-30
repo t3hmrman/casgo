@@ -41,7 +41,7 @@ var _ = BeforeSuite(func() {
 	testCASServer.SetupDb()
 
 	// Setup http test server
-	testHTTPServer = httptest.NewServer(testCASServer.ServeMux)
+	testHTTPServer = httptest.NewTLSServer(testCASServer.ServeMux)
 
 	// Load database fixtures
 	testCASServer.Db.LoadJSONFixture(
