@@ -3,10 +3,9 @@ package api_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/t3hmrman/casgo/cas"
-	"testing"
 	"net/http/httptest"
+	"testing"
 )
 
 // Testing globals for HTTP tests
@@ -30,7 +29,7 @@ var _ = BeforeSuite(func() {
 	testCASServer.SetupDb()
 
 	// Setup http test server
-	testHTTPServer = httptest.NewServer(testCASServer.ServeMux)
+	testHTTPServer = httptest.NewTLSServer(testCASServer.ServeMux)
 
 	// Load database fixtures
 	testCASServer.Db.LoadJSONFixture(

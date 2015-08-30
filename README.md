@@ -6,7 +6,7 @@ Casgo is a simple to use, simple to deploy [Single Sign On](http://en.wikipedia.
 
 ## CAS Spec
 
-Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/cas/specification/CAS%202.0%20Protocol%20Specification%20v1.0.html) as defined with a few key changes:
+Casgo implements version 1.0 of the [CAS Specification](http://www.yale.edu/tp/cas/specification/CAS%202.0%20Protocol%20Specification%20v1.0.html) as defined with a few key changes:
 
 - JSON is preferred over XML/plaintext responses
 - The /validate endpoint behaves as specified in CAS 1.0 (success/failure and the username of the user)
@@ -14,10 +14,19 @@ Casgo implements version 2.0 of the [CAS Specification](http://www.yale.edu/tp/c
 
 ## Getting started
 
-0. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com), version 2.0+)
+0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
 1. Download the casgo binary for your operating system
-2. Ensure port 9090 is open (and your database instance is at the right port, 28015 by default)
+2. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary
+
+## Getting started (from source code)
+
+0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
+1. `go get github.com/t3hmrman/casgo`
+2. `make` (or `go install`/`go build`)
+3. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
+4. Add an exception for the included self-signed certificate
+3. `casgo`
 
 ## Running tests
 
@@ -45,16 +54,18 @@ Casgo can be configured by file if you specify the `-c/--config <filename>` flag
 
 ### By ENV
 
-|Variable                 |ENV                  |default           |description                                        |
-|-------------------------|---------------------|------------------|---------------------------------------------------|
-|**Host**                 |HOST                 |"0.0.0.0"         |The host on which to run casgo                     |
-|**Port**                 |PORT                 |"8080"            |The port on which to run casgo                     |
-|**DBHost**               |DBHOST               |"localhost:28015" |The hostname of database instance                  |
-|**DBName**               |DBNAME               |"casgo"           |The database name for casgo to use                 |
-|**TemplatesDirectory**   |CASGO_TEMPLATES      |"templates/"      |The folder in which casgo templates reside         |
-|**CompanyName**          |CASGO_COMPNAME       |"companyABC"      |The database name for casgo to use                 |
-|**AuthMethod**           |CASGO_DEFAULT_AUTH   |"password"        |The default (user) authentication method for casgo |
-|**LogLevel**             |CASGO_LOG_LVL        |"WARN|DEBUG|INFO" |The default log level for casgo                    |
+|Variable (json)          |ENV                  |default                 |description                                        |
+|-------------------------|---------------------|------------------------|---------------------------------------------------|
+|**host**                 |CASGO_HOST           |"0.0.0.0"               |The host on which to run casgo                     |
+|**port**                 |CASGO_PORT           |"8080"                  |The port on which to run casgo                     |
+|**dbHost**               |CASGO_DBHOST         |"localhost:28015"       |The hostname of database instance                  |
+|**dbName**               |CASGO_DBNAME         |"casgo"                 |The database name for casgo to use                 |
+|**templatesDirectory**   |CASGO_TEMPLATES      |"templates/"            |The folder in which casgo templates reside         |
+|**companyName**          |CASGO_COMPNAME       |"companyABC"            |The database name for casgo to use                 |
+|**authMethod**           |CASGO_DEFAULT_AUTH   |"password"              |The default (user) authentication method for casgo |
+|**logLevel**             |CASGO_LOG_LVL        |"WARN|DEBUG|INFO"       |The default log level for casgo                    |
+|**tlsCertFile**          |CASGO_TLS_CERT       |"fixtures/ssl/cert.pem" |The TLS cert file that casgo will use              |
+|**tlsKeyFile**           |CASGO_TLS_KEY        |"fixtures/ssl/eckey.pem"|The TLS key file that casgo will use               |
 
 
 ### Database Schema
@@ -66,6 +77,7 @@ So what does the database that powers casgo look like?
 |casgo    |tickets  |The authentication tickets currently in use by the casgo      |
 |casgo    |services |Services authorized to use casgo                              |
 |casgo    |users    |User data stored by casgo (if not using external auth)        |
+|casgo    |api_keys |Authentication API keys (enabling non-web app authentication) |
 
 
 ### Contributing

@@ -1,0 +1,27 @@
+box: wercker/golang
+# Services
+services:
+    - dancannon/rethinkdb@0.4.0
+# Build definition
+build:
+    # The steps that will be executed on build
+    steps:
+        - pjvds/setup-go-workspace
+        # Gets the dependencies
+        - script:
+            name: get dependencies
+            code: |
+                cd $WERCKER_SOURCE_DIR
+                go version
+                go get ./...
+        # Build the project
+        - script:
+            name: build
+            code: |
+                go build ./...
+        # Test the project
+        - script:
+            name: Test
+            code: |-
+                go get -u gopkg.in/check.v1
+                go test ./... -short

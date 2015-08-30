@@ -19,6 +19,8 @@ var CONFIG_ENV_OVERRIDE_MAP map[string]string = map[string]string{
 	"companyName":        "CASGO_COMPNAME",
 	"authMethod":         "CASGO_DEFAULT_AUTH",
 	"logLevel":           "CASGO_LOG_LVL",
+	"tlsCertFile":        "CASGO_TLS_CERT",
+	"tlsKeyFile":         "CASGO_TLS_KEY",
 }
 
 var CONFIG_DEFAULTS map[string]string = map[string]string{
@@ -31,6 +33,8 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 	"companyName":        "companyABC",
 	"authMethod":         "password",
 	"logLevel":           "WARN",
+	"tlsCertFile":        "fixtures/ssl/server.pem",
+	"tlsKeyFile":         "fixtures/ssl/server.key",
 }
 
 // Create default casgo configuration, with user overrides if any
