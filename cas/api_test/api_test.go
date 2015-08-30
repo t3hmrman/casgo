@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
@@ -9,16 +10,15 @@ import (
 	. "github.com/t3hmrman/casgo/cas"
 	"io/ioutil"
 	"net/http"
-	"crypto/tls"
 )
 
 var API_TEST_DATA map[string]string = map[string]string{
-	"exampleAdminOnlyURI":          "/api/services",
-	"exampleRegularUserURI":        "/api/sessions",
-	"userApiKey":                   "userapikey",
-	"userApiSecret":                "badsecret",
-	"adminApiKey":                  "adminapikey",
-	"adminApiSecret":               "badsecret",
+	"exampleAdminOnlyURI":   "/api/services",
+	"exampleRegularUserURI": "/api/sessions",
+	"userApiKey":            "userapikey",
+	"userApiSecret":         "badsecret",
+	"adminApiKey":           "adminapikey",
+	"adminApiSecret":        "badsecret",
 }
 
 // List of tuples that describe all endpoints hierarchically
@@ -54,13 +54,13 @@ func failRedirect(req *http.Request, via []*http.Request) error {
 
 // Utility function for performing JSON API requests
 func jsonAPIRequestWithCustomHeaders(req *http.Request) (*http.Client, *http.Request, map[string]interface{}) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
+	// Create TLS configuration that ignores SSL
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	tr := &http.Transport{TLSClientConfig: tlsConfig}
+	// Create client modified to accept custom cert pool
 	client := &http.Client{
 		CheckRedirect: failRedirect,
-		Transport: tr,
+		Transport:     tr,
 	}
 
 	// Perform request
@@ -150,5 +150,5 @@ var _ = Describe("CasGo API", func() {
 
 		})
 	})
-	
+
 })
