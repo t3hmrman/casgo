@@ -3,8 +3,7 @@ package integration_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/sclevine/agouti/dsl"
-
+	"github.com/sclevine/agouti"
 	"github.com/t3hmrman/casgo/cas"
 	"log"
 	"net/http/httptest"
@@ -15,6 +14,7 @@ import (
 var testHTTPServer *httptest.Server
 var testCASConfig map[string]string
 var testCASServer *cas.CAS
+var agoutiDriver *agouti.WebDriver
 
 func TestCasgoEndToEnd(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -23,7 +23,7 @@ func TestCasgoEndToEnd(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// Start PhantomJS for integration tests
-	StartPhantomJS()
+	agoutiDriver = agouti.PhantomJS()
 
 	// Setup CAS server & DB
 	testCASConfig, err := cas.NewCASServerConfig("")
@@ -55,10 +55,11 @@ var _ = BeforeSuite(func() {
 		"../../fixtures/users.json",
 	)
 
+	Expect(agoutiDriver.Start()).To(Succeed())
 })
 
 var _ = AfterSuite(func() {
 	testHTTPServer.Close()
 	testCASServer.TeardownDb()
-	StopWebdriver()
+	agoutiDriver.Stop()
 })
