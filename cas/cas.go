@@ -1,12 +1,12 @@
 package cas
 
 import (
-	"code.google.com/p/go.crypto/bcrypt"
 	"encoding/gob"
+	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
-	"github.com/GeertJohan/go.rice"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"strconv"
@@ -46,7 +46,7 @@ func NewCASServer(config map[string]string) (*CAS, error) {
 			return box.MustBytes(name), nil
 		},
 		AssetNames: func() []string {
-			files, err := ListFilesInBox(box, boxPrefix + "/")
+			files, err := ListFilesInBox(box, boxPrefix+"/")
 			if err != nil {
 				log.Fatal("Failed to load list template asset names", err)
 			}
@@ -398,7 +398,6 @@ func (c *CAS) saveCurrentUserInSession(w http.ResponseWriter, req *http.Request,
 // Validate user credentials
 // Returns a valid user object if validation succeeds
 func (c *CAS) validateUserCredentials(email string, password string) (*User, *CASServerError) {
-
 	// TODO get the user from the current database adapter
 	returnedUser, err := c.Db.FindUserByEmail(email)
 	if err != nil {
@@ -416,7 +415,6 @@ func (c *CAS) validateUserCredentials(email string, password string) (*User, *CA
 		break
 	default:
 		return nil, &AuthMethodNotSupportedError
-		break
 	}
 
 	// Successful validation
@@ -544,7 +542,7 @@ func (c *CAS) HandleValidate(w http.ResponseWriter, req *http.Request) {
 	// Look up ticket
 	casTicket, casErr := c.Db.FindTicketByIdForService(ticket, casService)
 	if casErr != nil {
-		log.Printf("Failed to find matching ticket", casService.Url)
+		log.Print("Failed to find matching ticket", casService.Url)
 		c.render.JSON(w, http.StatusOK, map[string]string{
 			"status":  "error",
 			"code":    strconv.Itoa(*&FailedToFindTicketError.CasgoErrCode),

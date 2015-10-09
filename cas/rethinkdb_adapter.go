@@ -108,7 +108,6 @@ func (db *RethinkDBAdapter) setupTable(tableName string, dbOptions interface{}) 
 		casError.err = &err
 		return casError
 	}
-	return nil
 }
 
 func (db *RethinkDBAdapter) createTableWithOptions(tableName string, rdbOptions *r.TableCreateOpts) *CASServerError {
