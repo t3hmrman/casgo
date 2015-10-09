@@ -1,7 +1,7 @@
 package cas
 
 import (
-	"code.google.com/p/go.crypto/bcrypt"
+	"golang.org/x/crypto/bcrypt"
 	"encoding/gob"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
