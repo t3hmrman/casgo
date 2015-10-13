@@ -33,8 +33,8 @@ var CONFIG_DEFAULTS map[string]string = map[string]string{
 	"companyName":        "companyABC",
 	"authMethod":         "password",
 	"logLevel":           "WARN",
-	"tlsCertFile":        "fixtures/ssl/server.pem",
-	"tlsKeyFile":         "fixtures/ssl/server.key",
+	"tlsCertFile":        "fixtures/ssl/cert.pem",
+	"tlsKeyFile":         "fixtures/ssl/eckey.pem",
 }
 
 // Create default casgo configuration, with user overrides if any
