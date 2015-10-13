@@ -19,18 +19,23 @@ Casgo implements version 1.0 of the [CAS Specification](http://www.yale.edu/tp/c
 2. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary
 
-## Getting started (from source code)
+## Getting started (from source)
 
 0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
-1. `go get github.com/t3hmrman/casgo`
-2. `make` (or `go install`/`go build`)
-3. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
-4. Add an exception for the included self-signed certificate
-3. `casgo`
+1. Install [go.rice](https://github.com/GeertJohan/go.rice)
+2. `go get github.com/t3hmrman/casgo`
+3. `make all` (or `go install`/`go build`)
+4. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
+5. `casgo`
+
+NOTE - You may have to add an exception for the included self-signed certificate
 
 ## Running tests
 
-Tests are run using [Ginkgo](https://github.com/onsi/ginkgo) from the main directory casgo code directory, please ensure Ginkgo is installed.
+0. (If using RethinkDB) Download the RethinkDB python driver
+1. Run `load-test-fixtures.sh` to load a running RethinkDB instance with fixture data.
+2. Install [ginkgo](https://github.com/onsi/ginkgo) and [agouti](https://github.com/sclevine/agouti)
+3. `ginkgo -r` (from the main casgo directory)
 
 *Note* As some tests rely on the database to be up, RethinkDB must be running.
 

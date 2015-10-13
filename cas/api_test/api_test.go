@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/t3hmrman/casgo/cas"
