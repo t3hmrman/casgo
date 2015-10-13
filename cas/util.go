@@ -2,7 +2,7 @@ package cas
 
 import (
 	"fmt"
-	"github.com/GeertJohan/go.rice"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/GeertJohan/go.rice"
 	"log"
 	"os"
 )
@@ -48,7 +48,7 @@ func ListFilesInBox(box *rice.Box, prefix string) ([]string, error) {
 		}
 
 		if !info.IsDir() {
-			files = append(files, prefix + path)
+			files = append(files, prefix+path)
 		}
 
 		return nil

@@ -3,11 +3,6 @@
 	"GoVersion": "go1.5",
 	"Deps": [
 		{
-			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
-			"Comment": "null-233",
-			"Rev": "8fec09c61d5d66f460d227fd1df3473d7e015bc6"
-		},
-		{
 			"ImportPath": "github.com/GeertJohan/go.rice",
 			"Rev": "ada95a01c963696fb73320ee662195af68be81ae"
 		},

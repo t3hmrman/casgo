@@ -2,11 +2,11 @@ package cas
 
 import (
 	"encoding/gob"
-	"github.com/GeertJohan/go.rice"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
-	"github.com/unrolled/render"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/GeertJohan/go.rice"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/gorilla/sessions"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/unrolled/render"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"strconv"

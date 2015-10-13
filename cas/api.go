@@ -2,7 +2,7 @@ package cas
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 )

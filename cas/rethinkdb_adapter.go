@@ -3,7 +3,7 @@ package cas
 import (
 	"errors"
 	"fmt"
-	r "github.com/dancannon/gorethink"
+	r "github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/dancannon/gorethink"
 	"os/exec"
 	"path/filepath"
 )
@@ -45,7 +45,7 @@ func NewRethinkDBAdapter(c *CAS) (*RethinkDBAdapter, error) {
 // Check if the database has been setup
 func (db *RethinkDBAdapter) DbExists() (bool, *CASServerError) {
 	cursor, err := r.
-		DbList().
+		DBList().
 		Run(db.session)
 	if err != nil {
 		casErr := &DbExistsCheckFailedError
@@ -70,7 +70,7 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 
 	// Setup the Database
 	_, err := r.
-		DbCreate(db.dbName).
+		DBCreate(db.dbName).
 		Run(db.session)
 	if err != nil {
 		casError := &FailedToSetupDatabaseError
@@ -88,7 +88,7 @@ func (db *RethinkDBAdapter) Setup() *CASServerError {
 }
 
 func (db *RethinkDBAdapter) teardownTable(tableName string) *CASServerError {
-	_, err := r.Db(db.dbName).TableDrop(tableName).Run(db.session)
+	_, err := r.DB(db.dbName).TableDrop(tableName).Run(db.session)
 	if err != nil {
 		casError := &FailedToTeardownDatabaseError
 		casError.err = &err
@@ -118,7 +118,7 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, rdbOptions 
 	if rdbOptions == nil {
 
 		// Create table with no options
-		_, err = r.Db(db.dbName).TableCreate(tableName).Run(db.session)
+		_, err = r.DB(db.dbName).TableCreate(tableName).Run(db.session)
 
 	} else {
 
@@ -132,7 +132,7 @@ func (db *RethinkDBAdapter) createTableWithOptions(tableName string, rdbOptions 
 		}
 
 		// Create table
-		_, err = r.Db(db.dbName).TableCreate(tableName, *options).Run(db.session)
+		_, err = r.DB(db.dbName).TableCreate(tableName, *options).Run(db.session)
 	}
 
 	if err != nil {
@@ -293,7 +293,7 @@ func (db *RethinkDBAdapter) LoadJSONFixture(dbName, tableName, path string) *CAS
 // Clear all relevant databases and/or tables
 func (db *RethinkDBAdapter) Teardown() *CASServerError {
 	_, err := r.
-		DbDrop(db.dbName).
+		DBDrop(db.dbName).
 		Run(db.session)
 	if err != nil {
 		casError := &FailedToTeardownDatabaseError
@@ -307,7 +307,7 @@ func (db *RethinkDBAdapter) Teardown() *CASServerError {
 // Find a service by given URL (callback URL)
 func (db *RethinkDBAdapter) FindServiceByUrl(serviceUrl string) (*CASService, *CASServerError) {
 	// Get the first service with the given name
-	cursor, err := r.Db(db.dbName).
+	cursor, err := r.DB(db.dbName).
 		Table(db.servicesTableName).
 		Filter(map[string]string{"url": serviceUrl}).
 		Run(db.session)
@@ -333,7 +333,7 @@ func (db *RethinkDBAdapter) FindServiceByUrl(serviceUrl string) (*CASService, *C
 func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerError) {
 	// Find the user
 	cursor, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.usersTableName).
 		Get(email).
 		Run(db.session)
@@ -359,7 +359,7 @@ func (db *RethinkDBAdapter) FindUserByEmail(email string) (*User, *CASServerErro
 func (db *RethinkDBAdapter) FindUserByApiKeyAndSecret(key, secret string) (*User, *CASServerError) {
 	// Find the user
 	cursor, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.apiKeysTableName).
 		Get(key).
 		Run(db.session)
@@ -396,7 +396,7 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 
 	// Insert user into database
 	res, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.usersTableName).
 		Insert(user, r.InsertOpts{Conflict: "error"}).
 		RunWrite(db.session)
@@ -411,7 +411,7 @@ func (db *RethinkDBAdapter) AddNewUser(username, password string) (*User, *CASSe
 
 func (db *RethinkDBAdapter) AddNewService(service *CASService) *CASServerError {
 	res, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.servicesTableName).
 		Insert(service, r.InsertOpts{Conflict: "error"}).
 		RunWrite(db.session)
@@ -432,7 +432,7 @@ func (db *RethinkDBAdapter) AddNewService(service *CASService) *CASServerError {
 // Add new CASTicket to the database for the given service
 func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASService) (*CASTicket, *CASServerError) {
 	res, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.ticketsTableName).
 		Insert(ticket).
 		RunWrite(db.session)
@@ -453,7 +453,7 @@ func (db *RethinkDBAdapter) AddTicketForService(ticket *CASTicket, service *CASS
 // Find ticket by Id for a given service
 func (db *RethinkDBAdapter) FindTicketByIdForService(ticketId string, service *CASService) (*CASTicket, *CASServerError) {
 	cursor, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.ticketsTableName).
 		Get(ticketId).
 		Run(db.session)
@@ -478,7 +478,7 @@ func (db *RethinkDBAdapter) FindTicketByIdForService(ticketId string, service *C
 // Remove tickets for a given user under a given service
 func (db *RethinkDBAdapter) RemoveTicketsForUserWithService(email string, service *CASService) *CASServerError {
 	_, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.ticketsTableName).
 		Filter(map[string]string{"userEmail": email}).
 		Delete().
@@ -499,7 +499,7 @@ func (db *RethinkDBAdapter) RemoveServiceByName(name string) *CASServerError {
 	}
 
 	_, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.servicesTableName).
 		Get(name).
 		Delete().
@@ -520,7 +520,7 @@ func (db *RethinkDBAdapter) RemoveUserByEmail(email string) *CASServerError {
 	}
 
 	_, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.usersTableName).
 		Get(email).
 		Delete().
@@ -541,7 +541,7 @@ func (db *RethinkDBAdapter) UpdateService(service *CASService) *CASServerError {
 	}
 
 	res, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.servicesTableName).
 		Get(service.Name).
 		Update(service, r.UpdateOpts{ReturnChanges: true}).
@@ -562,7 +562,7 @@ func (db *RethinkDBAdapter) UpdateUser(user *User) *CASServerError {
 	}
 
 	res, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.usersTableName).
 		Get(user.Email).
 		Update(user, r.UpdateOpts{ReturnChanges: true}).
@@ -579,7 +579,7 @@ func (db *RethinkDBAdapter) UpdateUser(user *User) *CASServerError {
 // Get all services
 func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
 	cursor, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.servicesTableName).
 		Run(db.session)
 	if err != nil {
@@ -602,7 +602,7 @@ func (db *RethinkDBAdapter) GetAllServices() ([]CASService, *CASServerError) {
 // Get all users
 func (db *RethinkDBAdapter) GetAllUsers() ([]User, *CASServerError) {
 	cursor, err := r.
-		Db(db.dbName).
+		DB(db.dbName).
 		Table(db.usersTableName).
 		Without("password").
 		Run(db.session)

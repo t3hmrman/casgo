@@ -1,10 +1,10 @@
 package cas
 
 import (
-	r "github.com/dancannon/gorethink"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
-	"github.com/unrolled/render"
+	r "github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/dancannon/gorethink"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/gorilla/sessions"
+	"github.com/t3hmrman/casgo/cas/Godeps/_workspace/src/github.com/unrolled/render"
 	"net/http"
 )
 
