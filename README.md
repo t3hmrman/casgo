@@ -19,16 +19,20 @@ Casgo implements version 1.0 of the [CAS Specification](http://www.yale.edu/tp/c
 2. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary
 
-## Getting started (from source)
+## Getting started (developing from source)
 
 0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
-1. Install [go.rice](https://github.com/GeertJohan/go.rice)
-2. `go get github.com/t3hmrman/casgo`
-3. `make all` (or `go install`/`go build`)
-4. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
-5. `casgo`
+1. Install [bower](http://bower.io)
+2. `bower install`
+3. Install [go.rice](https://github.com/GeertJohan/go.rice)
+4. `go get github.com/t3hmrman/casgo`
+5. `make all` (or `go install`/`go build`)
+6. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
+7. `casgo`
 
 NOTE - You may have to add an exception for the included self-signed certificate
+
+You may also find it helpful to install [Gin](https://github.com/codegangsta/gin)
 
 ## Running tests
 

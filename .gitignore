@@ -11,3 +11,4 @@ public/vendor/*
 /_resources.go
 /cas/back-public.rice-box.go
 /cas/back-templates.rice-box.go
+/cas/rice-box.go
