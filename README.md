@@ -12,14 +12,14 @@ Casgo implements version 1.0 of the [CAS Specification](http://www.yale.edu/tp/c
 - The /validate endpoint behaves as specified in CAS 1.0 (success/failure and the username of the user)
 - The /validate endpoint returns user attributes
 
-## Getting started
+## Getting started (deploying an instance of Casgo)
 
 0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
 1. Download the casgo binary for your operating system
 2. Ensure port 443 is open (and your database instance is at the right port, 28015 by default)
 3. Run the binary
 
-## Getting started (developing from source)
+## Contributing to Casgo (setting up your local development environment)
 
 0. Install your database of choice (default is [RethinkDB](http://rethinkdb.com), version 2.0+)
 1. Install [bower](http://bower.io)
