@@ -77,24 +77,11 @@ Casgo can be configured by file if you specify the `-c/--config <filename>` flag
 |**tlsKeyFile**           |CASGO_TLS_KEY        |"fixtures/ssl/eckey.pem"|The TLS key file that casgo will use               |
 
 
-### Database Schema
-
-So what does the database that powers casgo look like?
-
-|Database |Table    |Description                                                   |
-|---------|---------|--------------------------------------------------------------|
-|casgo    |tickets  |The authentication tickets currently in use by the casgo      |
-|casgo    |services |Services authorized to use casgo                              |
-|casgo    |users    |User data stored by casgo (if not using external auth)        |
-|casgo    |api_keys |Authentication API keys (enabling non-web app authentication) |
-
-
 ### Contributing
 
 0. Fork the repo
-1. Install [Go](http://golang.org)
-2. Install your database of choice (default is  [RethinkDB](http://rethinkdb.com))
-3. Fix issues, make changes
-4. Ensure Makefile functions correctly (`make all`/`make resources`/etc)
-5. Pull Request
-6. Receive thanks from the community
+1. Follow the instructions for contributing to Casgo
+2. Fix issues, make changes
+3. Run tests, ensure make targets are functional
+4. Pull Request
+5. Receive thanks from the community

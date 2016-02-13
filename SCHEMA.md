@@ -3,6 +3,15 @@
 A breakdown of CasGo's RethinkDB (No-SQL) schema. This schema only applies to servers using the default RethinkDB based database adapter.
 If creating your own database adapter, please ensure to provide a similar document so others can build on your work.
 
+### Overview
+
+|Database |Table    |Description                                                   |
+|---------|---------|--------------------------------------------------------------|
+|casgo    |tickets  |The authentication tickets currently in use by the casgo      |
+|casgo    |services |Services authorized to use casgo                              |
+|casgo    |users    |User data stored by casgo (if not using external auth)        |
+|casgo    |api_keys |Authentication API keys (enabling non-web app authentication) |
+
 ### API Keys
 
 API keys that can be used to access CasGo's API
