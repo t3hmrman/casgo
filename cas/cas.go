@@ -489,8 +489,6 @@ func (c *CAS) HandleLogout(w http.ResponseWriter, req *http.Request) {
 	err := c.Db.RemoveTicketsForUserWithService(currentUser.Email, casService)
 	if err != nil {
 		log.Printf("Failed to remove ticket for user %s", currentUser.Email)
-		http.Redirect(w, req, "/login", 500)
-		return
 	}
 
 	// Remove current user information from session
